@@ -63,7 +63,7 @@ export function OrganisationForm() {
               id="name"
               name="name"
               required
-              placeholder="University of Technology"
+              placeholder="University of Cambridge"
             />
           </div>
 
@@ -73,7 +73,7 @@ export function OrganisationForm() {
               id="code"
               name="code"
               required
-              placeholder="UOT"
+              placeholder="UOC"
             />
           </div>
 
@@ -83,7 +83,7 @@ export function OrganisationForm() {
               id="contactEmail"
               name="contactEmail"
               type="email"
-              placeholder="admin@university.edu"
+              placeholder="admin@university.ac.uk"
             />
           </div>
 
@@ -92,7 +92,7 @@ export function OrganisationForm() {
             <Input
               id="contactPhone"
               name="contactPhone"
-              placeholder="+1 234 567 8900"
+              placeholder="+44 1223 763 000"
             />
           </div>
 
@@ -101,7 +101,7 @@ export function OrganisationForm() {
             <Input
               id="domain"
               name="domain"
-              placeholder="university.edu"
+              placeholder="university.ac.uk"
             />
           </div>
 
@@ -110,7 +110,7 @@ export function OrganisationForm() {
             <Input
               id="website"
               name="website"
-              placeholder="https://university.edu"
+              placeholder="https://university.ac.uk"
             />
           </div>
 

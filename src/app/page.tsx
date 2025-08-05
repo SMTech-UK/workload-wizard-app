@@ -3,38 +3,31 @@
 import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserButton } from '@clerk/nextjs';
-import { Building2, Users, Settings } from 'lucide-react';
+
 import Link from 'next/link';
 
 export default function Home() {
   const { user, isLoaded } = useUser();
+  const isAdmin = user?.publicMetadata?.role === 'admin';
+  const organisationId = user?.publicMetadata?.organisationId as string;
 
   if (!isLoaded) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-screen">
-          <p>Loading...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading...</p>
       </div>
     );
   }
 
-  const isAdmin = (user?.publicMetadata?.role as string) === 'admin';
-  const organisationId = user?.publicMetadata?.organisationId as string;
-
   return (
-    <div className="container mx-auto p-6 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold">Workload Wizard</h1>
-          <p className="text-muted-foreground">Academic workload management system</p>
-        </div>
-        <UserButton afterSignOutUrl="/" />
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Welcome Section */}
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold">Workload Wizard</h1>
+        <p className="text-xl text-muted-foreground">Academic workload management system</p>
       </div>
 
-      {/* User Info */}
+      {/* User Info Card */}
       {user && (
         <Card>
           <CardHeader>
@@ -62,54 +55,10 @@ export default function Home() {
         </Card>
       )}
 
-      {/* Admin Section */}
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin Panel</CardTitle>
-            <CardDescription>Manage your system</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href="/admin/users">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium">User Management</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link href="/admin/organisations">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Building2 className="h-5 w-5 text-green-600" />
-                      <span className="font-medium">Organisations</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link href="/admin">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Settings className="h-5 w-5 text-purple-600" />
-                      <span className="font-medium">Admin Dashboard</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Main App Section */}
+      {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Get Started</CardTitle>
+          <CardTitle>Quick Actions</CardTitle>
           <CardDescription>Access your workload management tools</CardDescription>
         </CardHeader>
         <CardContent>
@@ -118,7 +67,7 @@ export default function Home() {
               Welcome to Workload Wizard. This system helps academic institutions manage teaching workloads, 
               allocate resources, and track academic staff assignments.
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <Button asChild>
                 <Link href="/dashboard">Go to Dashboard</Link>
               </Button>

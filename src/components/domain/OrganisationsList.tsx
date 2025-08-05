@@ -29,7 +29,7 @@ export function OrganisationsList() {
     if (!confirm('Are you sure you want to delete this organisation?')) return;
     
     try {
-      await deleteOrganisation({ id: id as any });
+      await deleteOrganisation({ id: id as any }); // eslint-disable-line @typescript-eslint/no-explicit-any
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete organisation');
     }

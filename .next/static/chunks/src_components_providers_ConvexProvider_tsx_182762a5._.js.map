@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 7, "column": 0}, "map": {"version":3,"sources":["file:///Users/sammcnab/github/workload-wizard-app/src/components/providers/ConvexProvider.tsx"],"sourcesContent":["'use client';\n\nimport { ConvexProvider, ConvexReactClient } from \"convex/react\";\n\nconst convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);\n\nexport function ConvexClientProvider({ children }: { children: React.ReactNode }) {\n  return <ConvexProvider client={convex}>{children}</ConvexProvider>;\n} "],"names":[],"mappings":";;;AAIqC;;AAFrC;AAAA;AAFA;;;AAIA,MAAM,SAAS,IAAI,2JAAA,CAAA,oBAAiB;AAE7B,SAAS,qBAAqB,KAA2C;QAA3C,EAAE,QAAQ,EAAiC,GAA3C;IACnC,qBAAO,6LAAC,2JAAA,CAAA,iBAAc;QAAC,QAAQ;kBAAS;;;;;;AAC1C;KAFgB","debugId":null}}]
-}

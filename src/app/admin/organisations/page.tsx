@@ -23,7 +23,8 @@ export default function AdminOrganisationsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Organisation Management</h1>
@@ -31,11 +32,15 @@ export default function AdminOrganisationsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
+      {/* Main Content */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Sidebar - Create Organisation Form */}
+        <div className="xl:col-span-1">
           <OrganisationForm />
         </div>
-        <div className="lg:col-span-2">
+        
+        {/* Main Content - Organisations List */}
+        <div className="xl:col-span-2">
           <OrganisationsList />
         </div>
       </div>

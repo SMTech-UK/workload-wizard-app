@@ -44,6 +44,23 @@ export default defineSchema({
     updatedAt: v.float64(),
   }),
 
+  // 📋 Audit Logs
+  audit_logs: defineTable({
+    action: v.string(), // 'create', 'update', 'delete', 'login', 'logout', 'permission_change', etc.
+    entityType: v.string(), // 'user', 'organisation', 'module', 'academic_year', etc.
+    entityId: v.string(), // ID of the affected entity
+    entityName: v.optional(v.string()), // Human-readable name of the entity
+    performedBy: v.string(), // User ID who performed the action
+    performedByName: v.optional(v.string()), // Human-readable name of the user who performed the action
+    organisationId: v.optional(v.id("organisations")), // Organisation context
+    details: v.optional(v.string()), // Additional details about the action
+    metadata: v.optional(v.string()), // JSON string for additional structured data
+    ipAddress: v.optional(v.string()), // IP address of the request
+    userAgent: v.optional(v.string()), // User agent of the request
+    timestamp: v.float64(),
+    severity: v.optional(v.string()), // 'info', 'warning', 'error', 'critical'
+  }),
+
   // 👤 User Profile
   user_profiles: defineTable({
     userId: v.string(),
@@ -146,19 +163,6 @@ export default defineSchema({
     isDefault: v.boolean(),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
-
-  // 📝 Audit Logs
-  audit_logs: defineTable({
-    userId: v.string(),
-    action: v.string(), // 'create' | 'update' | 'delete'
-    entityId: v.string(),
-    entityType: v.string(),
-    changes: v.object({}), // Convex limitation — can’t enforce structure
-    ipAddress: v.string(),
-    userAgent: v.string(),
-    organisationId: v.optional(v.id("organisations")),
-    createdAt: v.float64(),
   }),
 
 });
