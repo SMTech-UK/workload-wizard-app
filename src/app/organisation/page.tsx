@@ -3,6 +3,7 @@
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -26,14 +27,17 @@ export default function OrganisationAdminPage() {
 
   const organisationId = user.publicMetadata?.organisationId as string;
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Organisation" }
+  ];
+
   return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Organisation Admin Panel</h1>
-        <p className="text-muted-foreground">
-          Manage your organisation&apos;s users, roles, and settings
-        </p>
-      </div>
+    <StandardizedSidebarLayout
+      breadcrumbs={breadcrumbs}
+      title="Organisation Admin Panel"
+      subtitle="Manage your organisation's users, roles, and settings"
+    >
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
@@ -119,6 +123,21 @@ export default function OrganisationAdminPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+
+      <div className="mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Organisation Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <p><strong>Organisation ID:</strong> {organisationId || 'Not assigned'}</p>
+              <p><strong>Your Role:</strong> Organisation Admin</p>
+              <p><strong>Email:</strong> {user.emailAddresses[0]?.emailAddress}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </StandardizedSidebarLayout>
   );
 } 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
+import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -203,19 +204,32 @@ export default function AdminPermissionsPage() {
     return Object.values(permissionsGrouped).flat();
   };
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Admin", href: "/admin" },
+    { label: "Permissions" }
+  ];
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm">
+        <Upload className="h-4 w-4 mr-2" />
+        Import
+      </Button>
+      <Button size="sm" onClick={() => setShowCreateForm(true)}>
+        <Plus className="h-4 w-4 mr-2" />
+        New Permission
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">Permission Registry</h1>
-          <p className="text-muted-foreground">Manage system-wide permissions and default role assignments</p>
-        </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Permission
-        </Button>
-      </div>
+    <StandardizedSidebarLayout
+      breadcrumbs={breadcrumbs}
+      title="Permission Registry"
+      subtitle="Manage system-wide permissions and default role assignments"
+      headerActions={headerActions}
+    >
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -425,6 +439,6 @@ export default function AdminPermissionsPage() {
           details={successModal.details}
         />
       )}
-    </div>
+    </StandardizedSidebarLayout>
   );
 }

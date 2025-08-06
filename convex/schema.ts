@@ -36,12 +36,18 @@ export default defineSchema({
     familyName: v.string(),
     fullName: v.string(),
     systemRole: v.string(), // 'admin', etc.
+    jobRole: v.optional(v.string()), // User's job role from onboarding
+    department: v.optional(v.string()),
+    phone: v.optional(v.string()),
     organisationId: v.id("organisations"),
     pictureUrl: v.optional(v.string()),
     subject: v.string(), // Clerk ID
     tokenIdentifier: v.optional(v.string()),
     isActive: v.boolean(),
     lastSignInAt: v.optional(v.float64()),
+    onboardingCompleted: v.optional(v.boolean()),
+    onboardingData: v.optional(v.any()),
+    onboardingCompletedAt: v.optional(v.float64()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
   }).index("by_subject", ["subject"]),

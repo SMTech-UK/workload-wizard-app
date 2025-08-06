@@ -6,6 +6,9 @@
     
     ---
     
+******** CONFIRM VALID BUILD
+
+
     ## 🔐 1. User Profile & Onboarding (User-side polish)
     
     ### 🔧 `/profile` or `/account`
@@ -93,6 +96,9 @@
     
     ---
 
+- Forgotten Password logic so it works without needing code or implement code UI 
+- Change password logic in onboarding
+- Handle change in name, email in onboarding
 
 - [ ] User profile management page (change password etc.)
 - [ ] User onboarding flow (first time login)

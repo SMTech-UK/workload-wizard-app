@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -215,15 +216,28 @@ export default function OrganisationRolesPage() {
     );
   }
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Organisation", href: "/organisation" },
+    { label: "Roles" }
+  ];
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm">
+        <Settings className="h-4 w-4 mr-2" />
+        Settings
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Role Management</h1>
-          <p className="text-muted-foreground">
-            Manage roles and permissions for your organisation
-          </p>
-        </div>
+    <StandardizedSidebarLayout
+      breadcrumbs={breadcrumbs}
+      title="Role Management"
+      subtitle="Manage roles and permissions for your organisation"
+      headerActions={headerActions}
+    >
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -472,6 +486,6 @@ export default function OrganisationRolesPage() {
           );
         })}
       </div>
-    </div>
+    </StandardizedSidebarLayout>
   );
 } 
