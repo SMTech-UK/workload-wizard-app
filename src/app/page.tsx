@@ -8,7 +8,8 @@ import Link from 'next/link';
 
 export default function Home() {
   const { user, isLoaded } = useUser();
-  const isAdmin = user?.publicMetadata?.role === 'admin';
+  const isSystemAdmin = user?.publicMetadata?.role === 'sysadmin' || user?.publicMetadata?.role === 'developer';
+  const isOrgAdmin = user?.publicMetadata?.role === 'orgadmin';
   const organisationId = user?.publicMetadata?.organisationId as string;
 
   if (!isLoaded) {
@@ -71,9 +72,14 @@ export default function Home() {
               <Button asChild>
                 <Link href="/dashboard">Go to Dashboard</Link>
               </Button>
-              {isAdmin && (
+              {isSystemAdmin && (
                 <Button variant="outline" asChild>
-                  <Link href="/admin">Admin Panel</Link>
+                  <Link href="/admin">System Admin Panel</Link>
+                </Button>
+              )}
+              {(isOrgAdmin || isSystemAdmin) && (
+                <Button variant="outline" asChild>
+                  <Link href="/organisation">Organisation Admin Panel</Link>
                 </Button>
               )}
             </div>

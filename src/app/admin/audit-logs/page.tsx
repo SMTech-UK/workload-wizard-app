@@ -10,14 +10,14 @@ export default function AdminAuditLogsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoaded && user?.publicMetadata?.role !== 'admin') {
+    if (isLoaded && (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer')) {
       router.replace('/unauthorised');
     }
   }, [isLoaded, user, router]);
 
   if (!isLoaded) return <p>Loading...</p>;
 
-  if (user?.publicMetadata?.role !== 'admin') {
+  if (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer') {
     return null; // Will redirect in useEffect
   }
 

@@ -3,23 +3,25 @@
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { CreateUserForm } from '@/components/domain/CreateUserForm';
 import { UsersList } from '@/components/domain/UsersList';
 import { UserSyncButton } from '@/components/domain/UserSyncButton';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Users } from 'lucide-react';
 
 export default function AdminUsersPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoaded && user?.publicMetadata?.role !== 'admin') {
+    if (isLoaded && (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer')) {
       router.replace('/unauthorised');
     }
   }, [isLoaded, user, router]);
 
   if (!isLoaded) return <p>Loading...</p>;
 
-  if (user?.publicMetadata?.role !== 'admin') {
+  if (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer') {
     return null; // Will redirect in useEffect
   }
 
@@ -37,16 +39,29 @@ export default function AdminUsersPage() {
       <UserSyncButton />
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Sidebar - Create User Form */}
-        <div className="xl:col-span-1">
-          <CreateUserForm />
+      <div className="grid grid-cols-1 gap-6">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                User Management
+              </CardTitle>
+              <CardDescription>
+                Manage users across all organisations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <a href="/admin/users">View All Users</a>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
         
-        {/* Main Content - Users List */}
-        <div className="xl:col-span-3">
-          <UsersList />
-        </div>
+        {/* Users List */}
+        <UsersList />
       </div>
     </div>
   );

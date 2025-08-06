@@ -177,4 +177,39 @@ export const listByOrganisation = query({
 
     return users;
   },
+});
+
+// Query to get all users by organisation (including inactive)
+export const listAllByOrganisation = query({
+  args: { organisationId: v.id("organisations") },
+  handler: async (ctx, args) => {
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .collect();
+
+    return users;
+  },
+});
+
+// Mutation to update last sign in time
+export const updateLastSignIn = mutation({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("subject"), args.userId))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      lastSignInAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return user._id;
+  },
 }); 

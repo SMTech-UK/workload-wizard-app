@@ -75,6 +75,9 @@ export async function POST(req: Request) {
       case 'user.deleted':
         await handleUserDeleted(evt.data);
         break;
+      case 'session.created':
+        await handleSessionCreated(evt.data);
+        break;
       default:
         console.log(`Unhandled webhook event: ${eventType}`);
     }
@@ -102,7 +105,7 @@ async function handleUserCreated(userData: any) { // eslint-disable-line @typesc
 
   // Set default values if metadata is missing
   const publicMetadata = userData.public_metadata as Record<string, unknown> || {};
-  const role = (publicMetadata.role as string) || 'staff';
+  const role = (publicMetadata.role as string) || 'user';
   const organisationId = (publicMetadata.organisationId as string) || '';
 
   console.log('Creating user in Convex:', {
@@ -167,4 +170,15 @@ async function handleUserDeleted(userData: any) { // eslint-disable-line @typesc
   });
 
   console.log('User deleted from Convex:', userData.id);
+}
+
+async function handleSessionCreated(sessionData: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  console.log('Handling session.created event for user:', sessionData.user_id);
+  
+  // Update last sign in time in Convex
+  await convex.mutation(api.users.updateLastSignIn, {
+    userId: sessionData.user_id as string,
+  });
+
+  console.log('Last sign in time updated in Convex for user:', sessionData.user_id);
 } 
