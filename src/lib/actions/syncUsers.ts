@@ -44,7 +44,7 @@ export async function syncUsersFromClerk() {
         }
 
         // Check if user exists in Convex
-        const existingConvexUser = await convex.query(api.users.get, { userId: clerkUser.id });
+        const existingConvexUser = await convex.query(api.users.getBySubject, { subject: clerkUser.id });
 
         if (!existingConvexUser) {
           // Create user in Convex if not found
@@ -52,6 +52,7 @@ export async function syncUsersFromClerk() {
           
           const createData = {
             email: primaryEmail,
+            username: clerkUser.username || '',
             givenName: clerkUser.firstName || '',
             familyName: clerkUser.lastName || '',
             fullName: clerkUser.firstName && clerkUser.lastName ? `${clerkUser.firstName} ${clerkUser.lastName}` : primaryEmail,

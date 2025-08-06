@@ -1,115 +1,139 @@
-# TODO - Workload Wizard: Org-Scoped User & Staff Management (Day Plan)
+    # ✅ **Tomorrow’s Task List: Core Foundations Sprint**
+    
+    ## 🎯 **Goal by EOD**
+    
+    > Have full user/role/permission management complete for both sysadmin and orgadmin, including UI polish and audit support — ready to build workload functionality on top.
+    
+    ---
+    
+    ## 🔐 1. User Profile & Onboarding (User-side polish)
+    
+    ### 🔧 `/profile` or `/account`
+    
+    * [ ] Implement **user profile management page**
+    
+      * Show name, email, current role(s)
+      * [ ] Allow password update (Clerk)
+      * [ ] Optionally update profile picture, job title, etc.
+    
+    ### 🛬 Onboarding Logic
+    
+    * [ ] Detect `publicMetadata.onboarded === false`
+    * [ ] Redirect to onboarding wizard after first login
+    * [ ] Wizard can:
+    
+      * Confirm name, role, org
+      * Change password
+    * [ ] Set `publicMetadata.onboarded = true` after
+    
+    ---
+    
+    ## 🛠️ 2. System Admin Polishing
+    
+    ### 🧑‍💼 User Management
+    
+    * [ ] Fix **reset password**
+    * [ ] Fix **table filters** (by org, role, status)
+    * [ ] Add **login-as functionality** from env (already started?)
+    
+    ### 🧠 Role Interface
+    
+    * [ ] Add **role assignment UI** to sysadmin user table
+    * [ ] Support **bulk role assignment**
+    * [ ] Log changes in audit log (`role.assigned`, `role.removed`)
+    
+    ---
+    
+    ## 🧑‍🏫 3. Org Admin Tools
+    
+    ### 👥 Organisation User Management
+    
+    * [ ] Fix **reset password**
+    * [ ] Show user roles + ability to update via dropdown
+    * [ ] Support multiple roles per user if future-proofing
+    
+    ---
+    
+    ## 📒 4. Role & Permission UX
+    
+    * [ ] Audit logging: `role.assigned`, `role.removed`, `role.edited`
+    * [ ] Permission visual labels: 📎 = default, ✏️ = custom
+    * [ ] Add hover tooltips to explain role-permission source
+    * [ ] Add warning/guardrails if sysadmin tries to edit org-managed role
+    
+    ---
+    
+    ## 🧪 5. Test Coverage / Dev Enhancements (if time)
+    
+    * [ ] Write test script that:
+    
+      * Seeds an org with roles
+      * Assigns roles to users
+      * Fetches user + permission matrix
+    * [ ] Add test util: `createTestUserWithRole()`
+    
+    ---
+    
+    ## 📦 Prep for Next Sprint
+    
+    Start planning following once above is complete:
+    
+    * Staff schema + input forms (lecturer FT/PT/bank + contract hours)
+    * Module setup: create module, assign to staff
+    * Visual timetable / calendar prototype
+    * MVP workload calculator (staff view)
+    
+    ---
+    
+    ## 📁 Optional (Stretch Goals)
+    
+    * [ ] Create `/help` route with dummy docs and onboarding info
+    * [ ] Clerk: add metadata validator in dev (e.g. role/orgId checker)
+    * [ ] Dark mode toggle
+    
+    ---
 
-## 🎯 Goal by EOD
-Be able to log in as an orgadmin and manage only users and staff within their organisation, with scoped access enforced via Clerk + Convex.
 
-## 🔐 1. Clerk Metadata Verification
-- [x] Confirm invited users are being created with publicMetadata.organisationId
-- [x] Confirm publicMetadata.role is set (e.g. orgadmin, sysadmin, developer, user, trial)
-- [x] Confirm publicMetadata.organisationId is set when users are created
-- [x] Display organisationId and role in console or UI (via useUser())
-- [x] Add a dropdown to assign organisation during user invite
+- [ ] User profile management page (change password etc.)
+- [ ] User onboarding flow (first time login)
+- System Admin User Management (reset password) //TODO: Fix this   
+- System Admin User Management (table filters) //TODO: Fix this
+- Organisation Admin User Management (reset password) //TODO: Fix this
+- User → Role assignment interface
+- Bulk role assignment
+- Role assignment history/audit
 
-## 👥 2. Organisation-Scoped User Management (/organisation/users)
-- [x] Add edit user functionality to UsersList component
-- [x] Create EditUserForm component with role, status, organisation, and password editing
-- [x] Update userActions.ts to handle password changes and detailed audit logging
-- [x] Update both Clerk and Convex when user is edited
-- [x] Create new route: /organisation/users/page.tsx
-- [x] List users where user.publicMetadata.organisationId === currentUser.organisationId
-- [x] Display:
-  - Full name
-  - Email
-  - Role
-- [x] Add server action: getUsersByOrganisationId()
-- [x] Add button to remove/deactivate user (optional)
-- [x] Add way for orgadmins to still see deactivated users so they can still reactivate them
-- [x] Add confirmation dialog when deactivating a user
-- [x] Add a way to reactivate a user for orgadmins
-- [x] Add way for dev/sysadmin to login as different users using .env.local username and password variables
-- [x] Add edit organisation functionality to user organisation management on /admin/organisations
-- [x] Add function for orgadmin to add users and edit users within their organisation/users
 
-## 🧑‍🏫 3. Organisation-Scoped Staff Management (/staff)
-- [x] Create /organisation/page.tsx (organisation admin panel)
+## Current Functions
 
-## 🧠 4. Convex Data Scoping Enforcement
-- [x] Ensure all queries/mutations include and filter by organisationId
-- [x] Create helper: getUserOrgOrThrow() in lib/auth/
-- [x] Prevent actions from users without an organisationId
-- [x] Protect against cross-org access
+- User management: users.edit, users.invite
+- Staff management: staff.create, staff.edit
+- System permissions: All CRUD operations on permissions/roles
 
-## 🔒 5. Role & Route-Based Protection
-- [x] Update /admin/* to restrict to sysadmin or dev
-- [x] Restrict /organisation/* to users with:
-  - role === orgadmin
-  - Matching organisationId
-- [x] Create or reuse middleware to enforce this
-- [x] Add a generic /unauthorised page
+- Login
+- System Admin Dashboard
+- System Admin User Management
+- System Admin User Management (change email) // Working 06/08     
+- System Admin User Management (delete user) // Working 06/08
+- System Admin User Management (create user) // Working 06/08
+- System Admin User Management (update username) // Working 06/08
+- System Admin User Management (update system role) // Working 06/08
+- System Admin User Management (update org) // Working 06/08
+- System Admin User Management (last login date) // Working 06/08
 
-## 🧪 Optional Extras (Stretch Goals)
-- [x] Add dropdown to assign organisation during user invite
-- [x] Implement last sign-in tracking and display
-- [x] Display number of users per organisation in admin view
-- [x] Write audit log entries:
-  - user.invited
-  - staff.created
-  - user.deleted
+- System Admin Org Management
+- System Admin Org Management (create org) //Working 06/08
+- System Admin Org Management (delete org) //Working 06/08
+- System Admin Org Management (edit org) //Working 06/08
 
-## ✅ Expected Outcome by End of Day
-Orgadmins can log in and:
-- View and manage only their users
-- View and add lecturers for their organisation
-- Cannot access other organisations' data
-- All Convex logic respects organisationId
-- Role-based route protection is working
+- Audit Logs
 
-## 🔐 6. System-Wide Permissions Management
-- [ ] Create system-wide permissions schema in Convex
-  - [ ] Define permission types (read, write, delete, admin)
-  - [ ] Create permission groups (user_management, staff_management, reports, etc.)
-  - [ ] Add permission inheritance system
-- [ ] Create permission management UI for sysadmins
-  - [ ] Permission group editor
-  - [ ] Permission assignment interface
-  - [ ] Permission testing tools
-- [ ] Implement permission checking system
-  - [ ] Create permission validation helpers
-  - [ ] Add permission checks to all actions
-  - [ ] Create permission-aware UI components
-- [ ] Auto-assign permissions to new organisations
-  - [ ] Default permission sets for different organisation types
-  - [ ] Permission inheritance from system defaults
-  - [ ] Custom permission overrides per organisation
-- [ ] Permission audit logging
-  - [ ] Log permission changes
-  - [ ] Track permission usage
-  - [ ] Permission violation alerts
-
-## 🎯 7. Advanced Organisation Features
-- [ ] Organisation hierarchy support
-  - [ ] Parent-child organisation relationships
-  - [ ] Permission inheritance across hierarchy
-  - [ ] Multi-level organisation management
-- [ ] Organisation templates
-  - [ ] Pre-configured permission sets
-  - [ ] Default organisational roles
-  - [ ] Standard workflows per template
-- [ ] Organisation analytics dashboard
-  - [ ] User activity metrics
-  - [ ] Permission usage statistics
-  - [ ] Organisation health indicators
-
-## 🔧 8. Developer Experience Improvements
-- [ ] API documentation generation
-  - [ ] Auto-generate API docs from Convex functions
-  - [ ] Interactive API testing interface
-  - [ ] Code examples and tutorials
-- [ ] Development tools
-  - [ ] Permission testing playground
-  - [ ] Organisation data seeder
-  - [ ] Bulk user import/export
-- [ ] Monitoring and observability
-  - [ ] Performance metrics dashboard
-  - [ ] Error tracking and alerting
-  - [ ] Usage analytics 
+- Organisation Admin Dashboard
+- Organisation Admin User Management
+- Organisation Admin User Management (deactivate user) //Working 06/08
+- Organisation Admin User Management (reactivate user) //Working 06/08
+- Organisation Admin User Management (create user) //Working 06/08
+- Organisation Admin User Management (update system role [limited]) //Working 06/08
+- Organisation Admin User Management (change email) //Working 06/08
+- Organisation Admin User Management (delete user) //Working 06/08
+- Organisation Admin User Management (update username) //Working 06/08

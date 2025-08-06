@@ -31,6 +31,7 @@ export default defineSchema({
   // 👥 Users
   users: defineTable({
     email: v.string(),
+    username: v.optional(v.string()),
     givenName: v.string(),
     familyName: v.string(),
     fullName: v.string(),
@@ -43,7 +44,7 @@ export default defineSchema({
     lastSignInAt: v.optional(v.float64()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  }).index("by_subject", ["subject"]),
 
   // 📋 Audit Logs
   audit_logs: defineTable({
@@ -93,7 +94,7 @@ export default defineSchema({
     isActive: v.boolean(),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  }).index("by_user_org", ["userId", "organisationId"]),
 
   // 📚 Module Definitions
   modules: defineTable({
@@ -126,7 +127,7 @@ export default defineSchema({
     isActive: v.boolean(),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  }).index("by_organisation", ["organisationId"]),
 
   // 🧑‍🏫 Lecturer Instances
   lecturers: defineTable({
@@ -165,5 +166,41 @@ export default defineSchema({
     createdAt: v.float64(),
     updatedAt: v.float64(),
   }),
+
+  // 🔐 System Permissions Registry
+  system_permissions: defineTable({
+    id: v.string(), // e.g. 'staff.create', 'users.invite'
+    group: v.string(), // e.g. 'staff', 'users', 'modules'
+    description: v.string(),
+    defaultRoles: v.array(v.string()), // Array of role names that get this permission by default
+    isActive: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_permission_id", ["id"]),
+
+  // 🏢 Organisation Roles
+  organisation_roles: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    organisationId: v.id("organisations"),
+    isDefault: v.boolean(), // Whether this is a default role for the org
+    isActive: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_organisation", ["organisationId"]),
+
+  // 🔗 Organisation Role Permissions (Junction Table)
+  organisation_role_permissions: defineTable({
+    organisationId: v.id("organisations"),
+    roleId: v.id("organisation_roles"),
+    permissionId: v.string(), // FK to system_permissions.id
+    isGranted: v.boolean(), // true = granted, false = explicitly denied
+    isOverride: v.boolean(), // Whether this overrides the system default
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_role", ["roleId"])
+    .index("by_role_permission", ["roleId", "permissionId"])
+    .index("by_organisation", ["organisationId"]),
 
 });

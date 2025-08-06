@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Users, Building2, FileText } from 'lucide-react';
+import { Users, Building2, FileText, Shield, Settings } from 'lucide-react';
 
 export default function OrganisationAdminPage() {
   const { user, isLoaded } = useUser();
@@ -31,7 +31,7 @@ export default function OrganisationAdminPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Organisation Admin Panel</h1>
         <p className="text-muted-foreground">
-          Manage your organisation&apos;s users, modules, and settings
+          Manage your organisation&apos;s users, roles, and settings
         </p>
       </div>
 
@@ -49,6 +49,23 @@ export default function OrganisationAdminPage() {
           <CardContent>
             <Button asChild className="w-full">
               <Link href="/organisation/users">Manage Users</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Roles & Permissions
+            </CardTitle>
+            <CardDescription>
+              Manage roles and permissions for your organisation
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/organisation/roles">Manage Roles</Link>
             </Button>
           </CardContent>
         </Card>

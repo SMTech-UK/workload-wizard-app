@@ -40,25 +40,6 @@ export default function AdminUsersPage() {
 
       {/* Main Content */}
       <div className="grid grid-cols-1 gap-6">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                User Management
-              </CardTitle>
-              <CardDescription>
-                Manage users across all organisations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <a href="/admin/users">View All Users</a>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
         
         {/* Users List */}
         <UsersList />

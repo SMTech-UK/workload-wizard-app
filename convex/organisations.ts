@@ -106,3 +106,11 @@ export const getByCode = query({
     return organisation;
   },
 }); 
+
+// Get a single organisation by ID
+export const get = query({
+  args: { organisationId: v.id("organisations") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.organisationId);
+  },
+}); 

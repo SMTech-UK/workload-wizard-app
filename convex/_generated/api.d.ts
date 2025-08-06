@@ -16,6 +16,8 @@ import type {
 import type * as audit from "../audit.js";
 import type * as organisationalRoles from "../organisationalRoles.js";
 import type * as organisations from "../organisations.js";
+import type * as permissions from "../permissions.js";
+import type * as staff from "../staff.js";
 import type * as users from "../users.js";
 
 /**
@@ -30,6 +32,8 @@ declare const fullApi: ApiFromModules<{
   audit: typeof audit;
   organisationalRoles: typeof organisationalRoles;
   organisations: typeof organisations;
+  permissions: typeof permissions;
+  staff: typeof staff;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

@@ -66,7 +66,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+    <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/20 flex items-center justify-center z-50">
       <Card className="w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <div className="flex items-center justify-between">

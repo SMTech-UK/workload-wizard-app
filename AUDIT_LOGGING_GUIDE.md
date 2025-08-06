@@ -2,7 +2,7 @@
 
 ## Overview
 
-The audit logging system provides comprehensive tracking of all user actions and system events across the application. It automatically captures who performed what action, when, and with what context.
+The audit logging system provides comprehensive tracking of all user actions and system events across the application. It automatically captures who performed what action, when, and with what context. This includes detailed permission and role management tracking as part of the RBAC system.
 
 ## 🏗️ Architecture
 
@@ -232,4 +232,14 @@ You can extend the system by:
 ### Monitoring
 - Monitor audit log creation failures
 - Set up alerts for critical severity events
-- Regular review of audit statistics 
+- Regular review of audit statistics
+
+## 🔗 Related Documentation
+
+- [Permission System Guide](./PERMISSION_SYSTEM_GUIDE.md) - Complete RBAC system with permission audit logging
+- [User Management Features](./USER_MANAGEMENT_FEATURES.md) - User management capabilities
+- [User Management Setup](./USER_MANAGEMENT_SETUP.md) - Configuration guide
+
+---
+
+*Last updated: January 2025* 

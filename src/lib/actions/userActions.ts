@@ -79,7 +79,7 @@ export async function createUser(data: CreateUserData) {
         const existingUser = existingUsers.data[0];
         
         // Check if user exists in Convex
-        const existingConvexUser = await convex.query(api.users.get, { userId: existingUser.id });
+        const existingConvexUser = await convex.query(api.users.getBySubject, { subject: existingUser.id });
         
         if (!existingConvexUser) {
           // User exists in Clerk but not in Convex - create in Convex
@@ -100,6 +100,7 @@ export async function createUser(data: CreateUserData) {
             
             await convex.mutation(api.users.create, {
               email: primaryEmail.emailAddress,
+              username: existingUser.username || '',
               givenName: existingUser.firstName || '',
               familyName: existingUser.lastName || '',
               fullName: `${existingUser.firstName || ''} ${existingUser.lastName || ''}`.trim(),
@@ -147,6 +148,7 @@ export async function createUser(data: CreateUserData) {
     // Create user in Convex
     await convex.mutation(api.users.create, {
       email: primaryEmail.emailAddress,
+      username: data.username || '',
       givenName: data.firstName,
       familyName: data.lastName,
       fullName: `${data.firstName} ${data.lastName}`,
@@ -236,7 +238,9 @@ export async function listUsers() {
     // Transform to match the expected interface
     return convexUsers.map(user => ({
       id: user.subject, // Use Clerk user ID as the ID
+      subject: user.subject, // Include subject for password reset and email updates
       email: user.email,
+      username: user.username,
       firstName: user.givenName,
       lastName: user.familyName,
       role: user.systemRole,
@@ -263,6 +267,7 @@ export async function deleteUser(userId: string) {
     // Get user details before deletion for audit logging
     const clerk = await clerkClient();
     let userEmail = 'unknown';
+    let userExistsInClerk = true;
     
     try {
       const user = await clerk.users.getUser(userId);
@@ -270,19 +275,37 @@ export async function deleteUser(userId: string) {
         email => email.id === user.primaryEmailAddressId
       );
       userEmail = primaryEmail?.emailAddress || 'unknown';
-    } catch (userError) {
+    } catch (userError: any) {
       console.warn('Could not get user details for audit log:', userError);
+      if (userError.status === 404) {
+        userExistsInClerk = false;
+        console.log(`User ${userId} not found in Clerk, will skip Clerk deletion`);
+      }
     }
 
-    // Delete from both Clerk and Convex simultaneously
-    const clerkDeletePromise = clerk.users.deleteUser(userId);
+    // Delete from Convex (always required)
     const convexDeletePromise = convex.mutation(api.users.hardDelete, { userId });
     
-    // Wait for both operations to complete
-    await Promise.all([clerkDeletePromise, convexDeletePromise]);
+    // Delete from Clerk only if user exists there
+    const promises = [convexDeletePromise];
+    if (userExistsInClerk) {
+      const clerkDeletePromise = clerk.users.deleteUser(userId).catch((error: any) => {
+        if (error.status === 404) {
+          console.log(`User ${userId} not found in Clerk during deletion, skipping`);
+          return; // Don't throw, just skip
+        }
+        throw error; // Re-throw other errors
+      });
+      promises.push(clerkDeletePromise);
+    } else {
+      console.log(`Skipping Clerk deletion for user ${userId} - user not found in Clerk`);
+    }
+    
+    // Wait for all operations to complete
+    await Promise.all(promises);
     
     // Log the user deletion
-    await logUserDeleted(userId, userEmail, `User deleted by admin: ${currentUserData.emailAddresses[0]?.emailAddress}`);
+    await logUserDeleted(userId, userEmail, `User deleted by admin: ${currentUserData.emailAddresses[0]?.emailAddress}${userExistsInClerk ? '' : ' (Clerk: not found)'}`);
     
     revalidatePath('/admin/users');
     return { success: true };
