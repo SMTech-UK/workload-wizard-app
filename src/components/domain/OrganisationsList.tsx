@@ -109,7 +109,7 @@ export function OrganisationsList() {
                             ? 'bg-gray-100 text-gray-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {org.status}
+                          {org.status.charAt(0).toUpperCase() + org.status.slice(1)}
                         </span>
                       </TableCell>
                       <TableCell>{formatDate(org.createdAt)}</TableCell>

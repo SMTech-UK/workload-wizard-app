@@ -226,6 +226,126 @@ export async function logError(error: Error, context: string, entityType?: strin
   });
 }
 
+// Permission-related audit functions
+export async function logPermissionCreated(permissionId: string, permissionName: string, details?: string, metadata?: Record<string, unknown>) {
+  await logAuditEvent({
+    action: 'create',
+    entityType: 'permission',
+    entityId: permissionId,
+    entityName: permissionName,
+    details: details || `System permission "${permissionName}" created`,
+    metadata,
+    severity: 'info',
+  });
+}
+
+export async function logPermissionUpdated(permissionId: string, permissionName: string, changes: Record<string, unknown>, details?: string) {
+  await logAuditEvent({
+    action: 'update',
+    entityType: 'permission',
+    entityId: permissionId,
+    entityName: permissionName,
+    details: details || `System permission "${permissionName}" updated`,
+    metadata: { changes },
+    severity: 'info',
+  });
+}
+
+export async function logPermissionDeleted(permissionId: string, permissionName: string, details?: string, metadata?: Record<string, unknown>) {
+  await logAuditEvent({
+    action: 'delete',
+    entityType: 'permission',
+    entityId: permissionId,
+    entityName: permissionName,
+    details: details || `System permission "${permissionName}" deleted`,
+    metadata,
+    severity: 'warning',
+  });
+}
+
+export async function logPermissionAssigned(permissionId: string, permissionName: string, roleId: string, roleName: string, details?: string) {
+  await logAuditEvent({
+    action: 'permission.assigned',
+    entityType: 'permission',
+    entityId: permissionId,
+    entityName: permissionName,
+    details: details || `Permission "${permissionName}" assigned to role "${roleName}"`,
+    metadata: { 
+      roleId,
+      roleName,
+      permissionId,
+      permissionName 
+    },
+    severity: 'info',
+  });
+}
+
+export async function logPermissionRevoked(permissionId: string, permissionName: string, roleId: string, roleName: string, details?: string) {
+  await logAuditEvent({
+    action: 'permission.revoked',
+    entityType: 'permission',
+    entityId: permissionId,
+    entityName: permissionName,
+    details: details || `Permission "${permissionName}" revoked from role "${roleName}"`,
+    metadata: { 
+      roleId,
+      roleName,
+      permissionId,
+      permissionName 
+    },
+    severity: 'warning',
+  });
+}
+
+export async function logPermissionPushedToOrgs(permissionId: string, permissionName: string, results: { organisationsUpdated: number; assignmentsCreated: number; }, details?: string) {
+  await logAuditEvent({
+    action: 'permission.pushed',
+    entityType: 'permission',
+    entityId: permissionId,
+    entityName: permissionName,
+    details: details || `Permission "${permissionName}" pushed to ${results.organisationsUpdated} organisation(s), creating ${results.assignmentsCreated} new assignment(s)`,
+    metadata: results,
+    severity: 'info',
+  });
+}
+
+// Role-related audit functions
+export async function logRoleCreated(roleId: string, roleName: string, organisationId?: string, details?: string, metadata?: Record<string, unknown>) {
+  await logAuditEvent({
+    action: 'role.created',
+    entityType: 'role',
+    entityId: roleId,
+    entityName: roleName,
+    details: details || `Role "${roleName}" created`,
+    metadata: { organisationId, ...metadata },
+    severity: 'info',
+  });
+}
+
+export async function logRoleUpdated(roleId: string, roleName: string, changes: Record<string, unknown>, organisationId?: string, details?: string) {
+  await logAuditEvent({
+    action: 'role.updated',
+    entityType: 'role',
+    entityId: roleId,
+    entityName: roleName,
+    details: details || `Role "${roleName}" updated`,
+    metadata: { organisationId, changes },
+    severity: 'info',
+  });
+}
+
+export async function logRoleDeleted(roleId: string, roleName: string, organisationId?: string, details?: string, metadata?: Record<string, unknown>) {
+  await logAuditEvent({
+    action: 'role.deleted',
+    entityType: 'role',
+    entityId: roleId,
+    entityName: roleName,
+    details: details || `Role "${roleName}" deleted`,
+    metadata: { organisationId, ...metadata },
+    severity: 'warning',
+  });
+}
+
 // Function to get audit logs (for admin interface)
 export async function getAuditLogs(filters?: {
   entityType?: string;

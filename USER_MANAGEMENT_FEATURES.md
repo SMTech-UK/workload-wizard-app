@@ -83,4 +83,14 @@ All user and organisation management actions are logged:
 2. **User Activity Tracking**: Track when users were last active before deactivation
 3. **Email Notifications**: Notify users when they are deactivated/reactivated
 4. **Organisation Bulk Operations**: Add ability to update multiple organisations at once
-5. **Organisation Activity Tracking**: Track organisation usage and activity metrics 
+5. **Organisation Activity Tracking**: Track organisation usage and activity metrics
+
+## 🔗 Related Documentation
+
+- [Permission System Guide](./PERMISSION_SYSTEM_GUIDE.md) - Complete RBAC and permission management
+- [Audit Logging Guide](./AUDIT_LOGGING_GUIDE.md) - Activity tracking and compliance
+- [User Management Setup](./USER_MANAGEMENT_SETUP.md) - Initial configuration guide
+
+---
+
+*Last updated: January 2025* 

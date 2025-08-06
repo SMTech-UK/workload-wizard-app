@@ -7,15 +7,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { listUsers, deleteUser } from '@/lib/actions/userActions';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
-import { Trash2, RefreshCw, UserCheck, UserX, Edit, Filter, Building2 } from 'lucide-react';
+import { Trash2, RefreshCw, UserCheck, UserX, Edit, Filter, Building2, Plus, GitCompareArrows } from 'lucide-react';
 import { EditUserForm } from './EditUserForm';
+import { CreateUserForm } from './CreateUserForm';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
 interface User {
   id: string;
+  subject?: string; // Clerk user ID for password reset and email updates
   email: string;
+  username?: string;
   firstName: string;
   lastName: string;
   role: string;
@@ -36,8 +39,10 @@ export function UsersList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [creatingUser, setCreatingUser] = useState(false);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
   
   const updateLastSignIn = useMutation(api.users.updateLastSignIn);
   const organisations = useQuery(api.organisations.list);
@@ -94,6 +99,53 @@ export function UsersList() {
 
   const handleUserUpdated = () => {
     fetchUsers(); // Refresh the user list
+  };
+
+  const handleCreateUser = () => {
+    setCreatingUser(true);
+  };
+
+  const handleCloseCreate = () => {
+    setCreatingUser(false);
+  };
+
+  const handleUserCreated = () => {
+    fetchUsers(); // Refresh the user list
+  };
+
+  const handleToggleUserStatus = async (user: User) => {
+    if (!user.subject) {
+      console.error('Cannot toggle status: User subject not found');
+      return;
+    }
+
+    setTogglingUserId(user.id);
+    
+    try {
+      const response = await fetch('/api/update-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.subject,
+          isActive: !user.isActive,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update user status');
+      }
+
+      // Refresh the user list
+      fetchUsers();
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update user status');
+    } finally {
+      setTogglingUserId(null);
+    }
   };
 
   // Get unique organisations for filter dropdown
@@ -162,6 +214,16 @@ export function UsersList() {
     });
   };
 
+  const formatDateTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'orgadmin': return 'Organisation Admin';
@@ -224,6 +286,13 @@ export function UsersList() {
             </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
+            <Button 
+              onClick={handleCreateUser}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
             <Button 
               onClick={() => setShowFilters(!showFilters)} 
               variant="outline" 
@@ -328,23 +397,43 @@ export function UsersList() {
                       {user.organisation?.name || user.organisationId || 'N/A'}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center">
-                        {user.isActive ? (
-                          <>
-                            <UserCheck className="h-4 w-4 text-green-600 mr-1" />
-                            <span className="text-green-600 text-sm">Active</span>
-                          </>
-                        ) : (
-                          <>
-                            <UserX className="h-4 w-4 text-red-600 mr-1" />
-                            <span className="text-red-600 text-sm">Inactive</span>
-                          </>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center">
+                          {user.isActive ? (
+                            <>
+                              <UserCheck className="h-4 w-4 text-green-600 mr-1" />
+                              <span className="text-green-600 text-sm">Active</span>
+                            </>
+                          ) : (
+                            <>
+                              <UserX className="h-4 w-4 text-red-600 mr-1" />
+                              <span className="text-red-600 text-sm">Inactive</span>
+                            </>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleUserStatus(user)}
+                          disabled={togglingUserId === user.id}
+                          className={`h-5 w-5 p-0 hover:bg-transparent ${
+                            user.isActive 
+                              ? 'hover:text-red-500 text-gray-400' 
+                              : 'hover:text-green-500 text-gray-400'
+                          }`}
+                          title={user.isActive ? 'Deactivate user' : 'Activate user'}
+                        >
+                          {togglingUserId === user.id ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <GitCompareArrows className="h-3 w-3" />
+                          )}
+                        </Button>
                       </div>
                     </TableCell>
                     <TableCell>{formatDate(user.createdAt)}</TableCell>
                     <TableCell>
-                      {user.lastSignInAt ? formatDate(user.lastSignInAt) : 'Never'}
+                      {user.lastSignInAt ? formatDateTime(user.lastSignInAt) : 'Never'}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-1">
@@ -383,6 +472,15 @@ export function UsersList() {
             user={editingUser}
             onClose={handleCloseEdit}
             onUserUpdated={handleUserUpdated}
+            isSysadmin={true}
+          />
+        )}
+
+        {creatingUser && (
+          <CreateUserForm
+            onClose={handleCloseCreate}
+            onUserCreated={handleUserCreated}
+            isSysadmin={true}
           />
         )}
     

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, Settings, FileText, RefreshCw } from 'lucide-react';
+import { Users, Building2, Shield, FileText, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { listUsers } from '@/lib/actions/userActions';
 import { api } from '../../../convex/_generated/api';
@@ -79,18 +79,18 @@ export default function AdminDashboardPage() {
       color: 'bg-green-500',
     },
     {
+      title: 'Permission Registry',
+      description: 'Manage system permissions and default role assignments',
+      icon: Shield,
+      href: '/admin/permissions',
+      color: 'bg-indigo-500',
+    },
+    {
       title: 'Audit Logs',
       description: 'View system activity and user actions',
       icon: FileText,
       href: '/admin/audit-logs',
       color: 'bg-orange-500',
-    },
-    {
-      title: 'System Settings',
-      description: 'Configure system-wide settings and preferences',
-      icon: Settings,
-      href: '/admin/settings',
-      color: 'bg-purple-500',
     },
   ];
 

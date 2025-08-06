@@ -12,19 +12,27 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 
 interface CreateUserFormProps {
-  organisationId: string;
+  organisationId?: string; // Optional for sysadmin use
   onClose: () => void;
   onUserCreated: () => void;
+  isSysadmin?: boolean; // Flag to indicate if this is for sysadmin use
 }
 
-export function CreateUserForm({ organisationId, onClose, onUserCreated }: CreateUserFormProps) {
+export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysadmin = false }: CreateUserFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [selectedOrganisationId, setSelectedOrganisationId] = useState(organisationId || null);
   
-  // Get organisational roles for this organisation
-  const organisationalRoles = useQuery(api.organisationalRoles.listByOrganisation, { 
-    organisationId: organisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
-  });
+  // Get all organisations for sysadmin use
+  const organisations = useQuery(api.organisations.list);
+  
+  // Get organisational roles for the selected organisation
+  const organisationalRoles = useQuery(
+    api.organisationalRoles.listByOrganisation, 
+    selectedOrganisationId
+      ? { organisationId: selectedOrganisationId as any } // eslint-disable-line @typescript-eslint/no-explicit-any
+      : "skip"
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,15 +40,23 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated }: Creat
     setMessage(null);
 
     const formData = new FormData(event.currentTarget);
+    const targetOrganisationId = isSysadmin ? selectedOrganisationId : organisationId;
+    
+    if (!targetOrganisationId) {
+      setMessage({ type: 'error', text: 'Please select an organisation' });
+      setIsLoading(false);
+      return;
+    }
+
     const data = {
       email: formData.get('email') as string,
       firstName: formData.get('firstName') as string,
       lastName: formData.get('lastName') as string,
       username: formData.get('username') as string,
-      password: formData.get('password') as string,
-      role: 'user' as const, // Always create as 'user' system role
-      organisationId: organisationId,
-      sendEmailInvitation: formData.get('sendEmailInvitation') === 'true',
+      password: '', // Will be auto-generated
+      role: (formData.get('systemRole') as string || 'user') as 'user' | 'orgadmin' | 'sysadmin' | 'developer' | 'trial',
+      organisationId: targetOrganisationId,
+      sendEmailInvitation: true, // Always send email invitation
       organisationalRoleId: formData.get('organisationalRole') as string,
     };
 
@@ -59,13 +75,15 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated }: Creat
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+    <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/20 flex items-center justify-center z-50">
       <Card className="w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Add User</CardTitle>
-              <CardDescription>Add a new user to your organisation</CardDescription>
+              <CardDescription>
+                {isSysadmin ? 'Add a new user to any organisation' : 'Add a new user to your organisation'}
+              </CardDescription>
             </div>
             <Button
               variant="ghost"
@@ -120,50 +138,71 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated }: Creat
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                placeholder="Enter password"
-              />
-            </div>
+            {/* Organisation Selection for Sysadmin */}
+            {isSysadmin && (
+              <div className="space-y-2">
+                <Label htmlFor="organisation">Organisation *</Label>
+                <Select 
+                  value={selectedOrganisationId || ''} 
+                  onValueChange={setSelectedOrganisationId}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select organisation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organisations?.map((org) => (
+                      <SelectItem key={org._id} value={org._id}>
+                        {org.name}
+                      </SelectItem>
+                    )) || []}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="organisationalRole">Organisational Role *</Label>
-              <Select name="organisationalRole" required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select organisational role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {organisationalRoles?.map((role) => (
-                    <SelectItem key={role._id} value={role._id}>
-                      {role.name}
-                    </SelectItem>
-                  )) || []}
-                </SelectContent>
-              </Select>
-              {organisationalRoles?.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No organisational roles found. Please create roles first.
-                </p>
-              )}
-            </div>
+            {/* System Role Selection for Sysadmin */}
+            {isSysadmin && (
+              <div className="space-y-2">
+                <Label htmlFor="systemRole">System Role *</Label>
+                <Select name="systemRole" defaultValue="user" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select system role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="orgadmin">Organisation Admin</SelectItem>
+                    <SelectItem value="sysadmin">System Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="sendEmailInvitation">Send Email Invitation</Label>
-              <Select name="sendEmailInvitation" defaultValue="true">
-                <SelectTrigger>
-                  <SelectValue placeholder="Send invitation email?" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Yes, send invitation email</SelectItem>
-                  <SelectItem value="false">No, I&apos;ll contact them separately</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Organisational Role Selection */}
+            {(selectedOrganisationId || !isSysadmin) && (
+              <div className="space-y-2">
+                <Label htmlFor="organisationalRole">Organisational Role</Label>
+                <Select name="organisationalRole">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select organisational role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organisationalRoles?.map((role) => (
+                      <SelectItem key={role._id} value={role._id}>
+                        {role.name}
+                      </SelectItem>
+                    )) || []}
+                  </SelectContent>
+                </Select>
+                {(!organisationalRoles || organisationalRoles.length === 0) && (
+                  <p className="text-sm text-muted-foreground">
+                    {isSysadmin && !selectedOrganisationId 
+                      ? 'Please select an organisation first' 
+                      : 'No organisational roles found. Please create roles first.'}
+                  </p>
+                )}
+              </div>
+            )}
 
             {message && (
               <div className={`p-3 rounded-md text-sm ${
