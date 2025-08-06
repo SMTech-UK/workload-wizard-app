@@ -2,6 +2,7 @@
 
 import { clerkClient } from '@clerk/nextjs/server';
 import { currentUser } from '@clerk/nextjs/server';
+// Removed unused imports
 import { revalidatePath } from 'next/cache';
 import { api } from '../../../convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
@@ -44,6 +45,11 @@ export async function createUser(data: CreateUserData) {
     throw new Error('Unauthorized: Can only create users in your own organisation');
   }
 
+  // Ensure user has an organisationId (for orgadmins)
+  if (isOrgAdmin && !currentUserData.publicMetadata?.organisationId) {
+    throw new Error('Unauthorized: User must be assigned to an organisation');
+  }
+
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(data.email)) {
@@ -52,7 +58,7 @@ export async function createUser(data: CreateUserData) {
 
   try {
     // Use provided organisationId or get the first organisation as default
-    let organisationId: any = data.organisationId;
+    let organisationId: any = data.organisationId; // eslint-disable-line @typescript-eslint/no-explicit-any
     if (!organisationId) {
       const organisations = await convex.query(api.organisations.list);
       if (organisations.length === 0) {
@@ -313,6 +319,11 @@ export async function updateUser(userId: string, updates: {
 
   // If orgadmin, ensure they can only update users in their own organisation
   if (isOrgAdmin) {
+    // Ensure orgadmin has an organisationId
+    if (!currentUserData.publicMetadata?.organisationId) {
+      throw new Error('Unauthorized: User must be assigned to an organisation');
+    }
+
     // Get the user being updated to check their organisation
     const clerk = await clerkClient();
     try {
@@ -323,7 +334,7 @@ export async function updateUser(userId: string, updates: {
       if (userOrgId !== currentUserOrgId) {
         throw new Error('Unauthorized: Can only update users in your own organisation');
       }
-    } catch (userError) {
+    } catch {
       throw new Error('Unauthorized: Cannot access user information');
     }
   }
@@ -346,7 +357,7 @@ export async function updateUser(userId: string, updates: {
     }
 
     // Prepare Clerk update data
-    const clerkUpdateData: any = {
+    const clerkUpdateData: any = { // eslint-disable-line @typescript-eslint/no-explicit-any
       firstName: updates.firstName,
       lastName: updates.lastName,
       publicMetadata: {
@@ -371,7 +382,7 @@ export async function updateUser(userId: string, updates: {
       familyName: updates.lastName,
       fullName: updates.firstName && updates.lastName ? `${updates.firstName} ${updates.lastName}` : undefined,
       systemRole: updates.role,
-      organisationId: updates.organisationId as any, // Cast to Convex Id type
+      organisationId: updates.organisationId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       isActive: updates.isActive,
     });
     
@@ -435,10 +446,15 @@ export async function getUsersByOrganisationId(organisationId: string) {
     throw new Error('Unauthorized: Access denied to this organisation');
   }
 
+  // Ensure user has an organisationId (for orgadmins)
+  if (currentUserData.publicMetadata?.role === 'orgadmin' && !currentUserData.publicMetadata?.organisationId) {
+    throw new Error('Unauthorized: User must be assigned to an organisation');
+  }
+
   try {
     // Get users from Convex filtered by organisation
     const convexUsers = await convex.query(api.users.listByOrganisation, { 
-      organisationId: organisationId as any // Cast to Convex Id type
+      organisationId: organisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
     });
     
     // Transform to match the expected interface and get organisational roles
@@ -497,6 +513,11 @@ export async function deactivateUser(userId: string) {
     throw new Error('Unauthorized: Admin access required');
   }
 
+  // Ensure user has an organisationId (for orgadmins)
+  if (currentUserData.publicMetadata?.role === 'orgadmin' && !currentUserData.publicMetadata?.organisationId) {
+    throw new Error('Unauthorized: User must be assigned to an organisation');
+  }
+
   try {
     // Get user details before deactivation for audit logging
     const clerk = await clerkClient();
@@ -553,6 +574,11 @@ export async function reactivateUser(userId: string) {
       currentUserData.publicMetadata?.role !== 'sysadmin' && 
       currentUserData.publicMetadata?.role !== 'developer') {
     throw new Error('Unauthorized: Admin access required');
+  }
+
+  // Ensure user has an organisationId (for orgadmins)
+  if (currentUserData.publicMetadata?.role === 'orgadmin' && !currentUserData.publicMetadata?.organisationId) {
+    throw new Error('Unauthorized: User must be assigned to an organisation');
   }
 
   try {
@@ -633,7 +659,7 @@ export async function getUsersByOrganisationIdWithOverride(organisationId: strin
   try {
     // Get users from Convex filtered by organisation
     const convexUsers = await convex.query(api.users.listByOrganisation, { 
-      organisationId: targetOrganisationId as any // Cast to Convex Id type
+      organisationId: targetOrganisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
     });
     
     // Transform to match the expected interface and get organisational roles
@@ -699,7 +725,7 @@ export async function getAllUsersByOrganisationIdWithOverride(organisationId: st
   try {
     // Get all users from Convex filtered by organisation (including inactive)
     const convexUsers = await convex.query(api.users.listAllByOrganisation, { 
-      organisationId: targetOrganisationId as any // Cast to Convex Id type
+      organisationId: targetOrganisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
     });
     
     // Transform to match the expected interface and get organisational roles

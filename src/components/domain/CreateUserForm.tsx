@@ -23,7 +23,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated }: Creat
   
   // Get organisational roles for this organisation
   const organisationalRoles = useQuery(api.organisationalRoles.listByOrganisation, { 
-    organisationId: organisationId as any 
+    organisationId: organisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
   });
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -160,7 +160,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated }: Creat
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="true">Yes, send invitation email</SelectItem>
-                  <SelectItem value="false">No, I'll contact them separately</SelectItem>
+                  <SelectItem value="false">No, I&apos;ll contact them separately</SelectItem>
                 </SelectContent>
               </Select>
             </div>

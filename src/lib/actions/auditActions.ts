@@ -38,7 +38,7 @@ export async function logAuditEvent(data: AuditLogData) {
       return;
     }
 
-    // Get user's organisation from metadata or default
+    // Get user's organisation from metadata
     const organisationId = currentUserData.publicMetadata?.organisationId as string;
 
     // Create the audit log entry

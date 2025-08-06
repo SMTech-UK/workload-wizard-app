@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
 
     const formData = new FormData(event.currentTarget);
     const data = {
-      id: organisation._id as any, // Cast to Convex Id type
+      id: organisation._id as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       name: formData.get('name') as string,
       code: formData.get('code') as string,
       contactEmail: formData.get('contactEmail') as string || undefined,

@@ -4,22 +4,20 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { listUsers, deleteUser, getAllOrganisations } from '@/lib/actions/userActions';
+import { listUsers, deleteUser } from '@/lib/actions/userActions';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
-import { Trash2, RefreshCw, UserCheck, UserX, Edit, Search, Filter, X, Building2 } from 'lucide-react';
+import { Trash2, RefreshCw, UserCheck, UserX, Edit, Filter, Building2 } from 'lucide-react';
 import { EditUserForm } from './EditUserForm';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
 interface User {
   id: string;
-  email: string | null;
-  firstName: string | null;
-  lastName: string | null;
+  email: string;
+  firstName: string;
+  lastName: string;
   role: string;
   organisationId: string;
   organisation?: {
@@ -380,13 +378,13 @@ export function UsersList() {
       </CardContent>
     </Card>
     
-    {editingUser && (
-      <EditUserForm
-        user={editingUser}
-        onClose={handleCloseEdit}
-        onUpdate={handleUserUpdated}
-      />
-    )}
+            {editingUser && (
+          <EditUserForm
+            user={editingUser}
+            onClose={handleCloseEdit}
+            onUserUpdated={handleUserUpdated}
+          />
+        )}
     
     {deletingUser && (
       <DeleteConfirmationModal

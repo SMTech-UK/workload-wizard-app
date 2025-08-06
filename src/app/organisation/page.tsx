@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Users, Building2, FileText, Settings } from 'lucide-react';
+import { Users, Building2, FileText } from 'lucide-react';
 
 export default function OrganisationAdminPage() {
   const { user, isLoaded } = useUser();
@@ -31,7 +31,7 @@ export default function OrganisationAdminPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Organisation Admin Panel</h1>
         <p className="text-muted-foreground">
-          Manage your organisation's users, modules, and settings
+          Manage your organisation&apos;s users, modules, and settings
         </p>
       </div>
 

@@ -5,6 +5,12 @@ import { mutation, query } from "./_generated/server";
 export const listByOrganisation = query({
   args: { organisationId: v.id("organisations") },
   handler: async (ctx, args) => {
+    // Validate that the organisation exists
+    const organisation = await ctx.db.get(args.organisationId);
+    if (!organisation || !organisation.isActive) {
+      throw new Error('Organisation not found or inactive');
+    }
+
     const roles = await ctx.db
       .query("user_roles")
       .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
@@ -98,6 +104,29 @@ export const assignToUser = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    
+    // Validate that the organisation exists and is active
+    const organisation = await ctx.db.get(args.organisationId);
+    if (!organisation || !organisation.isActive) {
+      throw new Error('Organisation not found or inactive');
+    }
+
+    // Validate that the role exists and belongs to the organisation
+    const role = await ctx.db.get(args.roleId);
+    if (!role || !role.isActive || role.organisationId !== args.organisationId) {
+      throw new Error('Role not found or does not belong to the organisation');
+    }
+
+    // Validate that the user exists in the organisation
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("subject"), args.userId))
+      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .first();
+    
+    if (!user) {
+      throw new Error('User not found in the specified organisation');
+    }
     
     // First, deactivate any existing role assignments for this user in this organisation
     const existingAssignments = await ctx.db

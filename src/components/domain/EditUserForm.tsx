@@ -34,13 +34,13 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
   
   // Get organisational roles for this organisation
   const organisationalRoles = useQuery(api.organisationalRoles.listByOrganisation, { 
-    organisationId: user.organisationId as any 
+    organisationId: user.organisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
   });
   
   // Get user's current organisational role
   const userOrganisationalRole = useQuery(api.organisationalRoles.getUserRole, {
     userId: user.id,
-    organisationId: user.organisationId as any
+    organisationId: user.organisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
   });
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

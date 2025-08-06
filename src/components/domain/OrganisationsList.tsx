@@ -12,7 +12,7 @@ import { EditOrganisationForm } from './EditOrganisationForm';
 export function OrganisationsList() {
   const organisations = useQuery(api.organisations.list);
   const deleteOrganisation = useMutation(api.organisations.remove);
-  const [editingOrganisation, setEditingOrganisation] = useState<any>(null);
+  const [editingOrganisation, setEditingOrganisation] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   // Handle case where Convex might not be ready
   if (organisations === undefined && typeof window !== 'undefined') {
@@ -38,7 +38,7 @@ export function OrganisationsList() {
     }
   };
 
-  const handleEditOrganisation = (organisation: any) => {
+  const handleEditOrganisation = (organisation: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     setEditingOrganisation(organisation);
   };
 

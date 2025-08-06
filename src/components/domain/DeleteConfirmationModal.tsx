@@ -18,7 +18,7 @@ interface DeleteConfirmationModalProps {
   isDeleting: boolean;
 }
 
-export function DeleteConfirmationModal({ user, onConfirm, onCancel, isDeleting }: DeleteConfirmationModalProps) {
+export function DeleteConfirmationModal({ user, onConfirm, onCancel }: DeleteConfirmationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleConfirm = async () => {

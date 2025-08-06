@@ -32,40 +32,26 @@ Be able to log in as an orgadmin and manage only users and staff within their or
 
 ## 🧑‍🏫 3. Organisation-Scoped Staff Management (/staff)
 - [x] Create /organisation/page.tsx (organisation admin panel)
-- [ ] Use Convex query to list lecturer_profiles by organisationId
-- [ ] Display:
-  - Full name
-  - Email
-  - Contract type
-  - FTE
-  - Max teaching hours
-- [ ] Add "Add Lecturer" button (ShadCN dialog)
-- [ ] Create Convex mutation to add new lecturer
 
 ## 🧠 4. Convex Data Scoping Enforcement
-- [ ] Ensure all queries/mutations include and filter by organisationId
-- [ ] Create helper: getUserOrgOrThrow() in lib/auth/
-- [ ] Prevent actions from users without an organisationId
-- [ ] Protect against cross-org access
+- [x] Ensure all queries/mutations include and filter by organisationId
+- [x] Create helper: getUserOrgOrThrow() in lib/auth/
+- [x] Prevent actions from users without an organisationId
+- [x] Protect against cross-org access
 
 ## 🔒 5. Role & Route-Based Protection
-- [ ] Update /admin/* to restrict to sysadmin or dev
-- [ ] Restrict /organisation/* to users with:
+- [x] Update /admin/* to restrict to sysadmin or dev
+- [x] Restrict /organisation/* to users with:
   - role === orgadmin
   - Matching organisationId
-- [ ] Create or reuse middleware to enforce this
-- [ ] Add a generic /unauthorised page
-
-## 🧑‍💻 Git Workflow
-- [ ] git checkout dev
-- [ ] git pull
-- [ ] git checkout -b feature/org-scoped-management
+- [x] Create or reuse middleware to enforce this
+- [x] Add a generic /unauthorised page
 
 ## 🧪 Optional Extras (Stretch Goals)
 - [x] Add dropdown to assign organisation during user invite
 - [x] Implement last sign-in tracking and display
-- [ ] Display number of users per organisation in admin view
-- [ ] Write audit log entries:
+- [x] Display number of users per organisation in admin view
+- [x] Write audit log entries:
   - user.invited
   - staff.created
   - user.deleted
@@ -76,4 +62,54 @@ Orgadmins can log in and:
 - View and add lecturers for their organisation
 - Cannot access other organisations' data
 - All Convex logic respects organisationId
-- Role-based route protection is working 
+- Role-based route protection is working
+
+## 🔐 6. System-Wide Permissions Management
+- [ ] Create system-wide permissions schema in Convex
+  - [ ] Define permission types (read, write, delete, admin)
+  - [ ] Create permission groups (user_management, staff_management, reports, etc.)
+  - [ ] Add permission inheritance system
+- [ ] Create permission management UI for sysadmins
+  - [ ] Permission group editor
+  - [ ] Permission assignment interface
+  - [ ] Permission testing tools
+- [ ] Implement permission checking system
+  - [ ] Create permission validation helpers
+  - [ ] Add permission checks to all actions
+  - [ ] Create permission-aware UI components
+- [ ] Auto-assign permissions to new organisations
+  - [ ] Default permission sets for different organisation types
+  - [ ] Permission inheritance from system defaults
+  - [ ] Custom permission overrides per organisation
+- [ ] Permission audit logging
+  - [ ] Log permission changes
+  - [ ] Track permission usage
+  - [ ] Permission violation alerts
+
+## 🎯 7. Advanced Organisation Features
+- [ ] Organisation hierarchy support
+  - [ ] Parent-child organisation relationships
+  - [ ] Permission inheritance across hierarchy
+  - [ ] Multi-level organisation management
+- [ ] Organisation templates
+  - [ ] Pre-configured permission sets
+  - [ ] Default organisational roles
+  - [ ] Standard workflows per template
+- [ ] Organisation analytics dashboard
+  - [ ] User activity metrics
+  - [ ] Permission usage statistics
+  - [ ] Organisation health indicators
+
+## 🔧 8. Developer Experience Improvements
+- [ ] API documentation generation
+  - [ ] Auto-generate API docs from Convex functions
+  - [ ] Interactive API testing interface
+  - [ ] Code examples and tutorials
+- [ ] Development tools
+  - [ ] Permission testing playground
+  - [ ] Organisation data seeder
+  - [ ] Bulk user import/export
+- [ ] Monitoring and observability
+  - [ ] Performance metrics dashboard
+  - [ ] Error tracking and alerting
+  - [ ] Usage analytics 

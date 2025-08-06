@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Users, UserX, Building2, Edit } from 'lucide-react';
 import Link from 'next/link';
-import { getUsersByOrganisationId, deactivateUser, reactivateUser, getUsersByOrganisationIdWithOverride, getAllUsersByOrganisationIdWithOverride, getAllOrganisations } from '@/lib/actions/userActions';
+import { deactivateUser, reactivateUser, getAllUsersByOrganisationIdWithOverride, getAllOrganisations } from '@/lib/actions/userActions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DeactivateConfirmationModal } from '@/components/domain/DeactivateConfirmationModal';
 import { CreateUserForm } from '@/components/domain/CreateUserForm';
@@ -28,7 +28,7 @@ interface User {
   organisationalRole?: {
     name: string;
     description: string;
-  };
+  } | null;
 }
 
 interface Organisation {
@@ -86,7 +86,7 @@ export default function OrganisationUsersPage() {
         setSelectedOrganisationId(organisationId);
 
         // Fetch users (active only by default)
-        const usersData = await getUsersByOrganisationIdWithOverride(organisationId);
+        const usersData = await getAllUsersByOrganisationIdWithOverride(organisationId);
         setUsers(usersData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch users');
@@ -105,15 +105,10 @@ export default function OrganisationUsersPage() {
     setError(null);
     
     try {
-      const usersData = showInactiveUsers 
-        ? await getAllUsersByOrganisationIdWithOverride(
-            user?.publicMetadata?.organisationId as string,
-            organisationId
-          )
-        : await getUsersByOrganisationIdWithOverride(
-            user?.publicMetadata?.organisationId as string,
-            organisationId
-          );
+              const usersData = await getAllUsersByOrganisationIdWithOverride(
+          user?.publicMetadata?.organisationId as string,
+          organisationId
+        );
       setUsers(usersData);
       setSelectedOrganisationId(organisationId);
     } catch (err) {
@@ -129,15 +124,10 @@ export default function OrganisationUsersPage() {
     
     try {
       const newShowInactive = !showInactiveUsers;
-      const usersData = newShowInactive 
-        ? await getAllUsersByOrganisationIdWithOverride(
-            user?.publicMetadata?.organisationId as string,
-            selectedOrganisationId
-          )
-        : await getUsersByOrganisationIdWithOverride(
-            user?.publicMetadata?.organisationId as string,
-            selectedOrganisationId
-          );
+      const usersData = await getAllUsersByOrganisationIdWithOverride(
+        user?.publicMetadata?.organisationId as string,
+        selectedOrganisationId
+      );
       setUsers(usersData);
       setShowInactiveUsers(newShowInactive);
     } catch (err) {
@@ -153,22 +143,7 @@ export default function OrganisationUsersPage() {
     return null; // Will redirect in useEffect
   }
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'orgadmin':
-        return 'default';
-      case 'sysadmin':
-        return 'destructive';
-      case 'developer':
-        return 'secondary';
-      case 'user':
-        return 'outline';
-      case 'trial':
-        return 'outline';
-      default:
-        return 'outline';
-    }
-  };
+  // Removed unused function
 
   const formatDate = (timestamp: number | null) => {
     if (!timestamp) return 'Never';
@@ -184,15 +159,10 @@ export default function OrganisationUsersPage() {
     try {
       await deactivateUser(userId);
       // Refresh the users list
-      const usersData = showInactiveUsers 
-        ? await getAllUsersByOrganisationIdWithOverride(
-            user?.publicMetadata?.organisationId as string,
-            selectedOrganisationId
-          )
-        : await getUsersByOrganisationIdWithOverride(
-            user?.publicMetadata?.organisationId as string,
-            selectedOrganisationId
-          );
+      const usersData = await getAllUsersByOrganisationIdWithOverride(
+        user?.publicMetadata?.organisationId as string,
+        selectedOrganisationId
+      );
       setUsers(usersData);
       setDeactivatingUser(null);
     } catch (err) {
@@ -210,15 +180,10 @@ export default function OrganisationUsersPage() {
     try {
       await reactivateUser(userId);
       // Refresh the users list
-      const usersData = showInactiveUsers 
-        ? await getAllUsersByOrganisationIdWithOverride(
-            user?.publicMetadata?.organisationId as string,
-            selectedOrganisationId
-          )
-        : await getUsersByOrganisationIdWithOverride(
-            user?.publicMetadata?.organisationId as string,
-            selectedOrganisationId
-          );
+      const usersData = await getAllUsersByOrganisationIdWithOverride(
+        user?.publicMetadata?.organisationId as string,
+        selectedOrganisationId
+      );
       setUsers(usersData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reactivate user');
@@ -235,15 +200,10 @@ export default function OrganisationUsersPage() {
 
   const handleUserCreated = async () => {
     // Refresh the users list
-    const usersData = showInactiveUsers 
-      ? await getAllUsersByOrganisationIdWithOverride(
-          user?.publicMetadata?.organisationId as string,
-          selectedOrganisationId
-        )
-      : await getUsersByOrganisationIdWithOverride(
-          user?.publicMetadata?.organisationId as string,
-          selectedOrganisationId
-        );
+    const usersData = await getAllUsersByOrganisationIdWithOverride(
+      user?.publicMetadata?.organisationId as string,
+      selectedOrganisationId
+    );
     setUsers(usersData);
   };
 
@@ -257,15 +217,10 @@ export default function OrganisationUsersPage() {
 
   const handleUserUpdated = async () => {
     // Refresh the users list
-    const usersData = showInactiveUsers 
-      ? await getAllUsersByOrganisationIdWithOverride(
-          user?.publicMetadata?.organisationId as string,
-          selectedOrganisationId
-        )
-      : await getUsersByOrganisationIdWithOverride(
-          user?.publicMetadata?.organisationId as string,
-          selectedOrganisationId
-        );
+    const usersData = await getAllUsersByOrganisationIdWithOverride(
+      user?.publicMetadata?.organisationId as string,
+      selectedOrganisationId
+    );
     setUsers(usersData);
   };
 
