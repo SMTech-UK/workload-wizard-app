@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AlertCircle, WandSparkles, Eye, EyeOff, CheckCircle } from "lucide-react"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 export function LoginForm({
   className,
@@ -57,10 +58,38 @@ export function LoginForm({
         setError("Sign in failed. Please check your credentials.")
       }
     } catch (err: unknown) {
-      const error = err as { errors?: { message?: string }[] }
-      console.error("Sign in error:", err)
-      if (error.errors?.[0]?.message) {
-        setError(error.errors[0].message)
+      // Handle Clerk authentication errors
+      const clerkError = err as { 
+        errors?: Array<{ 
+          code?: string
+          message?: string
+          longMessage?: string
+        }>
+        code?: string
+        message?: string
+      }
+      
+      // Don't log to console, handle errors gracefully
+      if (clerkError.errors && clerkError.errors.length > 0) {
+        const error = clerkError.errors[0]
+        
+        // Handle specific error codes
+        switch (error.code) {
+          case 'form_password_incorrect':
+          case 'form_identifier_not_found':
+            setError("Invalid email/username or password. Please try again.")
+            break
+          case 'form_password_pwned':
+            setError("This password has been found in a data breach. Please use a different password.")
+            break
+          case 'too_many_requests':
+            setError("Too many failed attempts. Please try again later.")
+            break
+          default:
+            setError(error.message || error.longMessage || "Sign in failed. Please try again.")
+        }
+      } else if (clerkError.message) {
+        setError(clerkError.message)
       } else {
         setError("Invalid email/username or password. Please try again.")
       }
@@ -86,22 +115,55 @@ export function LoginForm({
       
       setResetSuccess("Password reset email sent! Please check your inbox and follow the instructions.")
     } catch (err: unknown) {
-      const error = err as { errors?: { message?: string }[] }
-      setResetError(error.errors?.[0]?.message || "An error occurred. Please try again.")
+      // Handle Clerk password reset errors
+      const clerkError = err as { 
+        errors?: Array<{ 
+          code?: string
+          message?: string
+          longMessage?: string
+        }>
+        code?: string
+        message?: string
+      }
+      
+      if (clerkError.errors && clerkError.errors.length > 0) {
+        const error = clerkError.errors[0]
+        
+        // Handle specific error codes
+        switch (error.code) {
+          case 'form_identifier_not_found':
+            setResetError("No account found with this email address.")
+            break
+          case 'too_many_requests':
+            setResetError("Too many requests. Please try again later.")
+            break
+          default:
+            setResetError(error.message || error.longMessage || "Failed to send reset email. Please try again.")
+        }
+      } else if (clerkError.message) {
+        setResetError(clerkError.message)
+      } else {
+        setResetError("An error occurred. Please try again.")
+      }
     } finally {
       setIsResetLoading(false)
     }
   }
-  return (
+    return (
     <div className={cn("flex flex-col gap-6 w-full max-w-md mx-auto", className)} {...props}>
-      {/* Logo */}
+      {/* Theme Toggle - Fixed Position */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+      
+      {/* Logo - Centered */}
       <div className="flex justify-center">
-      <div
-            className="flex aspect-square size-12 items-center justify-center rounded-lg text-white"
-            style={{ backgroundColor: '#0F59FF' }}
-          >
-            <WandSparkles className="size-6" />
-          </div>
+        <div
+          className="flex aspect-square size-12 items-center justify-center rounded-lg text-white"
+          style={{ backgroundColor: '#0F59FF' }}
+        >
+          <WandSparkles className="size-6" />
+        </div>
       </div>
 
       <Card>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Shield, Lock, Eye, Database, Users, AlertTriangle, ArrowLeft, WandSparkles } from "lucide-react"
 import Link from "next/link"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 export default function PrivacyPolicyPage() {
   return (
@@ -22,14 +23,17 @@ export default function PrivacyPolicyPage() {
                 </Link>
               </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="flex aspect-square size-8 items-center justify-center rounded-lg text-white"
-                style={{ backgroundColor: '#0F59FF' }}
-              >
-                <WandSparkles className="size-4" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex aspect-square size-8 items-center justify-center rounded-lg text-white"
+                  style={{ backgroundColor: '#0F59FF' }}
+                >
+                  <WandSparkles className="size-4" />
+                </div>
+                <span className="font-semibold text-sm">WorkloadWizard</span>
               </div>
-              <span className="font-semibold text-sm">WorkloadWizard</span>
+              <ThemeToggle />
             </div>
           </div>
         </div>

@@ -329,4 +329,72 @@ export const updateByWebhook = mutation({
 
     return user._id;
   },
+});
+
+export const completeOnboarding = mutation({
+  args: {
+    subject: v.string(), // Clerk user ID
+    onboardingData: v.any(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", args.subject))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const data = args.onboardingData;
+    
+    // Prepare updates object with onboarding completion
+    const updates: any = {
+      onboardingCompleted: true,
+      onboardingData: args.onboardingData,
+      onboardingCompletedAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    // Update profile fields from onboarding data if provided
+    if (data.firstName && data.firstName !== user.givenName) {
+      updates.givenName = data.firstName;
+    }
+    
+    if (data.lastName && data.lastName !== user.familyName) {
+      updates.familyName = data.lastName;
+    }
+    
+    // Update full name if first or last name changed
+    if (updates.givenName || updates.familyName) {
+      const firstName = updates.givenName || user.givenName;
+      const lastName = updates.familyName || user.familyName;
+      updates.fullName = `${firstName} ${lastName}`;
+    }
+    
+    if (data.email && data.email !== user.email) {
+      updates.email = data.email;
+    }
+    
+    if (data.phone) {
+      updates.phone = data.phone;
+    }
+    
+    if (data.department) {
+      updates.department = data.department;
+    }
+    
+    // Handle job role (use customRole if role is "other", otherwise use role)
+    if (data.role) {
+      if (data.role === "other" && data.customRole) {
+        updates.jobRole = data.customRole;
+      } else if (data.role !== "other") {
+        updates.jobRole = data.role;
+      }
+    }
+
+    await ctx.db.patch(user._id, updates);
+
+    return user._id;
+  },
 }); 

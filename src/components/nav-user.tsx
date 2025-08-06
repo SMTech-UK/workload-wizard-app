@@ -6,8 +6,10 @@ import {
   LogOut,
   Settings,
   User,
+  Palette,
 } from "lucide-react"
 import { useUser, useClerk } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
 
 import {
   Avatar,
@@ -29,11 +31,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 export function NavUser() {
   const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
   const { isMobile } = useSidebar()
+  const router = useRouter()
 
   if (!isLoaded) {
     return (
@@ -71,7 +75,7 @@ export function NavUser() {
   }
 
   const handleLogout = async () => {
-    await signOut()
+    await signOut(() => router.push('/sign-in'))
   }
 
   return (
@@ -123,6 +127,15 @@ export function NavUser() {
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <div className="flex items-center justify-between w-full cursor-pointer">
+                  <div className="flex items-center">
+                    <Palette className="mr-2 h-4 w-4" />
+                    Theme
+                  </div>
+                  <ThemeToggle />
+                </div>
               </DropdownMenuItem>
               {userRole && (
                 <DropdownMenuItem disabled>
