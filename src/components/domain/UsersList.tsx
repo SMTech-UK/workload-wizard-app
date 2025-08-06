@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { listUsers, deleteUser } from '@/lib/actions/userActions';
-import { Trash2, RefreshCw, UserCheck, UserX, Edit, Search, Filter, X } from 'lucide-react';
+import { listUsers, deleteUser, getAllOrganisations } from '@/lib/actions/userActions';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { Trash2, RefreshCw, UserCheck, UserX, Edit, Search, Filter, X, Building2 } from 'lucide-react';
 import { EditUserForm } from './EditUserForm';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 interface User {
   id: string;
@@ -38,12 +41,16 @@ export function UsersList() {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
+  const updateLastSignIn = useMutation(api.users.updateLastSignIn);
+  const organisations = useQuery(api.organisations.list);
+  
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [organisationFilter, setOrganisationFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedOrganisationId, setSelectedOrganisationId] = useState<string>('all');
 
   const fetchUsers = async () => {
     try {
@@ -126,6 +133,11 @@ export function UsersList() {
       filtered = filtered.filter(user => user.organisation?.id === organisationFilter);
     }
 
+    // Selected organisation filter (for admin cross-organisation viewing)
+    if (selectedOrganisationId !== 'all') {
+      filtered = filtered.filter(user => user.organisationId === selectedOrganisationId);
+    }
+
     // Status filter
     if (statusFilter !== 'all') {
       const isActive = statusFilter === 'active';
@@ -138,7 +150,7 @@ export function UsersList() {
   // Apply filters whenever filters or users change
   useEffect(() => {
     applyFilters();
-  }, [users, searchTerm, roleFilter, organisationFilter, statusFilter]);
+  }, [users, searchTerm, roleFilter, organisationFilter, statusFilter, selectedOrganisationId]);
 
   useEffect(() => {
     fetchUsers();
@@ -226,102 +238,56 @@ export function UsersList() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
+            <Button 
+              onClick={async () => {
+                try {
+                  // Get current user ID from the first user in the list (for testing)
+                  if (users.length > 0) {
+                    await updateLastSignIn({ userId: users[0].id });
+                    await fetchUsers();
+                  }
+                } catch (error) {
+                  console.error('Failed to update last sign in:', error);
+                }
+              }} 
+              variant="outline" 
+              size="sm"
+            >
+              Update Last Sign In
+            </Button>
           </div>
         </div>
         
-        {/* Filter Section */}
-        {showFilters && (
-          <div className="space-y-4 pt-4 border-t">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="space-y-2">
-                <Label htmlFor="search">Search</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="search"
-                    placeholder="Search by name or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              {/* Role Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="role-filter">Role</Label>
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All roles" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All roles</SelectItem>
-                    <SelectItem value="orgadmin">Organisation Admin</SelectItem>
-                    <SelectItem value="sysadmin">System Admin</SelectItem>
-                    <SelectItem value="developer">Developer</SelectItem>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="trial">Trial</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Organisation Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="org-filter">Organisation</Label>
-                <Select value={organisationFilter} onValueChange={setOrganisationFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All organisations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All organisations</SelectItem>
-                    {getUniqueOrganisations().map((org) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name} ({org.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Status Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="status-filter">Status</Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Organisation Selector for Cross-Organisation Viewing */}
+        {organisations && organisations.length > 0 && (
+          <div className="flex items-center gap-4 mt-4 p-4 bg-muted rounded-lg">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              <span className="font-medium">View Specific Organisation:</span>
             </div>
-
-            {/* Clear Filters Button */}
-            {(searchTerm || roleFilter !== 'all' || organisationFilter !== 'all' || statusFilter !== 'all') && (
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setRoleFilter('all');
-                    setOrganisationFilter('all');
-                    setStatusFilter('all');
-                  }}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Clear all filters
-                </Button>
-              </div>
+            <Select value={selectedOrganisationId} onValueChange={setSelectedOrganisationId}>
+              <SelectTrigger className="w-80">
+                <SelectValue placeholder="All organisations" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All organisations</SelectItem>
+                {organisations.map((org) => (
+                  <SelectItem key={org._id} value={org._id}>
+                    {org.name} ({org.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedOrganisationId !== 'all' && (
+              <Badge variant="outline" className="ml-2">
+                Filtered View
+              </Badge>
             )}
           </div>
         )}
       </CardHeader>
-      <CardContent>
+      
+            <CardContent>
         <div className="rounded-md border">
           <Table>
             <TableHeader>

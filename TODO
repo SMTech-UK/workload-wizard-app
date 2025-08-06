@@ -23,6 +23,12 @@ Be able to log in as an orgadmin and manage only users and staff within their or
   - Role
 - [x] Add server action: getUsersByOrganisationId()
 - [x] Add button to remove/deactivate user (optional)
+- [x] Add way for orgadmins to still see deactivated users so they can still reactivate them
+- [x] Add confirmation dialog when deactivating a user
+- [x] Add a way to reactivate a user for orgadmins
+- [x] Add way for dev/sysadmin to login as different users using .env.local username and password variables
+- [x] Add edit organisation functionality to user organisation management on /admin/organisations
+- [x] Add function for orgadmin to add users and edit users within their organisation/users
 
 ## 🧑‍🏫 3. Organisation-Scoped Staff Management (/staff)
 - [x] Create /organisation/page.tsx (organisation admin panel)

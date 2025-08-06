@@ -179,6 +179,19 @@ export const listByOrganisation = query({
   },
 });
 
+// Query to get all users by organisation (including inactive)
+export const listAllByOrganisation = query({
+  args: { organisationId: v.id("organisations") },
+  handler: async (ctx, args) => {
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .collect();
+
+    return users;
+  },
+});
+
 // Mutation to update last sign in time
 export const updateLastSignIn = mutation({
   args: { userId: v.string() },

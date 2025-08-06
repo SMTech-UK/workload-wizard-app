@@ -50,7 +50,7 @@ export function DevNavbar() {
           {user && (
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">
-                {user.firstName} {user.lastName} ({user.publicMetadata?.role})
+                {user.firstName} {user.lastName} ({(user.publicMetadata?.role as string) || 'unknown'})
               </span>
               <Button
                 onClick={handleSignOut}
