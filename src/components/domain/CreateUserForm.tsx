@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,11 +8,18 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { createUser, CreateUserData } from '@/lib/actions/userActions';
+import { api } from '../../../convex/_generated/api';
+import { ConvexHttpClient } from 'convex/browser';
+import type { Organisation } from '@/lib/types';
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 const ROLES = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'lecturer', label: 'Lecturer' },
-  { value: 'staff', label: 'Staff' },
+  { value: 'sysadmin', label: 'System Admin' },
+  { value: 'developer', label: 'Developer' },
+  { value: 'orgadmin', label: 'Organisation Admin' },
+  { value: 'user', label: 'User' },
+  { value: 'trial', label: 'Trial' },
 ] as const;
 
 export function CreateUserForm() {
@@ -20,6 +27,44 @@ export function CreateUserForm() {
   const [sendEmailInvitation, setSendEmailInvitation] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+  const [organisations, setOrganisations] = useState<Organisation[]>([]);
+  const [orgLoading, setOrgLoading] = useState(true);
+  const [selectedOrganisationId, setSelectedOrganisationId] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string>('user');
+
+  useEffect(() => {
+    async function fetchOrgs() {
+      setOrgLoading(true);
+      try {
+        const orgs = await convex.query(api.organisations.list);
+        // Transform Convex format to match Organisation interface
+        const transformedOrgs = orgs.map(org => ({
+          id: org._id,
+          name: org.name,
+          code: org.code,
+          contactEmail: org.contactEmail,
+          contactPhone: org.contactPhone,
+          domain: org.domain,
+          isActive: org.isActive,
+          status: org.status as 'active' | 'inactive' | 'suspended',
+          website: org.website,
+          createdAt: org.createdAt,
+          updatedAt: org.updatedAt,
+        }));
+        setOrganisations(transformedOrgs);
+        // Set default to "Unallocated Users" if it exists, otherwise first organisation
+        const unallocatedOrg = transformedOrgs.find(org => org.name === 'Unallocated Users');
+        if (unallocatedOrg) {
+          setSelectedOrganisationId(unallocatedOrg.id);
+        } else if (transformedOrgs.length > 0) {
+          setSelectedOrganisationId(transformedOrgs[0].id);
+        }
+      } finally {
+        setOrgLoading(false);
+      }
+    }
+    fetchOrgs();
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,7 +79,8 @@ export function CreateUserForm() {
       lastName: formData.get('lastName') as string,
       username: formData.get('username') as string,
       password: '', // Will be generated automatically
-      role: formData.get('role') as 'admin' | 'lecturer' | 'staff',
+      role: selectedRole as 'orgadmin' | 'sysadmin' | 'developer' | 'user' | 'trial',
+      organisationId: selectedOrganisationId,
       sendEmailInvitation,
     };
 
@@ -126,9 +172,33 @@ export function CreateUserForm() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="organisation">Organisation</Label>
+            <Select 
+              value={selectedOrganisationId} 
+              onValueChange={setSelectedOrganisationId}
+              disabled={orgLoading}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={orgLoading ? 'Loading organisations...' : 'Select organisation'} />
+              </SelectTrigger>
+              <SelectContent>
+                {organisations.map((org) => (
+                  <SelectItem key={org.id} value={org.id}>
+                    {org.name} ({org.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select name="role" required>
-              <SelectTrigger>
+            <Select 
+              value={selectedRole} 
+              onValueChange={setSelectedRole}
+              required
+            >
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>

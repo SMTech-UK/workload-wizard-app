@@ -1,49 +1,73 @@
-# TODO - Tomorrow's Next Steps
+# TODO - Workload Wizard: Org-Scoped User & Staff Management (Day Plan)
 
-## 🚨 IMMEDIATE (First 30 minutes)
-- [ ] Test audit log page - verify Radix Select error is resolved
-- [ ] Run `npm run build` - ensure no linting errors
-- [ ] Test user creation flow end-to-end (form → Clerk → Convex → email)
-- [ ] Verify audit logging is working for user actions
+## 🎯 Goal by EOD
+Be able to log in as an orgadmin and manage only users and staff within their organisation, with scoped access enforced via Clerk + Convex.
 
-## 🔥 HIGH PRIORITY (Morning)
-- [ ] Test user deletion (should log to audit)
-- [ ] Test user updates (should log to audit)
-- [ ] Verify email sending works with different domains
-- [ ] Test sync functionality with multiple users
-- [ ] Add loading states to all forms
-- [ ] Add success/error toast notifications
+## 🔐 1. Clerk Metadata Verification
+- [x] Confirm invited users are being created with publicMetadata.organisationId
+- [x] Confirm publicMetadata.role is set (e.g. orgadmin, sysadmin, developer, user, trial)
+- [x] Confirm publicMetadata.organisationId is set when users are created
+- [x] Display organisationId and role in console or UI (via useUser())
+- [x] Add a dropdown to assign organisation during user invite
 
-## 📋 MEDIUM PRIORITY (Afternoon)
-- [ ] Improve mobile responsiveness
-- [ ] Add confirmation dialogs for destructive actions
-- [ ] Add user search/filtering in UsersList
-- [ ] Add pagination to audit logs
-- [ ] Add audit log export functionality
-- [ ] Test edge cases (empty data, network errors)
+## 👥 2. Organisation-Scoped User Management (/organisation/users)
+- [x] Add edit user functionality to UsersList component
+- [x] Create EditUserForm component with role, status, organisation, and password editing
+- [x] Update userActions.ts to handle password changes and detailed audit logging
+- [x] Update both Clerk and Convex when user is edited
+- [x] Create new route: /organisation/users/page.tsx
+- [x] List users where user.publicMetadata.organisationId === currentUser.organisationId
+- [x] Display:
+  - Full name
+  - Email
+  - Role
+- [x] Add server action: getUsersByOrganisationId()
+- [x] Add button to remove/deactivate user (optional)
 
-## 🎯 FEATURE ENHANCEMENTS (Later)
-- [ ] Add bulk user operations (import/export)
-- [ ] Implement role-based access control (RBAC)
-- [ ] Add user permission management
-- [ ] Secure audit log access (admin-only)
-- [ ] Add rate limiting to API endpoints
+## 🧑‍🏫 3. Organisation-Scoped Staff Management (/staff)
+- [x] Create /organisation/page.tsx (organisation admin panel)
+- [ ] Use Convex query to list lecturer_profiles by organisationId
+- [ ] Display:
+  - Full name
+  - Email
+  - Contract type
+  - FTE
+  - Max teaching hours
+- [ ] Add "Add Lecturer" button (ShadCN dialog)
+- [ ] Create Convex mutation to add new lecturer
 
-## 🛡️ PRODUCTION READINESS
-- [ ] Set up proper error monitoring
-- [ ] Add comprehensive logging
-- [ ] Performance optimization
-- [ ] Security audit
-- [ ] Update README with current features
-- [ ] Create user/admin guides
+## 🧠 4. Convex Data Scoping Enforcement
+- [ ] Ensure all queries/mutations include and filter by organisationId
+- [ ] Create helper: getUserOrgOrThrow() in lib/auth/
+- [ ] Prevent actions from users without an organisationId
+- [ ] Protect against cross-org access
 
-## 🐛 IF ISSUES ARISE
-- **Email not sending**: Check Resend dashboard for delivery status
-- **User creation fails**: Check Clerk dashboard for user status
-- **Audit logs empty**: Verify the audit functions are being called
-- **Build errors**: Check for any remaining linting issues
+## 🔒 5. Role & Route-Based Protection
+- [ ] Update /admin/* to restrict to sysadmin or dev
+- [ ] Restrict /organisation/* to users with:
+  - role === orgadmin
+  - Matching organisationId
+- [ ] Create or reuse middleware to enforce this
+- [ ] Add a generic /unauthorised page
 
-## 📝 NOTES
-- Foundation is solid - working user management with Clerk, Convex, audit logging, and email
-- Focus on refinement and expansion
-- Test everything thoroughly before moving to new features 
+## 🧑‍💻 Git Workflow
+- [ ] git checkout dev
+- [ ] git pull
+- [ ] git checkout -b feature/org-scoped-management
+
+## 🧪 Optional Extras (Stretch Goals)
+- [x] Add dropdown to assign organisation during user invite
+- [x] Implement last sign-in tracking and display
+- [ ] Display number of users per organisation in admin view
+- [ ] Write audit log entries:
+  - user.invited
+  - staff.created
+  - user.deleted
+
+## ✅ Expected Outcome by End of Day
+Orgadmins can log in and:
+- View and manage only their users
+- View and add lecturers for their organisation
+- Cannot access other organisations' data
+- All Convex logic respects organisationId
+- Role-based route protection is working 

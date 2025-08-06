@@ -2,25 +2,64 @@
 
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, Settings, FileText } from 'lucide-react';
+import { Users, Building2, Settings, FileText, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { listUsers } from '@/lib/actions/userActions';
+import { api } from '../../../convex/_generated/api';
+import { ConvexHttpClient } from 'convex/browser';
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export default function AdminDashboardPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalOrganisations: 0,
+    activeUsers: 0,
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  const fetchStats = async () => {
+    try {
+      setIsLoadingStats(true);
+      const [users, organisations] = await Promise.all([
+        listUsers(),
+        convex.query(api.organisations.list),
+      ]);
+      
+      const activeUsers = users.filter(user => user.isActive).length;
+      
+      setStats({
+        totalUsers: users.length,
+        totalOrganisations: organisations.length,
+        activeUsers,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
 
   useEffect(() => {
-    if (isLoaded && user?.publicMetadata?.role !== 'admin') {
+    if (isLoaded && (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer')) {
       router.replace('/unauthorised');
     }
   }, [isLoaded, user, router]);
 
+  useEffect(() => {
+    if (isLoaded && (user?.publicMetadata?.role === 'sysadmin' || user?.publicMetadata?.role === 'developer')) {
+      fetchStats();
+    }
+  }, [isLoaded, user]);
+
   if (!isLoaded) return <p>Loading...</p>;
 
-  if (user?.publicMetadata?.role !== 'admin') {
+  if (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer') {
     return null; // Will redirect in useEffect
   }
 
@@ -60,7 +99,7 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage your workload wizard system</p>
+        <p className="text-muted-foreground">Manage your WorkloadWizard system</p>
       </div>
 
       {/* Admin Cards */}
@@ -88,22 +127,40 @@ export default function AdminDashboardPage() {
       {/* Quick Stats */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Stats</CardTitle>
-          <CardDescription>Overview of your system</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Quick Stats</CardTitle>
+              <CardDescription>Overview of your system</CardDescription>
+            </div>
+            <button
+              onClick={fetchStats}
+              disabled={isLoadingStats}
+              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              title="Refresh stats"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-3xl font-bold text-blue-600">0</div>
+              <div className="text-3xl font-bold text-blue-600">
+                {isLoadingStats ? '...' : stats.totalUsers}
+              </div>
               <div className="text-sm text-muted-foreground mt-1">Total Users</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-3xl font-bold text-green-600">0</div>
+              <div className="text-3xl font-bold text-green-600">
+                {isLoadingStats ? '...' : stats.totalOrganisations}
+              </div>
               <div className="text-sm text-muted-foreground mt-1">Organisations</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-3xl font-bold text-purple-600">0</div>
-              <div className="text-sm text-muted-foreground mt-1">Active Sessions</div>
+              <div className="text-3xl font-bold text-purple-600">
+                {isLoadingStats ? '...' : stats.activeUsers}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Active Users</div>
             </div>
           </div>
         </CardContent>

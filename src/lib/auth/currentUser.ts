@@ -15,3 +15,15 @@ export async function getCurrentUserDetails() {
     role: user.publicMetadata?.role as string | undefined,
   };
 }
+
+export function hasSystemAdminAccess(userRole?: string): boolean {
+  return userRole === 'sysadmin' || userRole === 'developer';
+}
+
+export function hasOrgAdminAccess(userRole?: string): boolean {
+  return userRole === 'orgadmin';
+}
+
+export function hasAdminAccess(userRole?: string): boolean {
+  return userRole === 'orgadmin' || userRole === 'sysadmin' || userRole === 'developer';
+}

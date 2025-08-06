@@ -32,7 +32,7 @@ export interface AcademicYear {
     givenName: string;
     familyName: string;
     fullName: string;
-    systemRole: 'admin' | 'manager' | 'lecturer' | 'viewer' | 'developer';
+    systemRole: 'orgadmin' | 'sysadmin' | 'developer' | 'user' | 'trial';
     organisationId: string;
     pictureUrl?: string;
     subject: string;               // Clerk identifier

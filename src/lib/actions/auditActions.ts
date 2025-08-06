@@ -240,7 +240,7 @@ export async function getAuditLogs(filters?: {
 }) {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || currentUserData.publicMetadata?.role !== 'admin') {
+  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
     throw new Error('Unauthorized: Admin access required');
   }
 
@@ -260,7 +260,7 @@ export async function getAuditStats(filters?: {
 }) {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || currentUserData.publicMetadata?.role !== 'admin') {
+  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
     throw new Error('Unauthorized: Admin access required');
   }
 

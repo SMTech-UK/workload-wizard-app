@@ -40,6 +40,7 @@ export default defineSchema({
     subject: v.string(), // Clerk ID
     tokenIdentifier: v.optional(v.string()),
     isActive: v.boolean(),
+    lastSignInAt: v.optional(v.float64()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
   }),

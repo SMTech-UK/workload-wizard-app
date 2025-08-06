@@ -10,7 +10,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 export async function syncUsersFromClerk() {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || currentUserData.publicMetadata?.role !== 'admin') {
+  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
     throw new Error('Unauthorized: Admin access required');
   }
 
@@ -48,7 +48,7 @@ export async function syncUsersFromClerk() {
 
         if (!existingConvexUser) {
           // Create user in Convex if not found
-          const systemRole = (clerkUser.publicMetadata?.role as 'admin' | 'lecturer' | 'staff') || 'staff';
+          const systemRole = (clerkUser.publicMetadata?.role as 'orgadmin' | 'sysadmin' | 'developer' | 'user' | 'trial') || 'user';
           
           const createData = {
             email: primaryEmail,
@@ -90,7 +90,7 @@ export async function syncUsersFromClerk() {
 export async function getSyncStatus() {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || currentUserData.publicMetadata?.role !== 'admin') {
+  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
     throw new Error('Unauthorized: Admin access required');
   }
 
