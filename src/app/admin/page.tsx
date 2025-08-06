@@ -4,8 +4,10 @@ import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, Shield, FileText, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, Building2, Shield, FileText, RefreshCw, Plus, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { listUsers } from '@/lib/actions/userActions';
 import { api } from '../../../convex/_generated/api';
@@ -94,13 +96,31 @@ export default function AdminDashboardPage() {
     },
   ];
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Admin" }
+  ];
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm" onClick={fetchStats} disabled={isLoadingStats}>
+        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingStats ? 'animate-spin' : ''}`} />
+        Refresh
+      </Button>
+      <Button size="sm">
+        <Plus className="h-4 w-4 mr-2" />
+        Quick Action
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage your WorkloadWizard system</p>
-      </div>
+    <StandardizedSidebarLayout
+      breadcrumbs={breadcrumbs}
+      title="Admin Dashboard"
+      subtitle="Manage your WorkloadWizard system"
+      headerActions={headerActions}
+    >
 
       {/* Admin Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -127,20 +147,8 @@ export default function AdminDashboardPage() {
       {/* Quick Stats */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Quick Stats</CardTitle>
-              <CardDescription>Overview of your system</CardDescription>
-            </div>
-            <button
-              onClick={fetchStats}
-              disabled={isLoadingStats}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-              title="Refresh stats"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
+          <CardTitle>Quick Stats</CardTitle>
+          <CardDescription>Overview of your system</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -165,6 +173,6 @@ export default function AdminDashboardPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </StandardizedSidebarLayout>
   );
 } 

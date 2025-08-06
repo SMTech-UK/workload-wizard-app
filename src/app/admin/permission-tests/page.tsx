@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Settings, Play } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 
@@ -71,13 +73,37 @@ export default function PermissionTestsPage() {
     setTestResults(runTests);
   };
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Admin", href: "/admin" },
+    { label: "Permission Tests" }
+  ];
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm" onClick={handleRunTests}>
+        <Play className="h-4 w-4 mr-2" />
+        Run Tests
+      </Button>
+      <Button variant="outline" size="sm">
+        <Settings className="h-4 w-4 mr-2" />
+        Settings
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto p-6">
+    <StandardizedSidebarLayout
+      breadcrumbs={breadcrumbs}
+      title="Permission System Tests"
+      subtitle="Test the permission system with different user roles and permissions"
+      headerActions={headerActions}
+    >
       <Card>
         <CardHeader>
-          <CardTitle>Permission System Tests</CardTitle>
+          <CardTitle>Test Controls</CardTitle>
           <CardDescription>
-            Test the permission system with different user roles and permissions
+            Set up test data and run permission validation tests
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -220,6 +246,6 @@ export default function PermissionTestsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </StandardizedSidebarLayout>
   );
 } 

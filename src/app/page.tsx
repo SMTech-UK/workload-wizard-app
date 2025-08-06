@@ -1,9 +1,10 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
+import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
+import { Settings, Users, Shield } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
@@ -20,12 +21,46 @@ export default function Home() {
     );
   }
 
+  const breadcrumbs = [
+    { label: "Home" }
+  ];
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      {isSystemAdmin && (
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/admin">
+            <Shield className="h-4 w-4 mr-2" />
+            Admin
+          </Link>
+        </Button>
+      )}
+      {(isOrgAdmin || isSystemAdmin) && (
+        <Button size="sm" asChild>
+          <Link href="/organisation">
+            <Users className="h-4 w-4 mr-2" />
+            Organisation
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <StandardizedSidebarLayout
+      breadcrumbs={breadcrumbs}
+      title="Workload Wizard"
+      subtitle="Academic workload management system"
+      headerActions={headerActions}
+    >
       {/* Welcome Section */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold">Workload Wizard</h1>
-        <p className="text-xl text-muted-foreground">Academic workload management system</p>
+      <div className="text-center space-y-4 mb-8">
+        <div className="max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground">
+            Welcome to your academic workload management hub. Organize your teaching assignments, 
+            research commitments, and administrative tasks all in one place.
+          </p>
+        </div>
       </div>
 
       {/* User Info Card */}
@@ -86,6 +121,6 @@ export default function Home() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </StandardizedSidebarLayout>
   );
 }

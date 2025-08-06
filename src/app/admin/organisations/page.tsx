@@ -3,8 +3,11 @@
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
 import { OrganisationForm } from '@/components/domain/OrganisationForm';
 import { OrganisationsList } from '@/components/domain/OrganisationsList';
+import { Button } from '@/components/ui/button';
+import { Plus, Settings } from 'lucide-react';
 
 export default function AdminOrganisationsPage() {
   const { user, isLoaded } = useUser();
@@ -22,16 +25,28 @@ export default function AdminOrganisationsPage() {
     return null; // Will redirect in useEffect
   }
 
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Organisation Management</h1>
-          <p className="text-muted-foreground">Manage organisations and their settings</p>
-        </div>
-      </div>
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Admin", href: "/admin" },
+    { label: "Organisations" }
+  ];
 
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm">
+        <Settings className="h-4 w-4 mr-2" />
+        Settings
+      </Button>
+    </div>
+  );
+
+  return (
+    <StandardizedSidebarLayout
+      breadcrumbs={breadcrumbs}
+      title="Organisation Management"
+      subtitle="Manage organisations and their settings"
+      headerActions={headerActions}
+    >
       {/* Main Content */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Sidebar - Create Organisation Form */}
@@ -44,6 +59,6 @@ export default function AdminOrganisationsPage() {
           <OrganisationsList />
         </div>
       </div>
-    </div>
+    </StandardizedSidebarLayout>
   );
 } 

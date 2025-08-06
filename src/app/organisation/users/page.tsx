@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -174,21 +175,32 @@ export default function OrganisationUsersPage() {
     );
   }
 
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Organisation", href: "/organisation" },
+    { label: "Users" }
+  ];
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm">
+        <RefreshCw className="h-4 w-4 mr-2" />
+        Sync
+      </Button>
+      <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+        <Plus className="h-4 w-4 mr-2" />
+        Add User
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Organisation Users</h1>
-          <p className="text-muted-foreground">
-            Manage users within your organisation
-          </p>
-        </div>
-        
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add User
-        </Button>
-      </div>
+    <StandardizedSidebarLayout
+      breadcrumbs={breadcrumbs}
+      title="Organisation Users"
+      subtitle="Manage users within your organisation"
+      headerActions={headerActions}
+    >
 
       <Card>
         <CardHeader>
@@ -370,6 +382,6 @@ export default function OrganisationUsersPage() {
            isDeleting={isDeleting}
          />
        )}
-     </div>
-   );
- } 
+    </StandardizedSidebarLayout>
+  );
+} 
