@@ -4,13 +4,22 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../convex/_generated/api';
+import { hasAdminAccess } from '@/lib/auth/permissions';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function syncUsernamesFromClerk() {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
+  if (!currentUserData) {
+    throw new Error('Unauthorized: User not authenticated');
+  }
+
+  // Check if user has admin role in Clerk metadata
+  const userRole = currentUserData.publicMetadata?.role as string;
+  const userRoles = currentUserData.publicMetadata?.roles as string[];
+  
+  if (!hasAdminAccess(userRole) && !(userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')))) {
     throw new Error('Unauthorized: Admin access required');
   }
 

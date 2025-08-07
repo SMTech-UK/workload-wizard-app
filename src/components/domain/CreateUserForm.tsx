@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { X } from 'lucide-react';
 import { createUser } from '@/lib/actions/userActions';
 import { useQuery } from 'convex/react';
@@ -22,6 +23,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedOrganisationId, setSelectedOrganisationId] = useState(organisationId || null);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(['user']);
   
   // Get all organisations for sysadmin use
   const organisations = useQuery(api.organisations.list);
@@ -54,7 +56,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
       lastName: formData.get('lastName') as string,
       username: formData.get('username') as string,
       password: '', // Will be auto-generated
-      role: (formData.get('systemRole') as string || 'user') as 'user' | 'orgadmin' | 'sysadmin' | 'developer' | 'trial',
+      roles: selectedRoles,
       organisationId: targetOrganisationId,
       sendEmailInvitation: true, // Always send email invitation
       organisationalRoleId: formData.get('organisationalRole') as string,
@@ -164,17 +166,68 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
             {/* System Role Selection for Sysadmin */}
             {isSysadmin && (
               <div className="space-y-2">
-                <Label htmlFor="systemRole">System Role *</Label>
-                <Select name="systemRole" defaultValue="user" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select system role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="orgadmin">Organisation Admin</SelectItem>
-                    <SelectItem value="sysadmin">System Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>System Roles *</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="role-user"
+                      checked={selectedRoles.includes('user')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedRoles([...selectedRoles, 'user']);
+                        } else {
+                          setSelectedRoles(selectedRoles.filter(role => role !== 'user'));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="role-user" className="text-sm font-normal">User</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="role-orgadmin"
+                      checked={selectedRoles.includes('orgadmin')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedRoles([...selectedRoles, 'orgadmin']);
+                        } else {
+                          setSelectedRoles(selectedRoles.filter(role => role !== 'orgadmin'));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="role-orgadmin" className="text-sm font-normal">Organisation Admin</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="role-sysadmin"
+                      checked={selectedRoles.includes('sysadmin')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedRoles([...selectedRoles, 'sysadmin']);
+                        } else {
+                          setSelectedRoles(selectedRoles.filter(role => role !== 'sysadmin'));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="role-sysadmin" className="text-sm font-normal">System Admin</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="role-developer"
+                      checked={selectedRoles.includes('developer')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedRoles([...selectedRoles, 'developer']);
+                        } else {
+                          setSelectedRoles(selectedRoles.filter(role => role !== 'developer'));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="role-developer" className="text-sm font-normal">Developer</Label>
+                  </div>
+                </div>
+                {selectedRoles.length === 0 && (
+                  <p className="text-sm text-red-600">Please select at least one role</p>
+                )}
               </div>
             )}
 

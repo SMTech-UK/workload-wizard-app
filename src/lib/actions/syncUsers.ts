@@ -4,13 +4,22 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../convex/_generated/api';
+import { hasAdminAccess } from '@/lib/auth/permissions';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function syncUsersFromClerk() {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
+  if (!currentUserData) {
+    throw new Error('Unauthorized: User not authenticated');
+  }
+
+  // Check if user has admin role in Clerk metadata
+  const userRole = currentUserData.publicMetadata?.role as string;
+  const userRoles = currentUserData.publicMetadata?.roles as string[];
+  
+  if (!hasAdminAccess(userRole) && !(userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')))) {
     throw new Error('Unauthorized: Admin access required');
   }
 
@@ -56,7 +65,7 @@ export async function syncUsersFromClerk() {
             givenName: clerkUser.firstName || '',
             familyName: clerkUser.lastName || '',
             fullName: clerkUser.firstName && clerkUser.lastName ? `${clerkUser.firstName} ${clerkUser.lastName}` : primaryEmail,
-            systemRole: systemRole,
+            systemRoles: [systemRole],
             organisationId: defaultOrganisationId,
             pictureUrl: clerkUser.imageUrl || '',
             subject: clerkUser.id,
@@ -91,7 +100,15 @@ export async function syncUsersFromClerk() {
 export async function getSyncStatus() {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
+  if (!currentUserData) {
+    throw new Error('Unauthorized: User not authenticated');
+  }
+
+  // Check if user has admin role in Clerk metadata
+  const userRole = currentUserData.publicMetadata?.role as string;
+  const userRoles = currentUserData.publicMetadata?.roles as string[];
+  
+  if (!hasAdminAccess(userRole) && !(userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')))) {
     throw new Error('Unauthorized: Admin access required');
   }
 
@@ -101,7 +118,7 @@ export async function getSyncStatus() {
     const clerkUsers = clerkUsersResponse.data;
     const clerkUserIds = new Set(clerkUsers.map(u => u.id));
 
-    const convexUsers = await convex.query(api.users.list);
+    const convexUsers = await convex.query(api.users.list, {});
     const convexUserSubjects = new Set(convexUsers.map(u => u.subject));
 
     const missingInConvex = clerkUsers.filter(clerkUser => !convexUserSubjects.has(clerkUser.id));

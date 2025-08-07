@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useUser } from "@clerk/nextjs"
+import { getUserRoles } from "@/lib/utils"
 import {
   Building2,
   Home,
@@ -23,6 +24,7 @@ import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
+// Removed BETA_FEATURES imports - no longer needed
 import {
   Sidebar,
   SidebarContent,
@@ -32,7 +34,7 @@ import {
 } from "@/components/ui/sidebar"
 
 // Generate role-based navigation data
-const getNavigationData = (userRole?: string) => {
+const getNavigationData = (userRoles?: string[]) => {
   const baseNav = [
     {
       title: "Dashboard",
@@ -50,8 +52,8 @@ const getNavigationData = (userRole?: string) => {
   // Add role-specific navigation
   const roleNav = []
 
-  // Sysadmin navigation
-  if (userRole === 'sysadmin') {
+  // Admin navigation (for both sysadmin and developer)
+  if (userRoles?.some(role => role === 'sysadmin' || role === 'developer')) {
     roleNav.push({
       title: "Admin",
       url: "/admin",
@@ -85,39 +87,8 @@ const getNavigationData = (userRole?: string) => {
     })
   }
 
-  // Developer navigation (includes sysadmin features plus dev tools)
-  if (userRole === 'developer') {
-    roleNav.push({
-      title: "Admin",
-      url: "/admin",
-      icon: Shield,
-      items: [
-        {
-          title: "Overview",
-          url: "/admin",
-        },
-        {
-          title: "Users Management",
-          url: "/admin/users",
-        },
-        {
-          title: "Organisations",
-          url: "/admin/organisations",
-        },
-        {
-          title: "Permissions",
-          url: "/admin/permissions",
-        },
-        {
-          title: "Audit Logs",
-          url: "/admin/audit-logs",
-        },
-        {
-          title: "Permission Tests",
-          url: "/admin/permission-tests",
-        },
-      ],
-    })
+  // Developer-specific tools (only for developer role)
+  if (userRoles?.includes('developer')) {
     
     // Add developer-specific tools
     roleNav.push({
@@ -142,7 +113,7 @@ const getNavigationData = (userRole?: string) => {
   }
 
   // Orgadmin navigation
-  if (userRole === 'orgadmin') {
+  if (userRoles?.includes('orgadmin')) {
     roleNav.push({
       title: "Organisation",
       url: "/organisation",
@@ -165,7 +136,7 @@ const getNavigationData = (userRole?: string) => {
   }
 
   // UI Components (for development)
-  if (userRole === 'developer' || userRole === 'sysadmin') {
+  if (userRoles?.some(role => role === 'developer' || role === 'sysadmin')) {
     roleNav.push({
       title: "UI Components",
       url: "/ui",
@@ -187,16 +158,16 @@ const getNavigationData = (userRole?: string) => {
       },
     ],
     navMain: [...baseNav, ...roleNav],
-    projects: getProjectsData(userRole),
+    projects: getProjectsData(userRoles),
   }
 }
 
 // Generate role-based projects data
-const getProjectsData = (userRole?: string) => {
+const getProjectsData = (userRoles?: string[]) => {
   const projects = []
 
-  // Sysadmin projects
-  if (userRole === 'sysadmin') {
+  // Admin projects (for both sysadmin and developer)
+  if (userRoles?.some(role => role === 'sysadmin' || role === 'developer')) {
     projects.push(
       {
         name: "User Management",
@@ -216,24 +187,9 @@ const getProjectsData = (userRole?: string) => {
     )
   }
 
-  // Developer projects (includes sysadmin plus dev tools)
-  if (userRole === 'developer') {
+  // Developer-specific projects (only for developer role)
+  if (userRoles?.includes('developer')) {
     projects.push(
-      {
-        name: "User Management",
-        url: "/admin/users",
-        icon: Users,
-      },
-      {
-        name: "Organisation Setup",
-        url: "/admin/organisations",
-        icon: Building2,
-      },
-      {
-        name: "Audit & Compliance",
-        url: "/admin/audit-logs",
-        icon: FileText,
-      },
       {
         name: "Database Tools",
         url: "/dev/database",
@@ -253,7 +209,7 @@ const getProjectsData = (userRole?: string) => {
   }
 
   // Orgadmin projects
-  if (userRole === 'orgadmin') {
+  if (userRoles?.includes('orgadmin')) {
     projects.push(
       {
         name: "Team Management",
@@ -278,10 +234,10 @@ const getProjectsData = (userRole?: string) => {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useUser()
-  const userRole = user?.publicMetadata?.role as string
+  const userRoles = getUserRoles(user)
   
   // Get role-based navigation data
-  const data = getNavigationData(userRole)
+  const data = getNavigationData(userRoles)
 
   return (
     <Sidebar collapsible="icon" {...props}>

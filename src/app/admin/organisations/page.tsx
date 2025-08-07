@@ -9,6 +9,7 @@ import { OrganisationsList } from '@/components/domain/OrganisationsList';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings } from 'lucide-react';
 
+
 export default function AdminOrganisationsPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();

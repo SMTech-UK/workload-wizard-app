@@ -11,7 +11,7 @@ interface DeleteConfirmationModalProps {
     firstName: string | null;
     lastName: string | null;
     email: string | null;
-    role: string;
+    roles: string[];
   };
   onConfirm: (userId: string) => Promise<void>;
   onCancel: () => void;
@@ -76,7 +76,7 @@ export function DeleteConfirmationModal({ user, onConfirm, onCancel }: DeleteCon
                 <div className="text-sm text-red-700 space-y-1">
                   <p><strong>Name:</strong> {getUserDisplayName()}</p>
                   <p><strong>Email:</strong> {user.email || 'N/A'}</p>
-                  <p><strong>Role:</strong> {user.role}</p>
+                  <p><strong>Roles:</strong> {user.roles && user.roles.length > 0 ? user.roles.join(', ') : 'No roles'}</p>
                 </div>
                 <p className="text-xs text-red-600 mt-2">
                   This will permanently remove the user from the system. All associated data will be lost.

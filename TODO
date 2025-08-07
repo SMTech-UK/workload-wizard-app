@@ -5,14 +5,11 @@
     > Have full user/role/permission management complete for both sysadmin and orgadmin, including UI polish and audit support — ready to build workload functionality on top.
     
     ---
+
+    - Implement Feature flag backend/template
+
     
     ## 🛠️ 2. System Admin Polishing
-    
-    ### 🧑‍💼 User Management
-    
-    * [ ] Fix **reset password**
-    * [ ] Add **table filters** (by org, role, status)
-    * [ ] Add **login-as functionality** from env (already started?)
     
     ### 🧠 Role Interface
     
@@ -26,7 +23,6 @@
     
     ### 👥 Organisation User Management
     
-    * [ ] Fix **reset password**
     * [ ] Show user roles + ability to update via dropdown
     * [ ] Support multiple roles per user if future-proofing
     
@@ -68,17 +64,11 @@
     * [ ] Create `/help` route with dummy docs and onboarding info
     * [ ] Clerk: add metadata validator in dev (e.g. role/orgId checker)
     * [ ] Dark mode toggle
-    
+    - System Admin User Management (reset password) //TODO: Fix this   
+    - Organisation Admin User Management (reset password) //TODO: Fix this
+    - [ ] Add **login-as functionality** from env ✅ // TODO: Fix this
+
     ---
-
-- Allow multiple system roles
-- System Admin User Management (reset password) //TODO: Fix this   
-- System Admin User Management (table filters) //TODO: Fix this
-- Organisation Admin User Management (reset password) //TODO: Fix this
-- User → Role assignment interface
-- Bulk role assignment
-- Role assignment history/audit
-
 
 ## Current Functions
 

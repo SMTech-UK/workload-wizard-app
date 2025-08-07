@@ -21,9 +21,12 @@ export const hasPermission = query({
       return false;
     }
 
-    // System admin bypasses all permission checks
-    if (user.systemRole === "admin") {
-      return true;
+    // System roles bypass all permission checks
+    if (user.systemRoles && user.systemRoles.length > 0) {
+      const systemRoles = ["admin", "sysadmin", "developer"];
+      if (user.systemRoles.some(role => systemRoles.includes(role))) {
+        return true;
+      }
     }
 
     // Get user's role assignment
@@ -936,7 +939,7 @@ export const createTestUsers = mutation({
         givenName: "Admin",
         familyName: "User",
         fullName: "Admin User",
-        systemRole: "user", // Not system admin
+        systemRoles: [], // Not system admin
         organisationId: testOrg._id,
         subject: "test_admin_user",
         isActive: true,
@@ -946,7 +949,7 @@ export const createTestUsers = mutation({
         givenName: "Manager",
         familyName: "User",
         fullName: "Manager User",
-        systemRole: "user",
+        systemRoles: [],
         organisationId: testOrg._id,
         subject: "test_manager_user",
         isActive: true,
@@ -956,7 +959,7 @@ export const createTestUsers = mutation({
         givenName: "Lecturer",
         familyName: "User",
         fullName: "Lecturer User",
-        systemRole: "user",
+        systemRoles: [],
         organisationId: testOrg._id,
         subject: "test_lecturer_user",
         isActive: true,
@@ -966,7 +969,7 @@ export const createTestUsers = mutation({
         givenName: "System",
         familyName: "Admin",
         fullName: "System Admin",
-        systemRole: "admin", // System admin - bypasses all checks
+        systemRoles: ["admin"], // System admin - bypasses all checks
         organisationId: testOrg._id,
         subject: "test_sysadmin_user",
         isActive: true,
@@ -1071,9 +1074,12 @@ export const runPermissionTests = query({
               return false;
             }
 
-            // System admin bypasses all permission checks
-            if (user.systemRole === "admin") {
-              return true;
+            // System roles bypass all permission checks
+            if (user.systemRoles && user.systemRoles.length > 0) {
+              const systemRoles = ["admin", "sysadmin", "developer"];
+              if (user.systemRoles.some(role => systemRoles.includes(role))) {
+                return true;
+              }
             }
 
             // Get user's role assignment
@@ -1338,9 +1344,12 @@ export const requirePermission = async (
         return false;
       }
 
-      // System admin and developers bypass all permission checks
-      if (user.systemRole === "admin" || user.systemRole === "sysadmin" || user.systemRole === "developer") {
-        return true;
+      // System roles bypass all permission checks
+      if (user.systemRoles && user.systemRoles.length > 0) {
+        const systemRoles = ["admin", "sysadmin", "developer"];
+        if (user.systemRoles.some(role => systemRoles.includes(role))) {
+          return true;
+        }
       }
 
       // Get user's role assignment

@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has appropriate permissions
-    const userRole = currentUserData.publicMetadata?.role as string;
-    const isAdmin = userRole === 'sysadmin' || userRole === 'developer';
+      const userRole = currentUserData.publicMetadata?.role as string;
+  const userRoles = currentUserData.publicMetadata?.roles as string[];
+  const isAdmin = userRole === 'sysadmin' || userRole === 'developer' || 
+                 (userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')));
     const isOrgAdmin = userRole === 'orgadmin';
     
     // Allow users to update their own email

@@ -1,30 +1,27 @@
-import posthog from "posthog-js"
+import posthog from 'posthog-js'
 
-// Only initialize PostHog if the key is available and we're in the browser
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-  try {
+if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    // Use proxy in production, or when explicitly testing proxy in dev
+    const useProxy = process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_TEST_PROXY === 'true';
+    
+    const apiHost = useProxy
+        ? `${window.location.origin}/e`  // Use our proxy
+        : process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com'; // Direct connection in dev
+    
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
-      ui_host: "https://eu.posthog.com",
-      defaults: '2025-05-24',
-      capture_exceptions: true, // This enables capturing exceptions using Error Tracking, set to false if you don't want this
-      debug: false, // Disable debug mode to prevent constant logging
-      capture_pageview: true,
-      capture_pageleave: true,
-      disable_session_recording: true, // Disable session recording if not needed
-      // Explicitly disable web vitals to prevent warnings
-      web_vitals: {
-        CLS: false,
-        FID: false,
-        FCP: false,
-        LCP: false,
-        TTFB: false,
-      },
-      loaded: (posthog) => {
-        if (process.env.NODE_ENV === 'development') posthog.debug()
-      },
+        api_host: apiHost,
+        ui_host: 'https://eu.posthog.com', // Always use direct UI host for toolbar/auth
+        defaults: '2025-05-24'
     });
-  } catch (error) {
-    console.log('PostHog initialization failed:', error);
-  }
+    
+    // Log the configuration for debugging
+    if (process.env.NODE_ENV === 'development') {
+        console.log('PostHog Configuration:', {
+            apiHost,
+            uiHost: 'https://eu.posthog.com',
+            useProxy,
+            environment: process.env.NODE_ENV,
+            testProxy: process.env.NEXT_PUBLIC_TEST_PROXY
+        });
+    }
 }

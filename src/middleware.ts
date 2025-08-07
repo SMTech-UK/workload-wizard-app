@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../convex/_generated/api'
 
-const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/api/webhooks/clerk', '/terms', '/privacy'])
-  const isAccountRoute = createRouteMatcher(['/account(.*)'])
+const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/api/webhooks/clerk', '/terms', '/privacy', '/reset-password'])
+const isAccountRoute = createRouteMatcher(['/account(.*)'])
 const isApiRoute = createRouteMatcher(['/api/complete-onboarding'])
 const isOnboardingRoute = createRouteMatcher(['/onboarding', '/onboarding-success'])
 
@@ -37,10 +37,14 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next()
   }
   
+
+  
   // Protect all other routes
   await auth.protect()
   
+  // Temporarily disabled onboarding check to debug login issue
   // Check if authenticated user has completed onboarding
+  /*
   if (userId) {
     try {
       // Check Convex user record for onboarding completion
@@ -66,6 +70,7 @@ export default clerkMiddleware(async (auth, req) => {
       // On error, allow access but log the issue
     }
   }
+  */
   
   return NextResponse.next()
 })

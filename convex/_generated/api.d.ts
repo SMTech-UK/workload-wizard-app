@@ -14,6 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as audit from "../audit.js";
+import type * as featureFlags from "../featureFlags.js";
 import type * as organisationalRoles from "../organisationalRoles.js";
 import type * as organisations from "../organisations.js";
 import type * as permissions from "../permissions.js";
@@ -30,6 +31,7 @@ import type * as users from "../users.js";
  */
 declare const fullApi: ApiFromModules<{
   audit: typeof audit;
+  featureFlags: typeof featureFlags;
   organisationalRoles: typeof organisationalRoles;
   organisations: typeof organisations;
   permissions: typeof permissions;

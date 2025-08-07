@@ -32,7 +32,7 @@ export interface AcademicYear {
     givenName: string;
     familyName: string;
     fullName: string;
-    systemRole: 'orgadmin' | 'sysadmin' | 'developer' | 'user' | 'trial';
+    systemRoles: string[]; // Array of system roles like ['sysadmin', 'developer']
     organisationId: string;
     pictureUrl?: string;
     subject: string;               // Clerk identifier

@@ -57,14 +57,4 @@ export async function getUserOrgOrThrowWithValidation(requiredOrganisationId: st
   return user;
 }
 
-export function hasSystemAdminAccess(userRole?: string): boolean {
-  return userRole === 'sysadmin' || userRole === 'developer';
-}
-
-export function hasOrgAdminAccess(userRole?: string): boolean {
-  return userRole === 'orgadmin';
-}
-
-export function hasAdminAccess(userRole?: string): boolean {
-  return userRole === 'orgadmin' || userRole === 'sysadmin' || userRole === 'developer';
-}
+// Permission utility functions moved to src/lib/auth/permissions.ts

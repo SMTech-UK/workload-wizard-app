@@ -4,7 +4,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import { ConvexClientProvider } from "@/components/providers/ConvexProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { FeatureFlagProvider } from "@/components/providers/FeatureFlagProvider";
 import { Toaster } from "@/components/ui/toast";
+
 
 
 const geistSans = Geist({
@@ -40,8 +42,10 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              {children}
-              <Toaster />
+              <FeatureFlagProvider>
+                {children}
+                <Toaster />
+              </FeatureFlagProvider>
             </ThemeProvider>
           </body>
         </html>

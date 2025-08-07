@@ -8,7 +8,8 @@ export const listByOrganisation = query({
     // Validate that the organisation exists
     const organisation = await ctx.db.get(args.organisationId);
     if (!organisation || !organisation.isActive) {
-      throw new Error('Organisation not found or inactive');
+      // Return empty array instead of throwing error for better UX
+      return [];
     }
 
     const roles = await ctx.db

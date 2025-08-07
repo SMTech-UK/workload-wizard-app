@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { X, Key } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -21,8 +22,8 @@ interface User {
   firstName?: string;
   lastName?: string;
   fullName?: string;
-  systemRole?: string;
-  role?: string;
+  systemRoles?: string[];
+  roles?: string[];
   organisationId: string;
   isActive: boolean;
   subject?: string; // Clerk user ID
@@ -45,6 +46,9 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedOrganisationId, setSelectedOrganisationId] = useState(user.organisationId);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(
+    user.systemRoles || user.roles || []
+  );
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -72,7 +76,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
       lastName: formData.get('lastName') as string,
       username: formData.get('username') as string,
       email: formData.get('email') as string,
-      systemRole: formData.get('systemRole') as string,
+      systemRoles: selectedRoles,
       organisationalRoleId: formData.get('organisationalRole') as string,
       organisationId: isSysadmin ? selectedOrganisationId : user.organisationId,
     };
@@ -110,7 +114,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
               firstName: data.firstName,
               lastName: data.lastName,
               username: data.username?.trim() || undefined,
-              systemRole: data.systemRole,
+              systemRoles: data.systemRoles,
               organisationalRoleId: data.organisationalRoleId,
               organisationId: data.organisationId,
               // Don't include email - it's handled separately if changed
@@ -295,19 +299,72 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="systemRole">System Role *</Label>
-              <Select name="systemRole" defaultValue={user.systemRole || user.role || ''} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select system role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="orgadmin">Organisation Admin</SelectItem>
-                  {isSysadmin && (
-                    <SelectItem value="sysadmin">System Admin</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <Label>System Roles *</Label>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="role-user"
+                    checked={selectedRoles.includes('user')}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedRoles([...selectedRoles, 'user']);
+                      } else {
+                        setSelectedRoles(selectedRoles.filter(role => role !== 'user'));
+                      }
+                    }}
+                  />
+                  <Label htmlFor="role-user" className="text-sm font-normal">User</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="role-orgadmin"
+                    checked={selectedRoles.includes('orgadmin')}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedRoles([...selectedRoles, 'orgadmin']);
+                      } else {
+                        setSelectedRoles(selectedRoles.filter(role => role !== 'orgadmin'));
+                      }
+                    }}
+                  />
+                  <Label htmlFor="role-orgadmin" className="text-sm font-normal">Organisation Admin</Label>
+                </div>
+                {isSysadmin && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="role-sysadmin"
+                      checked={selectedRoles.includes('sysadmin')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedRoles([...selectedRoles, 'sysadmin']);
+                        } else {
+                          setSelectedRoles(selectedRoles.filter(role => role !== 'sysadmin'));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="role-sysadmin" className="text-sm font-normal">System Admin</Label>
+                  </div>
+                )}
+                {isSysadmin && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="role-developer"
+                      checked={selectedRoles.includes('developer')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedRoles([...selectedRoles, 'developer']);
+                        } else {
+                          setSelectedRoles(selectedRoles.filter(role => role !== 'developer'));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="role-developer" className="text-sm font-normal">Developer</Label>
+                  </div>
+                )}
+              </div>
+              {selectedRoles.length === 0 && (
+                <p className="text-sm text-red-600">Please select at least one role</p>
+              )}
             </div>
 
             {(selectedOrganisationId || !isSysadmin) && (

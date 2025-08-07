@@ -2,6 +2,7 @@
 
 import { useUser } from "@clerk/nextjs"
 import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout"
+import { getUserRoles } from "@/lib/utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -42,7 +43,7 @@ export default function AccountPage() {
 
   const userName = user.fullName || user.firstName || "User"
   const userEmail = user.emailAddresses[0]?.emailAddress || ""
-  const userRole = user.publicMetadata?.role as string
+  const userRoles = getUserRoles(user)
   const avatarUrl = user.imageUrl
   const createdAt = user.createdAt
 
@@ -63,6 +64,28 @@ export default function AccountPage() {
       month: 'long',
       day: 'numeric'
     }).format(date)
+  }
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'orgadmin': return 'Organisation Admin';
+      case 'sysadmin': return 'System Admin';
+      case 'developer': return 'Developer';
+      case 'user': return 'User';
+      case 'trial': return 'Trial';
+      default: return role.charAt(0).toUpperCase() + role.slice(1);
+    }
+  }
+
+  const getRoleBadgeClass = (role: string) => {
+    switch (role) {
+      case 'orgadmin': return 'bg-red-100 text-red-800';
+      case 'sysadmin': return 'bg-purple-100 text-purple-800';
+      case 'developer': return 'bg-blue-100 text-blue-800';
+      case 'user': return 'bg-green-100 text-green-800';
+      case 'trial': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   }
 
   const accountSections = [
@@ -138,9 +161,21 @@ export default function AccountPage() {
               <div>
                 <h3 className="font-semibold">{userName}</h3>
                 <p className="text-sm text-muted-foreground">{userEmail}</p>
-                {userRole && (
-                  <Badge variant="secondary" className="mt-1">
-                    {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                {userRoles && userRoles.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {userRoles.map((role, index) => (
+                      <Badge 
+                        key={index} 
+                        variant="secondary" 
+                        className={getRoleBadgeClass(role)}
+                      >
+                        {getRoleLabel(role)}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <Badge variant="secondary" className="mt-1 bg-gray-100 text-gray-800">
+                    No roles assigned
                   </Badge>
                 )}
               </div>
@@ -155,13 +190,36 @@ export default function AccountPage() {
                 <span className="font-medium">{userEmail}</span>
               </div>
               
-              {userRole && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Role:</span>
-                  <span className="font-medium">{userRole.charAt(0).toUpperCase() + userRole.slice(1)}</span>
+              <div className="flex items-start gap-2 text-sm">
+                <Shield className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <span className="text-muted-foreground">Role Summary:</span>
+                  <div className="mt-1 space-y-1">
+                    {userRoles && userRoles.length > 0 ? (
+                      <>
+                        {userRoles.includes('sysadmin') && (
+                          <div className="text-xs text-purple-600">• Full system administration access</div>
+                        )}
+                        {userRoles.includes('developer') && (
+                          <div className="text-xs text-blue-600">• Developer tools and debugging access</div>
+                        )}
+                        {userRoles.includes('orgadmin') && (
+                          <div className="text-xs text-red-600">• Organisation management capabilities</div>
+                        )}
+                        {userRoles.includes('user') && (
+                          <div className="text-xs text-green-600">• Standard user access</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-xs text-gray-500">• No roles assigned</div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
+              
+
+              
+
               
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />

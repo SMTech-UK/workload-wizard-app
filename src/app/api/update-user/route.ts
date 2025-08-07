@@ -18,8 +18,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has appropriate permissions
-    const userRole = currentUserData.publicMetadata?.role as string;
-    const isAdmin = userRole === 'sysadmin' || userRole === 'developer';
+      const userRole = currentUserData.publicMetadata?.role as string;
+  const userRoles = currentUserData.publicMetadata?.roles as string[];
+  const isAdmin = userRole === 'sysadmin' || userRole === 'developer' || 
+                 (userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')));
     const isOrgAdmin = userRole === 'orgadmin';
     
     if (!isAdmin && !isOrgAdmin) {
@@ -29,7 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId, firstName, lastName, username, systemRole, isActive, organisationId, organisationalRoleId } = await request.json();
+    const { userId, firstName, lastName, username, systemRoles, isActive, organisationId, organisationalRoleId } = await request.json();
 
     if (!userId) {
       return NextResponse.json(
@@ -83,9 +85,9 @@ export async function POST(request: NextRequest) {
         clerkUpdates.username = username;
       }
       
-      // Update public metadata if systemRole or organisationId is different
+      // Update public metadata if systemRoles or organisationId is different
       const needsMetadataUpdate = 
-        (systemRole && systemRole !== existingClerkUser.publicMetadata?.role) ||
+        (systemRoles && JSON.stringify(systemRoles) !== JSON.stringify(existingClerkUser.publicMetadata?.roles)) ||
         (organisationId && organisationId !== existingClerkUser.publicMetadata?.organisationId);
         
       if (needsMetadataUpdate) {
@@ -93,8 +95,8 @@ export async function POST(request: NextRequest) {
           ...existingClerkUser.publicMetadata,
         };
         
-        if (systemRole) {
-          clerkUpdates.publicMetadata.role = systemRole;
+        if (systemRoles) {
+          clerkUpdates.publicMetadata.roles = systemRoles;
         }
         
         if (organisationId) {
@@ -135,7 +137,7 @@ export async function POST(request: NextRequest) {
           if (firstName || lastName) {
             convexUpdates.fullName = `${firstName || convexUser.givenName} ${lastName || convexUser.familyName}`;
           }
-          if (systemRole) convexUpdates.systemRole = systemRole;
+          if (systemRoles) convexUpdates.systemRoles = systemRoles;
           if (organisationId) convexUpdates.organisationId = organisationId;
           if (typeof isActive === 'boolean') convexUpdates.isActive = isActive;
           
