@@ -4,6 +4,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { headers } from 'next/headers';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../convex/_generated/api';
+import { hasAdminAccess } from '@/lib/auth/permissions';
 
 // Initialize Convex client for server actions
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -357,15 +358,32 @@ export async function getAuditLogs(filters?: {
   startDate?: number;
   endDate?: number;
   limit?: number;
+  cursor?: string;
 }) {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
+  if (!currentUserData) {
+    throw new Error('Unauthorized: User not authenticated');
+  }
+
+  // Check if user has admin role in Clerk metadata - support both old and new format
+  const userRoles = currentUserData.publicMetadata?.roles as string[] || [];
+  const userRole = currentUserData.publicMetadata?.role as string;
+  
+  // Add legacy role to roles array if it exists
+  if (userRole && !userRoles.includes(userRole)) {
+    userRoles.push(userRole);
+  }
+  
+  if (!hasAdminAccess(userRole) && !(userRoles.includes('sysadmin') || userRoles.includes('developer'))) {
     throw new Error('Unauthorized: Admin access required');
   }
 
   try {
-    return await convex.query(api.audit.list, filters || {});
+    // Filter out fields that aren't supported by the Convex function
+    const { search, timeRange, ...convexFilters } = filters || {};
+    const result = await convex.query(api.audit.list, convexFilters);
+    return result; // Return the full response object with logs, hasMore, and nextCursor
   } catch (error) {
     console.error('Error fetching audit logs:', error);
     throw new Error('Failed to fetch audit logs');
@@ -380,7 +398,22 @@ export async function getAuditStats(filters?: {
 }) {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
+  if (!currentUserData) {
+    throw new Error('Unauthorized: User not authenticated');
+  }
+
+  // Check if user has admin role in Clerk metadata - support both old and new format
+  const userRoles = currentUserData.publicMetadata?.roles as string[] || [];
+  const userRole = currentUserData.publicMetadata?.role as string;
+  
+  // Add legacy role to roles array if it exists
+  if (userRole && !userRoles.includes(userRole)) {
+    userRoles.push(userRole);
+  }
+  
+  const hasAdminAccess = userRoles.includes('sysadmin') || userRoles.includes('developer');
+  
+  if (!hasAdminAccess) {
     throw new Error('Unauthorized: Admin access required');
   }
 
@@ -390,4 +423,174 @@ export async function getAuditStats(filters?: {
     console.error('Error fetching audit stats:', error);
     throw new Error('Failed to fetch audit statistics');
   }
+} 
+
+// User deactivation/reactivation audit functions
+export async function logUserDeactivated(userId: string, userEmail: string, details?: string) {
+  await logAuditEvent({
+    action: 'deactivate',
+    entityType: 'user',
+    entityId: userId,
+    entityName: userEmail,
+    details: details || 'User account deactivated',
+    severity: 'warning',
+  });
+}
+
+export async function logUserReactivated(userId: string, userEmail: string, details?: string) {
+  await logAuditEvent({
+    action: 'reactivate',
+    entityType: 'user',
+    entityId: userId,
+    entityName: userEmail,
+    details: details || 'User account reactivated',
+    severity: 'info',
+  });
+}
+
+export async function logUserPasswordReset(userId: string, userEmail: string, details?: string) {
+  await logAuditEvent({
+    action: 'password_reset',
+    entityType: 'user',
+    entityId: userId,
+    entityName: userEmail,
+    details: details || 'User password reset',
+    severity: 'warning',
+  });
+}
+
+export async function logUserEmailUpdated(userId: string, oldEmail: string, newEmail: string, details?: string) {
+  await logAuditEvent({
+    action: 'email_update',
+    entityType: 'user',
+    entityId: userId,
+    entityName: newEmail,
+    details: details || `User email updated from ${oldEmail} to ${newEmail}`,
+    metadata: { oldEmail, newEmail },
+    severity: 'info',
+  });
+}
+
+// Organisation audit functions
+export async function logOrganisationDeleted(orgId: string, orgName: string, details?: string) {
+  await logAuditEvent({
+    action: 'delete',
+    entityType: 'organisation',
+    entityId: orgId,
+    entityName: orgName,
+    details: details || 'Organisation deleted',
+    severity: 'critical',
+  });
+}
+
+export async function logOrganisationStatusChanged(orgId: string, orgName: string, oldStatus: string, newStatus: string, details?: string) {
+  await logAuditEvent({
+    action: 'status_change',
+    entityType: 'organisation',
+    entityId: orgId,
+    entityName: orgName,
+    details: details || `Organisation status changed from ${oldStatus} to ${newStatus}`,
+    metadata: { oldStatus, newStatus },
+    severity: 'warning',
+  });
+}
+
+
+
+// Academic year audit functions
+export async function logAcademicYearDeleted(yearId: string, yearName: string, details?: string) {
+  await logAuditEvent({
+    action: 'delete',
+    entityType: 'academic_year',
+    entityId: yearId,
+    entityName: yearName,
+    details: details || 'Academic year deleted',
+    severity: 'warning',
+  });
+}
+
+export async function logAcademicYearStatusChanged(yearId: string, yearName: string, oldStatus: boolean, newStatus: boolean, details?: string) {
+  await logAuditEvent({
+    action: 'status_change',
+    entityType: 'academic_year',
+    entityId: yearId,
+    entityName: yearName,
+    details: details || `Academic year ${newStatus ? 'activated' : 'deactivated'}`,
+    metadata: { oldStatus, newStatus },
+    severity: 'info',
+  });
+}
+
+// System audit functions
+export async function logSystemMaintenance(action: string, details?: string, metadata?: Record<string, unknown>) {
+  await logAuditEvent({
+    action: 'maintenance',
+    entityType: 'system',
+    entityId: 'system',
+    entityName: 'System',
+    details: details || `System maintenance: ${action}`,
+    metadata,
+    severity: 'info',
+  });
+}
+
+export async function logDataExport(userId: string, userEmail: string, exportType: string, recordCount: number, details?: string) {
+  await logAuditEvent({
+    action: 'data_export',
+    entityType: 'system',
+    entityId: 'export',
+    entityName: `${exportType} Export`,
+    details: details || `Data export: ${exportType} (${recordCount} records)`,
+    metadata: { exportType, recordCount },
+    severity: 'info',
+  });
+}
+
+export async function logDataImport(userId: string, userEmail: string, importType: string, recordCount: number, details?: string) {
+  await logAuditEvent({
+    action: 'data_import',
+    entityType: 'system',
+    entityId: 'import',
+    entityName: `${importType} Import`,
+    details: details || `Data import: ${importType} (${recordCount} records)`,
+    metadata: { importType, recordCount },
+    severity: 'info',
+  });
+}
+
+// Security audit functions
+export async function logFailedLogin(userId: string, userEmail: string, reason: string, details?: string) {
+  await logAuditEvent({
+    action: 'login_failed',
+    entityType: 'user',
+    entityId: userId,
+    entityName: userEmail,
+    details: details || `Failed login attempt: ${reason}`,
+    metadata: { reason },
+    severity: 'warning',
+  });
+}
+
+export async function logAccountLocked(userId: string, userEmail: string, reason: string, details?: string) {
+  await logAuditEvent({
+    action: 'account_locked',
+    entityType: 'user',
+    entityId: userId,
+    entityName: userEmail,
+    details: details || `Account locked: ${reason}`,
+    metadata: { reason },
+    severity: 'error',
+  });
+}
+
+export async function logSuspiciousActivity(userId: string, userEmail: string, activity: string, details?: string) {
+  await logAuditEvent({
+    action: 'suspicious_activity',
+    entityType: 'user',
+    entityId: userId,
+    entityName: userEmail,
+    details: details || `Suspicious activity detected: ${activity}`,
+    metadata: { activity },
+    severity: 'error',
+  });
 } 

@@ -4,7 +4,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import { ConvexClientProvider } from "@/components/providers/ConvexProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { FeatureFlagProvider } from "@/components/providers/FeatureFlagProvider";
+import { PinkModeProvider } from "@/components/providers/PinkModeProvider";
 import { Toaster } from "@/components/ui/toast";
+
 
 
 const geistSans = Geist({
@@ -40,8 +43,12 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              {children}
-              <Toaster />
+              <FeatureFlagProvider>
+                <PinkModeProvider>
+                  {children}
+                  <Toaster />
+                </PinkModeProvider>
+              </FeatureFlagProvider>
             </ThemeProvider>
           </body>
         </html>

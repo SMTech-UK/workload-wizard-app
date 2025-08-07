@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { listUsers } from '@/lib/actions/userActions';
 import { api } from '../../../convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
+import { hasAnyRole } from '@/lib/utils';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -48,20 +49,20 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    if (isLoaded && (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer')) {
+    if (isLoaded && !hasAnyRole(user, ['sysadmin', 'developer'])) {
       router.replace('/unauthorised');
     }
   }, [isLoaded, user, router]);
 
   useEffect(() => {
-    if (isLoaded && (user?.publicMetadata?.role === 'sysadmin' || user?.publicMetadata?.role === 'developer')) {
+    if (isLoaded && hasAnyRole(user, ['sysadmin', 'developer'])) {
       fetchStats();
     }
   }, [isLoaded, user]);
 
   if (!isLoaded) return <p>Loading...</p>;
 
-  if (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer') {
+  if (!hasAnyRole(user, ['sysadmin', 'developer'])) {
     return null; // Will redirect in useEffect
   }
 

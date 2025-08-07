@@ -41,8 +41,8 @@ export function StandardizedSidebarLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex flex-1 items-center gap-2 px-4">
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 z-10 bg-background border-b">
+          <div className="flex items-center gap-2 px-4 w-1/4">
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
@@ -71,8 +71,11 @@ export function StandardizedSidebarLayout({
               </Breadcrumb>
             )}
           </div>
+          
+          <div className="flex-1"></div>
+          
           {headerActions && (
-            <div className="flex items-center gap-2 px-4">
+            <div className="flex items-center gap-2 px-4 justify-end">
               {headerActions}
             </div>
           )}

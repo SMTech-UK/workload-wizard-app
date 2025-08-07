@@ -6,7 +6,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { api } from '../../../convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
-import { logUserCreated, logUserDeleted, logUserUpdated } from './auditActions';
+import { logUserCreated, logUserDeleted, logUserUpdated, logUserDeactivated, logUserReactivated, logUserPasswordReset, logUserEmailUpdated } from './auditActions';
 import { sendUserInvitationEmail } from '../services/emailService';
 
 // Initialize Convex client for server actions
@@ -18,7 +18,7 @@ export interface CreateUserData {
   lastName: string;
   username: string;
   password: string;
-  role: 'orgadmin' | 'sysadmin' | 'developer' | 'user' | 'trial';
+  roles: string[]; // Array of system roles
   organisationId?: string;
   sendEmailInvitation?: boolean;
   organisationalRoleId?: string;
@@ -33,8 +33,11 @@ export async function createUser(data: CreateUserData) {
 
   // Check if user has appropriate permissions
   const userRole = currentUserData.publicMetadata?.role as string;
-  const isAdmin = userRole === 'sysadmin' || userRole === 'developer';
-  const isOrgAdmin = userRole === 'orgadmin';
+  const userRoles = currentUserData.publicMetadata?.roles as string[];
+  const isAdmin = userRole === 'sysadmin' || userRole === 'developer' || 
+                 (userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')));
+  const isOrgAdmin = userRole === 'orgadmin' || 
+                    (userRoles && userRoles.includes('orgadmin'));
   
   if (!isAdmin && !isOrgAdmin) {
     throw new Error('Unauthorized: Admin access required');
@@ -68,10 +71,9 @@ export async function createUser(data: CreateUserData) {
     }
 
     // Check if user already exists in Clerk
-    const clerk = await clerkClient();
     
     try {
-      const existingUsers = await clerk.users.getUserList({
+      const existingUsers = await clerkClient.users.getUserList({
         emailAddress: [data.email],
       });
       
@@ -90,7 +92,7 @@ export async function createUser(data: CreateUserData) {
           if (primaryEmail) {
             // Update Clerk user with organisationId if not already set
             if (!existingUser.publicMetadata?.organisationId) {
-              await clerk.users.updateUser(existingUser.id, {
+              await clerkClient.users.updateUser(existingUser.id, {
                 publicMetadata: {
                   ...existingUser.publicMetadata,
                   organisationId: organisationId,
@@ -104,7 +106,7 @@ export async function createUser(data: CreateUserData) {
               givenName: existingUser.firstName || '',
               familyName: existingUser.lastName || '',
               fullName: `${existingUser.firstName || ''} ${existingUser.lastName || ''}`.trim(),
-              systemRole: data.role,
+              systemRoles: data.roles,
               organisationId: organisationId,
               pictureUrl: existingUser.imageUrl,
               subject: existingUser.id,
@@ -124,14 +126,14 @@ export async function createUser(data: CreateUserData) {
     const password = data.password || Math.random().toString(36).substring(2, 15) + '!1';
     
     // Create new user in Clerk
-    const clerkUser = await clerk.users.createUser({
+    const clerkUser = await clerkClient.users.createUser({
       emailAddress: [data.email],
       username: data.username,
       password: password,
       firstName: data.firstName,
       lastName: data.lastName,
       publicMetadata: {
-        role: data.role,
+        roles: data.roles,
         organisationId: organisationId,
       },
     });
@@ -152,7 +154,7 @@ export async function createUser(data: CreateUserData) {
       givenName: data.firstName,
       familyName: data.lastName,
       fullName: `${data.firstName} ${data.lastName}`,
-      systemRole: data.role,
+      systemRoles: data.roles,
       organisationId: organisationId,
       pictureUrl: clerkUser.imageUrl,
       subject: clerkUser.id,
@@ -227,7 +229,18 @@ export async function createUser(data: CreateUserData) {
 export async function listUsers() {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
+  // Check for multiple roles first (new format)
+  const currentUserRoles: string[] = [];
+  if (currentUserData?.publicMetadata?.roles && Array.isArray(currentUserData.publicMetadata.roles)) {
+    currentUserRoles.push(...currentUserData.publicMetadata.roles);
+  } else if (currentUserData?.publicMetadata?.role) {
+    currentUserRoles.push(currentUserData.publicMetadata.role as string);
+  }
+  
+  // Check if this is a dev login session (server-side check)
+  const isDevLoginSession = currentUserData?.publicMetadata?.devLoginSession === true;
+  
+  if (!currentUserData || (!currentUserRoles.some(role => role === 'sysadmin' || role === 'developer') && !isDevLoginSession)) {
     throw new Error('Unauthorized: Admin access required');
   }
 
@@ -243,7 +256,7 @@ export async function listUsers() {
       username: user.username,
       firstName: user.givenName,
       lastName: user.familyName,
-      role: user.systemRole,
+      roles: user.systemRoles,
       organisationId: user.organisationId,
       createdAt: user.createdAt,
       lastSignInAt: user.lastSignInAt || null,
@@ -259,18 +272,28 @@ export async function listUsers() {
 export async function deleteUser(userId: string) {
   const currentUserData = await currentUser();
   
-  if (!currentUserData || (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer')) {
+  // Check for multiple roles first (new format)
+  const currentUserRoles: string[] = [];
+  if (currentUserData?.publicMetadata?.roles && Array.isArray(currentUserData.publicMetadata.roles)) {
+    currentUserRoles.push(...currentUserData.publicMetadata.roles);
+  } else if (currentUserData?.publicMetadata?.role) {
+    currentUserRoles.push(currentUserData.publicMetadata.role as string);
+  }
+  
+  // Check if this is a dev login session (server-side check)
+  const isDevLoginSession = currentUserData?.publicMetadata?.devLoginSession === true;
+  
+  if (!currentUserData || (!currentUserRoles.some(role => role === 'sysadmin' || role === 'developer') && !isDevLoginSession)) {
     throw new Error('Unauthorized: Admin access required');
   }
 
   try {
     // Get user details before deletion for audit logging
-    const clerk = await clerkClient();
     let userEmail = 'unknown';
     let userExistsInClerk = true;
     
     try {
-      const user = await clerk.users.getUser(userId);
+      const user = await clerkClient.users.getUser(userId);
       const primaryEmail = user.emailAddresses.find(
         email => email.id === user.primaryEmailAddressId
       );
@@ -289,7 +312,7 @@ export async function deleteUser(userId: string) {
     // Delete from Clerk only if user exists there
     const promises = [convexDeletePromise];
     if (userExistsInClerk) {
-      const clerkDeletePromise = clerk.users.deleteUser(userId).catch((error: any) => {
+      const clerkDeletePromise = clerkClient.users.deleteUser(userId).catch((error: any) => {
         if (error.status === 404) {
           console.log(`User ${userId} not found in Clerk during deletion, skipping`);
           return; // Don't throw, just skip
@@ -319,7 +342,7 @@ export async function updateUser(userId: string, updates: {
   email?: string;
   firstName?: string;
   lastName?: string;
-  role?: string;
+  roles?: string[];
   organisationId?: string;
   isActive?: boolean;
   password?: string;
@@ -333,8 +356,11 @@ export async function updateUser(userId: string, updates: {
 
   // Check if user has appropriate permissions
   const userRole = currentUserData.publicMetadata?.role as string;
-  const isAdmin = userRole === 'sysadmin' || userRole === 'developer';
-  const isOrgAdmin = userRole === 'orgadmin';
+  const userRoles = currentUserData.publicMetadata?.roles as string[];
+  const isAdmin = userRole === 'sysadmin' || userRole === 'developer' || 
+                 (userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')));
+  const isOrgAdmin = userRole === 'orgadmin' || 
+                    (userRoles && userRoles.includes('orgadmin'));
   
   if (!isAdmin && !isOrgAdmin) {
     throw new Error('Unauthorized: Admin access required');
@@ -348,9 +374,8 @@ export async function updateUser(userId: string, updates: {
     }
 
     // Get the user being updated to check their organisation
-    const clerk = await clerkClient();
     try {
-      const userToUpdate = await clerk.users.getUser(userId);
+      const userToUpdate = await clerkClient.users.getUser(userId);
       const userOrgId = userToUpdate.publicMetadata?.organisationId as string;
       const currentUserOrgId = currentUserData.publicMetadata?.organisationId as string;
       
@@ -364,12 +389,11 @@ export async function updateUser(userId: string, updates: {
 
   try {
     // Get user details before update for audit logging
-    const clerk = await clerkClient();
     let userEmail = 'unknown';
     let currentUserData = null;
     
     try {
-      const user = await clerk.users.getUser(userId);
+      const user = await clerkClient.users.getUser(userId);
       const primaryEmail = user.emailAddresses.find(
         email => email.id === user.primaryEmailAddressId
       );
@@ -395,7 +419,7 @@ export async function updateUser(userId: string, updates: {
     }
 
     // Update in Clerk
-    await clerk.users.updateUser(userId, clerkUpdateData);
+    await clerkClient.users.updateUser(userId, clerkUpdateData);
     
     // Update in Convex
     await convex.mutation(api.users.update, {
@@ -404,7 +428,7 @@ export async function updateUser(userId: string, updates: {
       givenName: updates.firstName,
       familyName: updates.lastName,
       fullName: updates.firstName && updates.lastName ? `${updates.firstName} ${updates.lastName}` : undefined,
-      systemRole: updates.role,
+              systemRoles: updates.roles || [updates.role],
       organisationId: updates.organisationId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       isActive: updates.isActive,
     });
@@ -463,8 +487,14 @@ export async function getUsersByOrganisationId(organisationId: string) {
   }
 
   // Check if user has access to this organisation
-  if (currentUserData.publicMetadata?.role !== 'sysadmin' && 
-      currentUserData.publicMetadata?.role !== 'developer' &&
+  const currentUserRoles: string[] = [];
+  if (currentUserData.publicMetadata?.roles && Array.isArray(currentUserData.publicMetadata.roles)) {
+    currentUserRoles.push(...currentUserData.publicMetadata.roles);
+  } else if (currentUserData.publicMetadata?.role) {
+    currentUserRoles.push(currentUserData.publicMetadata.role as string);
+  }
+  
+  if (!currentUserRoles.some(role => role === 'sysadmin' || role === 'developer') &&
       currentUserData.publicMetadata?.organisationId !== organisationId) {
     throw new Error('Unauthorized: Access denied to this organisation');
   }
@@ -505,7 +535,7 @@ export async function getUsersByOrganisationId(organisationId: string) {
           email: user.email,
           firstName: user.givenName,
           lastName: user.familyName,
-          role: user.systemRole,
+          roles: user.systemRoles,
           organisationId: user.organisationId,
           createdAt: user.createdAt,
           lastSignInAt: user.lastSignInAt || null,
@@ -530,25 +560,29 @@ export async function deactivateUser(userId: string) {
   }
 
   // Only orgadmin, sysadmin, and developer can deactivate users
-  if (currentUserData.publicMetadata?.role !== 'orgadmin' && 
-      currentUserData.publicMetadata?.role !== 'sysadmin' && 
-      currentUserData.publicMetadata?.role !== 'developer') {
+  const currentUserRoles: string[] = [];
+  if (currentUserData.publicMetadata?.roles && Array.isArray(currentUserData.publicMetadata.roles)) {
+    currentUserRoles.push(...currentUserData.publicMetadata.roles);
+  } else if (currentUserData.publicMetadata?.role) {
+    currentUserRoles.push(currentUserData.publicMetadata.role as string);
+  }
+  
+  if (!currentUserRoles.some(role => role === 'orgadmin' || role === 'sysadmin' || role === 'developer')) {
     throw new Error('Unauthorized: Admin access required');
   }
 
   // Ensure user has an organisationId (for orgadmins)
-  if (currentUserData.publicMetadata?.role === 'orgadmin' && !currentUserData.publicMetadata?.organisationId) {
+  if (currentUserRoles.includes('orgadmin') && !currentUserData.publicMetadata?.organisationId) {
     throw new Error('Unauthorized: User must be assigned to an organisation');
   }
 
   try {
     // Get user details before deactivation for audit logging
-    const clerk = await clerkClient();
     let userEmail = 'unknown';
     let userRole = 'unknown';
     
     try {
-      const user = await clerk.users.getUser(userId);
+      const user = await clerkClient.users.getUser(userId);
       const primaryEmail = user.emailAddresses.find(
         email => email.id === user.primaryEmailAddressId
       );
@@ -570,10 +604,9 @@ export async function deactivateUser(userId: string) {
     await convex.mutation(api.users.remove, { userId });
     
     // Log the user deactivation
-    await logUserUpdated(
+    await logUserDeactivated(
       userId, 
       userEmail, 
-      { isActive: false }, 
       `User deactivated by ${currentUserData.publicMetadata?.role}: ${currentUserData.emailAddresses[0]?.emailAddress}`
     );
     
@@ -593,24 +626,28 @@ export async function reactivateUser(userId: string) {
   }
 
   // Only orgadmin, sysadmin, and developer can reactivate users
-  if (currentUserData.publicMetadata?.role !== 'orgadmin' && 
-      currentUserData.publicMetadata?.role !== 'sysadmin' && 
-      currentUserData.publicMetadata?.role !== 'developer') {
+  const currentUserRoles: string[] = [];
+  if (currentUserData.publicMetadata?.roles && Array.isArray(currentUserData.publicMetadata.roles)) {
+    currentUserRoles.push(...currentUserData.publicMetadata.roles);
+  } else if (currentUserData.publicMetadata?.role) {
+    currentUserRoles.push(currentUserData.publicMetadata.role as string);
+  }
+  
+  if (!currentUserRoles.some(role => role === 'orgadmin' || role === 'sysadmin' || role === 'developer')) {
     throw new Error('Unauthorized: Admin access required');
   }
 
   // Ensure user has an organisationId (for orgadmins)
-  if (currentUserData.publicMetadata?.role === 'orgadmin' && !currentUserData.publicMetadata?.organisationId) {
+  if (currentUserRoles.includes('orgadmin') && !currentUserData.publicMetadata?.organisationId) {
     throw new Error('Unauthorized: User must be assigned to an organisation');
   }
 
   try {
     // Get user details before reactivation for audit logging
-    const clerk = await clerkClient();
     let userEmail = 'unknown';
     
     try {
-      const user = await clerk.users.getUser(userId);
+      const user = await clerkClient.users.getUser(userId);
       const primaryEmail = user.emailAddresses.find(
         email => email.id === user.primaryEmailAddressId
       );
@@ -626,10 +663,9 @@ export async function reactivateUser(userId: string) {
     });
     
     // Log the user reactivation
-    await logUserUpdated(
+    await logUserReactivated(
       userId, 
       userEmail, 
-      { isActive: true }, 
       `User reactivated by ${currentUserData.publicMetadata?.role}: ${currentUserData.emailAddresses[0]?.emailAddress}`
     );
     
@@ -710,7 +746,7 @@ export async function getUsersByOrganisationIdWithOverride(organisationId: strin
           email: user.email,
           firstName: user.givenName,
           lastName: user.familyName,
-          role: user.systemRole,
+          roles: user.systemRoles,
           organisationId: user.organisationId,
           createdAt: user.createdAt,
           lastSignInAt: user.lastSignInAt || null,
@@ -735,7 +771,14 @@ export async function getAllUsersByOrganisationIdWithOverride(organisationId: st
   }
 
   // Check if user has admin privileges
-  const isAdmin = currentUserData.publicMetadata?.role === 'sysadmin' || currentUserData.publicMetadata?.role === 'developer';
+  const currentUserRoles: string[] = [];
+  if (currentUserData.publicMetadata?.roles && Array.isArray(currentUserData.publicMetadata.roles)) {
+    currentUserRoles.push(...currentUserData.publicMetadata.roles);
+  } else if (currentUserData.publicMetadata?.role) {
+    currentUserRoles.push(currentUserData.publicMetadata.role as string);
+  }
+  
+  const isAdmin = currentUserRoles.some(role => role === 'sysadmin' || role === 'developer');
   
   // If not admin, check if user has access to this organisation
   if (!isAdmin && currentUserData.publicMetadata?.organisationId !== organisationId) {
@@ -776,7 +819,7 @@ export async function getAllUsersByOrganisationIdWithOverride(organisationId: st
           email: user.email,
           firstName: user.givenName,
           lastName: user.familyName,
-          role: user.systemRole,
+          roles: user.systemRoles,
           organisationId: user.organisationId,
           createdAt: user.createdAt,
           lastSignInAt: user.lastSignInAt || null,
@@ -801,7 +844,14 @@ export async function getAllOrganisations() {
   }
 
   // Only sysadmin and developer can view all organisations
-  if (currentUserData.publicMetadata?.role !== 'sysadmin' && currentUserData.publicMetadata?.role !== 'developer') {
+  const currentUserRoles: string[] = [];
+  if (currentUserData.publicMetadata?.roles && Array.isArray(currentUserData.publicMetadata.roles)) {
+    currentUserRoles.push(...currentUserData.publicMetadata.roles);
+  } else if (currentUserData.publicMetadata?.role) {
+    currentUserRoles.push(currentUserData.publicMetadata.role as string);
+  }
+  
+  if (!currentUserRoles.some(role => role === 'sysadmin' || role === 'developer')) {
     throw new Error('Unauthorized: Admin access required');
   }
 

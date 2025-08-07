@@ -39,7 +39,7 @@ interface User {
   givenName: string;
   familyName: string;
   fullName: string;
-  systemRole: string;
+  systemRoles: string[];
   organisationId: string;
   isActive: boolean;
   lastSignInAt?: number;
@@ -254,9 +254,9 @@ export default function OrganisationUsersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(user.systemRole)}`}>
-                        {getRoleLabel(user.systemRole)}
-                      </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(user.systemRoles[0])}`}>
+          {getRoleLabel(user.systemRoles[0])}
+        </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -375,7 +375,7 @@ export default function OrganisationUsersPage() {
              firstName: deletingUser.givenName,
              lastName: deletingUser.familyName,
              email: deletingUser.email,
-             role: deletingUser.systemRole,
+             roles: deletingUser.systemRoles,
            }}
            onConfirm={handleConfirmDelete}
            onCancel={handleCancelDelete}

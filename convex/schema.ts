@@ -35,7 +35,7 @@ export default defineSchema({
     givenName: v.string(),
     familyName: v.string(),
     fullName: v.string(),
-    systemRole: v.string(), // 'admin', etc.
+    systemRoles: v.array(v.string()), // ['sysadmin', 'developer'], etc.
     jobRole: v.optional(v.string()), // User's job role from onboarding
     department: v.optional(v.string()),
     phone: v.optional(v.string()),
@@ -208,5 +208,16 @@ export default defineSchema({
     .index("by_role", ["roleId"])
     .index("by_role_permission", ["roleId", "permissionId"])
     .index("by_organisation", ["organisationId"]),
+
+  // 🚩 Feature Flag Overrides
+  featureFlagOverrides: defineTable({
+    userId: v.string(),
+    flagName: v.string(),
+    enabled: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_flag", ["userId", "flagName"]),
 
 });

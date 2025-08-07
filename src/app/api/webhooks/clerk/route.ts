@@ -110,13 +110,13 @@ async function handleUserCreated(userData: any) { // eslint-disable-line @typesc
 
   // Set default values if metadata is missing
   const publicMetadata = userData.public_metadata as Record<string, unknown> || {};
-  const role = (publicMetadata.role as string) || 'user';
+  const roles = (publicMetadata.roles as string[]) || (publicMetadata.role as string) ? [publicMetadata.role as string] : ['user'];
   const organisationId = (publicMetadata.organisationId as string) || '';
 
   console.log('Creating user in Convex:', {
     id: userData.id,
     email: primaryEmail.email_address,
-    role,
+    roles,
     organisationId: organisationId || 'No organisation assigned'
   });
 
@@ -128,7 +128,7 @@ async function handleUserCreated(userData: any) { // eslint-disable-line @typesc
       givenName: (userData.first_name as string) || '',
       familyName: (userData.last_name as string) || '',
       fullName: `${(userData.first_name as string) || ''} ${(userData.last_name as string) || ''}`.trim(),
-      systemRole: role,
+      systemRoles: roles,
       organisationId: organisationId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       pictureUrl: userData.image_url as string,
       subject: userData.id as string,
@@ -160,7 +160,7 @@ async function handleUserUpdated(userData: any) { // eslint-disable-line @typesc
     givenName: userData.first_name as string,
     familyName: userData.last_name as string,
     fullName: `${(userData.first_name as string) || ''} ${(userData.last_name as string) || ''}`.trim(),
-    systemRole: publicMetadata.role as string,
+    systemRoles: publicMetadata.roles as string[] || (publicMetadata.role as string) ? [publicMetadata.role as string] : [],
     organisationId: publicMetadata.organisationId as string,
     pictureUrl: userData.image_url as string,
   });
