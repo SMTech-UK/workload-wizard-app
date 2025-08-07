@@ -10,7 +10,8 @@ import {
   Database,
   Users,
   Shield,
-  FileText
+  FileText,
+  Palette
 } from 'lucide-react';
 import Link from 'next/link';
 import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
@@ -23,6 +24,22 @@ const devTools = [
     icon: TestTube,
     status: 'active',
     category: 'Analytics'
+  },
+  {
+    title: 'Feature Flag Management',
+    description: 'Manage and preview all feature flags (PostHog and local) with comprehensive controls',
+    href: '/dev/features',
+    icon: Flag,
+    status: 'active',
+    category: 'Features'
+  },
+  {
+    title: 'Feature Flags Test',
+    description: 'Test feature flag discovery and compare different approaches',
+    href: '/dev/feature-flags-test',
+    icon: Flag,
+    status: 'active',
+    category: 'Features'
   },
   {
     title: 'Feature Flag Test',

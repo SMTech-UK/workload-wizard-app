@@ -97,16 +97,28 @@ const getNavigationData = (userRoles?: string[]) => {
       icon: Code,
       items: [
         {
-          title: "Database",
-          url: "/dev/database",
+          title: "Overview",
+          url: "/dev",
         },
         {
-          title: "API Testing",
-          url: "/dev/api",
+          title: "Feature Flag Management",
+          url: "/dev/features",
         },
         {
-          title: "Debug Console",
-          url: "/dev/debug",
+          title: "PostHog Test Dashboard",
+          url: "/dev/posthog-test",
+        },
+        {
+          title: "Feature Flags Test",
+          url: "/dev/feature-flags-test",
+        },
+        {
+          title: "Charts Test",
+          url: "/charts-test",
+        },
+        {
+          title: "UI Components",
+          url: "/ui",
         },
       ],
     })
@@ -132,15 +144,6 @@ const getNavigationData = (userRoles?: string[]) => {
           url: "/organisation/settings",
         },
       ],
-    })
-  }
-
-  // UI Components (for development)
-  if (userRoles?.some(role => role === 'developer' || role === 'sysadmin')) {
-    roleNav.push({
-      title: "UI Components",
-      url: "/ui",
-      icon: Settings,
     })
   }
 

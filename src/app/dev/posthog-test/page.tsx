@@ -32,9 +32,11 @@ import {
   checkEarlyAccessFeatureEnrollment,
   getAllPostHogFeatureFlags
 } from '@/lib/feature-flags/client';
+import { usePinkMode } from '@/hooks/usePinkMode';
 
 export default function PostHogTestPage() {
   // Removed BETA_FEATURES - using dynamic feature flag discovery instead
+  const { isPinkModeEnabled, isLoading: pinkModeLoading } = usePinkMode();
   const [posthogStatus, setPosthogStatus] = useState<{
     isInitialized: boolean;
     distinctId: string | null;
@@ -243,12 +245,28 @@ export default function PostHogTestPage() {
 
   const toggleEarlyAccessFeature = async (flagKey: string, enabled: boolean) => {
     try {
+      console.log(`Toggling early access feature: ${flagKey} to ${enabled}`);
+      
+      // Check status before change
+      const beforeStatus = await checkEarlyAccessFeatureEnrollment(flagKey);
+      console.log(`Status before change for ${flagKey}:`, beforeStatus);
+      
       await updateEarlyAccessFeatureEnrollment(flagKey, enabled);
+      
       // Reload features to get updated enrollment status
       await loadEarlyAccessFeatures();
+      
       // Also check the specific enrollment status for this feature
       const enrollmentStatus = await checkEarlyAccessFeatureEnrollment(flagKey);
-      console.log(`Enrollment status for ${flagKey}:`, enrollmentStatus);
+      console.log(`Enrollment status for ${flagKey} after change:`, enrollmentStatus);
+      
+      // Check if the feature flag is now enabled
+      if (typeof window !== 'undefined') {
+        const posthog = await import('posthog-js');
+        const isFeatureEnabled = posthog.default.isFeatureEnabled(flagKey);
+        console.log(`Feature flag ${flagKey} enabled status:`, isFeatureEnabled);
+      }
+      
       // Refresh feature flag to get updated value
       refresh();
     } catch (error) {
@@ -392,6 +410,12 @@ export default function PostHogTestPage() {
                 <span>Feature Flags:</span>
                 <Badge variant={posthogStatus.isIdentified ? "default" : "secondary"}>
                   {posthogStatus.isIdentified ? 'Working' : 'Not Working'}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span>Pink Mode:</span>
+                <Badge variant={isPinkModeEnabled ? "default" : "secondary"}>
+                  {pinkModeLoading ? 'Loading...' : (isPinkModeEnabled ? 'Active' : 'Inactive')}
                 </Badge>
               </div>
             </div>

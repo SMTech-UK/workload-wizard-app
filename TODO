@@ -1,105 +1,105 @@
-    # ✅ **Tomorrow’s Task List: Core Foundations Sprint**
-    
-    ## 🎯 **Goal by EOD**
-    
-    > Have full user/role/permission management complete for both sysadmin and orgadmin, including UI polish and audit support — ready to build workload functionality on top.
-    
-    ---
+---
 
-    - Implement Feature flag backend/template
+# ✅ **Tomorrow’s Task List: Core Foundations Sprint**
 
-    
-    ## 🛠️ 2. System Admin Polishing
-    
-    ### 🧠 Role Interface
-    
-    * [ ] Add **role assignment UI** to sysadmin user table
-    * [ ] Support **bulk role assignment**
-    * [ ] Log changes in audit log (`role.assigned`, `role.removed`)
-    
-    ---
-    
-    ## 🧑‍🏫 3. Org Admin Tools
-    
-    ### 👥 Organisation User Management
-    
-    * [ ] Show user roles + ability to update via dropdown
-    * [ ] Support multiple roles per user if future-proofing
-    
-    ---
-    
-    ## 📒 4. Role & Permission UX
-    
-    * [ ] Audit logging: `role.assigned`, `role.removed`, `role.edited`
-    * [ ] Permission visual labels: 📎 = default, ✏️ = custom
-    * [ ] Add hover tooltips to explain role-permission source
-    * [ ] Add warning/guardrails if sysadmin tries to edit org-managed role
-    
-    ---
-    
-    ## 🧪 5. Test Coverage / Dev Enhancements (if time)
-    
-    * [ ] Write test script that:
-    
-      * Seeds an org with roles
-      * Assigns roles to users
-      * Fetches user + permission matrix
-    * [ ] Add test util: `createTestUserWithRole()`
-    
-    ---
-    
-    ## 📦 Prep for Next Sprint
-    
-    Start planning following once above is complete:
-    
-    * Staff schema + input forms (lecturer FT/PT/bank + contract hours)
-    * Module setup: create module, assign to staff
-    * Visual timetable / calendar prototype
-    * MVP workload calculator (staff view)
-    
-    ---
-    
-    ## 📁 Optional (Stretch Goals)
-    
-    * [ ] Create `/help` route with dummy docs and onboarding info
-    * [ ] Clerk: add metadata validator in dev (e.g. role/orgId checker)
-    * [ ] Dark mode toggle
-    - System Admin User Management (reset password) //TODO: Fix this   
-    - Organisation Admin User Management (reset password) //TODO: Fix this
-    - [ ] Add **login-as functionality** from env ✅ // TODO: Fix this
+## 🎯 **Goal by EOD**
 
-    ---
+> Have **role/permission management fully usable** by both sysadmin and orgadmin, with **auditing**, **UX polish**, and **proven enforcement**, so you can safely layer in workload logic (lecturers/modules) next.
 
-## Current Functions
+---
 
-- User management: users.edit, users.invite
-- Staff management: staff.create, staff.edit
-- System permissions: All CRUD operations on permissions/roles
+## 🛠️ 1. System Admin Enhancements
 
-- Login
-- System Admin Dashboard
-- System Admin User Management
-- System Admin User Management (change email) // Working 06/08     
-- System Admin User Management (delete user) // Working 06/08
-- System Admin User Management (create user) // Working 06/08
-- System Admin User Management (update username) // Working 06/08
-- System Admin User Management (update system role) // Working 06/08
-- System Admin User Management (update org) // Working 06/08
-- System Admin User Management (last login date) // Working 06/08
+### 🧠 Role Assignment Interface
 
-- System Admin Org Management
-- System Admin Org Management (create org) //Working 06/08
-- System Admin Org Management (delete org) //Working 06/08
-- System Admin Org Management (edit org) //Working 06/08
+* [ ] Add **role assignment dropdown** to `/admin/users` table
+* [ ] Add **bulk role assignment** (check/select multiple → assign modal)
+* [ ] Log audit entries:
 
-- Audit Logs
+  * [ ] `role.assigned`
+  * [ ] `role.revoked`
 
-- Organisation Admin Dashboard
-- Organisation Admin User Management
-- Organisation Admin User Management (deactivate user) //Working 06/08
-- Organisation Admin User Management (reactivate user) //Working 06/08
-- Organisation Admin User Management (create user) //Working 06/08
-- Organisation Admin User Management (update system role [limited]) //Working 06/08
-- Organisation Admin User Management (change email) //Working 06/08
-- Organisation Admin User Management (delete user) //Working 06/08
-- Organisation Admin User Management (update username) //Working 06/08
+### 🛂 User Management
+
+* [ ] Add **"reset password"** button to each user row
+* [ ] Add **filter/search** to user table (by name, email, org, status)
+* [ ] Fix audit log links so you can click through to entity (if implemented)
+
+---
+
+## 🧑‍🏫 2. Organisation Admin Tools
+
+### 👥 Org User Management
+
+* [ ] Show **user roles per user**
+* [ ] Add **role update dropdown**
+* [ ] Add audit logging on role change
+
+### 🧱 Org Role Management
+
+* [ ] Enable orgadmins to:
+
+  * [ ] Create/edit/delete **their org’s roles**
+  * [ ] Assign permissions to those roles
+* [ ] Add restrictions so orgadmins **cannot affect global roles**
+* [ ] Add label (📎 default / ✏️ custom) next to each permission
+* [ ] Show tooltips on each icon with explanation
+
+---
+
+## 🔐 3. Permission System Polish
+
+* [ ] Add wrapper `requireOrgPermission("staff.create")` to enforce access
+* [ ] Ensure sysadmin bypasses checks
+* [ ] Add guardrails: sysadmin **cannot edit orgadmin roles**, and vice versa
+* [ ] Audit:
+
+  * [ ] `permission.assigned`
+  * [ ] `permission.revoked`
+  * [ ] `role.created`
+  * [ ] `role.deleted`
+
+---
+
+## 🧪 4. Dev Tooling & Testing (Stretch but useful)
+
+* [ ] `createTestUserWithRole()` util (for test seeds/dev UX)
+* [ ] Seed command:
+
+  * [ ] Creates org with default roles + permissions
+  * [ ] Creates 3 users with different roles
+* [ ] Optional: create `hasPermissionDevTest()` page that logs permission status for current user
+
+---
+
+## 📦 5. MVP Prep for Next Sprint
+
+Start rough wireframes/code once above is done:
+
+### 🧑‍🏫 Staff
+
+* [ ] Schema: FT/PT/Bank, contract hours, max teaching hours
+* [ ] Add input form + view
+* [ ] Assign staff to academic year
+
+### 📘 Modules
+
+* [ ] Schema: code, name, hours, academic year
+* [ ] Input: create + view module
+* [ ] Assign modules to staff with role (teaching/admin)
+
+### 📊 Workload Engine (Start Planning)
+
+* [ ] Calculate workload from allocations
+* [ ] Staff dashboard: workload summary + bar chart
+* [ ] Start MVP calendar/prototype with staff view
+
+---
+
+## 📁 Optional (Stretch Goals)
+
+* [ ] `/help` route with dummy onboarding / docs
+* [ ] Add Clerk dev middleware that warns if missing `orgId` or `role`
+* [ ] Auto-audit summary for each user (on profile page or modal)
+
+---

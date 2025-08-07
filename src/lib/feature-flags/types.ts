@@ -2,6 +2,7 @@
 export enum FeatureFlags {
   // Add your feature flags here
   // Example: NEW_DASHBOARD = 'new_dashboard',
+  PINK_MODE = 'pink-mode',
 }
 
 // Feature flag configuration interface
@@ -26,7 +27,7 @@ export interface FeatureFlagConfig {
 export interface FeatureFlagResult {
   enabled: boolean;
   payload?: unknown;
-  source?: 'posthog' | 'fallback' | 'override';
+  source?: 'posthog' | 'fallback' | 'override' | 'local-override';
 }
 
 // Feature flag context for evaluation

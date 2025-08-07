@@ -18,7 +18,8 @@ import {
   Calendar,
   ArrowRight,
   Users,
-  Building
+  Building,
+  Sparkles
 } from "lucide-react"
 import Link from "next/link"
 
@@ -106,6 +107,15 @@ export default function AccountPage() {
       color: "text-green-600",
       bgColor: "bg-green-50",
       borderColor: "border-green-200"
+    },
+    {
+      title: "Early Access Features",
+      description: "Manage your opt-in preferences for experimental features",
+      icon: Sparkles,
+      href: "/account/features",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200"
     },
     {
       title: "Notifications",

@@ -5,6 +5,7 @@ import "@/styles/globals.css";
 import { ConvexClientProvider } from "@/components/providers/ConvexProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { FeatureFlagProvider } from "@/components/providers/FeatureFlagProvider";
+import { PinkModeProvider } from "@/components/providers/PinkModeProvider";
 import { Toaster } from "@/components/ui/toast";
 
 
@@ -43,8 +44,10 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               <FeatureFlagProvider>
-                {children}
-                <Toaster />
+                <PinkModeProvider>
+                  {children}
+                  <Toaster />
+                </PinkModeProvider>
               </FeatureFlagProvider>
             </ThemeProvider>
           </body>

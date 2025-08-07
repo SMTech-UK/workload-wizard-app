@@ -10,6 +10,12 @@ export const FEATURE_FLAG_CONFIGS: Record<FeatureFlags, FeatureFlagConfig> = {
   //   description: 'Enables the new dashboard UI',
   //   defaultValue: false,
   // },
+  [FeatureFlags.PINK_MODE]: {
+    name: FeatureFlags.PINK_MODE,
+    description: 'Enables pink mode theme for early access users',
+    defaultValue: false,
+    rolloutPercentage: 0, // Start with 0% rollout, users must opt-in
+  },
 };
 
 // Helper function to get flag config

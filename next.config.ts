@@ -4,7 +4,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   async rewrites() {
     return [
-      // PostHog reverse proxy - using a non-obvious path to avoid blocking
+      // PostHog reverse proxy - DISABLED for direct access
+      // Uncomment these lines to re-enable proxy
+      /*
       {
         source: "/e/static/:path*",
         destination: "https://eu-assets.i.posthog.com/static/:path*",
@@ -26,6 +28,7 @@ const nextConfig: NextConfig = {
         source: "/ingest/flags",
         destination: "https://eu.i.posthog.com/flags",
       },
+      */
     ];
   },
   // This is required to support PostHog trailing slash API requests
