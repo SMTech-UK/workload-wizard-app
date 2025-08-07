@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -129,6 +130,12 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
         }
       }
 
+      posthog.capture('user-details-updated', {
+        user_id: user.subject,
+        email_changed: emailChanged,
+        is_sysadmin: isSysadmin,
+      });
+
       const successMessage = emailChanged 
         ? 'User updated successfully! Email has been updated and verified.' 
         : 'User updated successfully!';
@@ -174,6 +181,11 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
       if (!response.ok) {
         throw new Error('Failed to send password reset email');
       }
+
+      posthog.capture('user-password-reset-initiated', {
+        user_id: user.subject,
+        is_sysadmin: isSysadmin,
+      });
 
       const result = await response.json();
       setMessage({ 
@@ -345,7 +357,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
             </div>
 
             {message && (
-              <div className={`p-3 rounded-md text-sm ${
+              <div className={`p-3 rounded-md text-sm ${ 
                 message.type === 'success' 
                   ? 'bg-green-50 text-green-700 border border-green-200' 
                   : 'bg-red-50 text-red-700 border border-red-200'

@@ -4,6 +4,7 @@ import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../convex/_generated/api'
 
 const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/api/webhooks/clerk', '/terms', '/privacy'])
+  const isAccountRoute = createRouteMatcher(['/account(.*)'])
 const isApiRoute = createRouteMatcher(['/api/complete-onboarding'])
 const isOnboardingRoute = createRouteMatcher(['/onboarding', '/onboarding-success'])
 
@@ -15,6 +16,12 @@ export default clerkMiddleware(async (auth, req) => {
   
   // Allow public routes without authentication
   if (isPublicRoute(req)) {
+    return NextResponse.next()
+  }
+  
+  // Allow account routes for authenticated users (but don't check onboarding status)
+  if (isAccountRoute(req)) {
+    await auth.protect()
     return NextResponse.next()
   }
   

@@ -13,6 +13,7 @@ import { CreateUserForm } from './CreateUserForm';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
@@ -79,7 +80,7 @@ export function UsersList() {
       setUsers(users.filter(user => user.id !== userId));
       setDeletingUser(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete user');
+      toast.error('Failed to delete user', err instanceof Error ? err.message : undefined);
     } finally {
       setIsDeleting(false);
     }

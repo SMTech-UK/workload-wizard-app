@@ -398,3 +398,62 @@ export const completeOnboarding = mutation({
     return user._id;
   },
 }); 
+
+export const updateUserAvatar = mutation({
+  args: {
+    subject: v.string(), // Clerk user ID
+    pictureUrl: v.string(), // New avatar URL from Clerk
+  },
+  handler: async (ctx, args) => {
+    const { subject, pictureUrl } = args;
+
+    // Find the user by Clerk subject ID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", subject))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Update the user's picture URL
+    const updatedUser = await ctx.db.patch(user._id, {
+      pictureUrl,
+      updatedAt: Date.now(),
+    });
+
+    // Log the avatar update
+    await ctx.db.insert("audit_logs", {
+      action: "update",
+      entityType: "user",
+      entityId: user._id,
+      entityName: user.fullName,
+      performedBy: subject,
+      performedByName: user.fullName,
+      organisationId: user.organisationId,
+      details: "Updated profile picture",
+      metadata: JSON.stringify({ previousPictureUrl: user.pictureUrl, newPictureUrl: pictureUrl }),
+      timestamp: Date.now(),
+      severity: "info",
+    });
+
+    return updatedUser;
+  },
+}); 
+
+export const getUserAvatar = query({
+  args: {
+    subject: v.string(), // Clerk user ID
+  },
+  handler: async (ctx, args) => {
+    const { subject } = args;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", subject))
+      .first();
+
+    return user?.pictureUrl || null;
+  },
+}); 

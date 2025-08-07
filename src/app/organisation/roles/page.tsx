@@ -306,7 +306,6 @@ export default function OrganisationRolesPage() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
 
       <div className="space-y-6">
         {organisationRoles?.map((role) => {

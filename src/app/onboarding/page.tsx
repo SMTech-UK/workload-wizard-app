@@ -96,6 +96,29 @@ export default function OnboardingPage() {
   })
   const [missingFields, setMissingFields] = useState<string[]>([])
 
+  // Password strength calculation function
+  const getPasswordStrength = (password: string) => {
+    if (!password) return { strength: 0, label: '', color: '' }
+    
+    let score = 0
+    if (password.length >= 8) score++
+    if (/[a-z]/.test(password)) score++
+    if (/[A-Z]/.test(password)) score++
+    if (/[0-9]/.test(password)) score++
+    if (/[^A-Za-z0-9]/.test(password)) score++
+    
+    const strengthMap = [
+      { strength: 0, label: 'Very Weak', color: 'text-red-500' },
+      { strength: 1, label: 'Weak', color: 'text-orange-500' },
+      { strength: 2, label: 'Fair', color: 'text-yellow-500' },
+      { strength: 3, label: 'Good', color: 'text-blue-500' },
+      { strength: 4, label: 'Strong', color: 'text-green-500' },
+      { strength: 5, label: 'Very Strong', color: 'text-green-600' }
+    ]
+    
+    return strengthMap[Math.min(score, 5)]
+  }
+
   // Pre-populate form data from user information
   useEffect(() => {
     if (user) {
@@ -219,6 +242,10 @@ export default function OnboardingPage() {
         if (formData.role === "other") {
           requiredFields.push("customRole")
         }
+        // Add email validation if email is provided
+        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+          requiredFields.push("invalidEmail")
+        }
         return requiredFields
       case 1: // Work Information
         const workFields = ["department"]
@@ -229,9 +256,12 @@ export default function OnboardingPage() {
         return workFields
       case 2: // Security
         const securityFields = ["currentPassword", "newPassword", "confirmPassword"]
-        // Additional validation: passwords must match
+        // Additional validation: passwords must match and meet strength requirements
         if (formData.newPassword && formData.confirmPassword && formData.newPassword !== formData.confirmPassword) {
           return [...securityFields, "passwordMismatch"]
+        }
+        if (formData.newPassword && formData.newPassword.length < 8) {
+          return [...securityFields, "passwordTooWeak"]
         }
         return securityFields
       case 3: // Preferences
@@ -241,7 +271,7 @@ export default function OnboardingPage() {
       default:
         return []
     }
-  }, [formData.role, formData.organization, formData.newPassword, formData.confirmPassword])
+  }, [formData.role, formData.organization, formData.newPassword, formData.confirmPassword, formData.email])
 
   // Update missing fields when step changes
   useEffect(() => {
@@ -278,6 +308,100 @@ export default function OnboardingPage() {
     setIsCompleting(true)
     
     try {
+      // First, update user profile information (name, email) if changed
+      const userFirstName = user.firstName || ""
+      const userLastName = user.lastName || ""
+      const userEmail = user.emailAddresses?.[0]?.emailAddress || ""
+      
+      // Check if name or email has actually changed (trim whitespace for comparison)
+      const nameChanged = formData.firstName.trim() !== userFirstName || formData.lastName.trim() !== userLastName
+      const emailChanged = formData.email.trim() !== userEmail
+      
+      if (nameChanged || emailChanged) {
+        try {
+          // Update name in Clerk only if it actually changed
+          if (nameChanged) {
+            await user.update({
+              firstName: formData.firstName.trim(),
+              lastName: formData.lastName.trim(),
+            })
+          }
+
+          // Update email only if it actually changed
+          if (emailChanged) {
+            try {
+              const response = await fetch('/api/update-user-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: user.id,
+                  newEmail: formData.email.trim(),
+                }),
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to update email');
+              }
+
+              // Reload user data to get updated email
+              await user.reload();
+            } catch (emailError) {
+              console.error('Email update error:', emailError);
+              setError(emailError instanceof Error ? emailError.message : "Failed to update email. Please try again.")
+              return
+            }
+          }
+        } catch (profileError) {
+          console.error('Profile update error:', profileError);
+          setError("Failed to update profile information. Please try again.")
+          return
+        }
+      }
+
+      // Update the password if provided in the security step
+      if (formData.currentPassword && formData.newPassword && formData.confirmPassword) {
+        // Validate password match
+        if (formData.newPassword !== formData.confirmPassword) {
+          setError('New password and confirm password do not match.')
+          return
+        }
+
+        // Validate password strength
+        if (formData.newPassword.length < 8) {
+          setError('Password must be at least 8 characters long.')
+          return
+        }
+
+        try {
+          await user.updatePassword({
+            currentPassword: formData.currentPassword,
+            newPassword: formData.newPassword,
+          })
+        } catch (passwordError) {
+          // Provide specific error messages for password issues
+          let errorMessage = "Failed to update password. Please check your current password."
+          if (passwordError instanceof Error) {
+            if (passwordError.message.includes('current password')) {
+              errorMessage = "Current password is incorrect. Please try again."
+            } else if (passwordError.message.includes('weak')) {
+              errorMessage = "Password is too weak. Please choose a stronger password."
+            } else if (passwordError.message.includes('recent')) {
+              errorMessage = "Cannot reuse a recent password. Please choose a different password."
+            } else if (passwordError.message.includes('breach') || passwordError.message.includes('compromised')) {
+              errorMessage = "This password has been found in online breaches. Please choose a different, more secure password."
+            } else if (passwordError.message.includes('_baseFetch')) {
+              errorMessage = "Network error occurred. Please check your connection and try again."
+            }
+          }
+          setError(errorMessage)
+          return
+        }
+      }
+
+      // Filter out sensitive password data before sending to API
+      const { currentPassword, newPassword, confirmPassword, ...safeOnboardingData } = formData
+      
       // Update user metadata to mark onboarding as complete via API
       const response = await fetch('/api/complete-onboarding', {
         method: 'POST',
@@ -285,7 +409,7 @@ export default function OnboardingPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          onboardingData: formData,
+          onboardingData: safeOnboardingData,
         }),
       })
       
@@ -326,6 +450,17 @@ export default function OnboardingPage() {
   const isCurrentStepValid = () => {
     const requiredFields = getRequiredFieldsForStep(currentStep)
     return requiredFields.every(field => {
+      // Special handling for password validation
+      if (field === "passwordMismatch") {
+        return formData.newPassword === formData.confirmPassword
+      }
+      if (field === "passwordTooWeak") {
+        return formData.newPassword.length >= 8
+      }
+      if (field === "invalidEmail") {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+      }
+      
       const value = formData[field as keyof typeof formData]
       return typeof value === 'string' && value.trim() !== ''
     })
@@ -476,6 +611,9 @@ export default function OnboardingPage() {
                     placeholder="Enter your email address"
                     className={missingFields.includes("email") ? "border-orange-300 focus:border-orange-500" : ""}
                   />
+                  {formData.email && missingFields.includes("invalidEmail") && (
+                    <p className="text-xs text-red-600">Please enter a valid email address</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">
@@ -608,6 +746,46 @@ export default function OnboardingPage() {
                     {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+                
+                {/* Password validation feedback */}
+                {formData.newPassword && (
+                  <div className="space-y-2">
+                    {/* Password strength indicator */}
+                    <div className="space-y-1">
+                      <p className={`text-sm ${getPasswordStrength(formData.newPassword).color}`}>
+                        Password strength: {getPasswordStrength(formData.newPassword).label}
+                      </p>
+                      <div className="flex space-x-1">
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <div
+                            key={level}
+                            className={`h-1 flex-1 rounded ${
+                              level <= getPasswordStrength(formData.newPassword).strength
+                                ? getPasswordStrength(formData.newPassword).color.replace('text-', 'bg-')
+                                : 'bg-gray-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Validation messages */}
+                    {formData.newPassword.length < 8 && (
+                      <p className="text-sm text-red-600">
+                        Password must be at least 8 characters long
+                      </p>
+                    )}
+                    {formData.newPassword && formData.confirmPassword && formData.newPassword !== formData.confirmPassword && (
+                      <p className="text-sm text-red-600">Passwords do not match</p>
+                    )}
+                    {formData.newPassword && formData.confirmPassword && formData.newPassword === formData.confirmPassword && formData.newPassword.length >= 8 && (
+                      <p className="text-sm text-green-600">
+                        ✓ Password is valid
+                      </p>
+                    )}
+                  </div>
+                )}
+                
                 <p className="text-xs text-muted-foreground">
                   Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.
                 </p>

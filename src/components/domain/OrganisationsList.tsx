@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, RefreshCw, Edit } from 'lucide-react';
 import { EditOrganisationForm } from './EditOrganisationForm';
+import { toast } from '@/hooks/use-toast';
 
 export function OrganisationsList() {
   const organisations = useQuery(api.organisations.list);
@@ -34,7 +35,7 @@ export function OrganisationsList() {
     try {
       await deleteOrganisation({ id: id as any }); // eslint-disable-line @typescript-eslint/no-explicit-any
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete organisation');
+      toast.error('Failed to delete organisation', err instanceof Error ? err.message : undefined);
     }
   };
 
