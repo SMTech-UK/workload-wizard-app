@@ -7,9 +7,11 @@ import {
   Settings,
   User,
   Palette,
+  Shield,
 } from "lucide-react"
 import { useUser, useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 import {
   Avatar,
@@ -120,13 +122,23 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                Profile
+              <DropdownMenuItem asChild>
+                <Link href="/account">
+                  <User className="mr-2 h-4 w-4" />
+                  Account
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
+              <DropdownMenuItem asChild>
+                <Link href="/account/profile">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Profile Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/account/security">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Security & Privacy
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <div className="flex items-center justify-between w-full cursor-pointer">

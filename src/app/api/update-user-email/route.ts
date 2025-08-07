@@ -17,24 +17,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has appropriate permissions
-    const userRole = currentUserData.publicMetadata?.role as string;
-    const isAdmin = userRole === 'sysadmin' || userRole === 'developer';
-    const isOrgAdmin = userRole === 'orgadmin';
-    
-    if (!isAdmin && !isOrgAdmin) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Admin access required' },
-        { status: 403 }
-      );
-    }
-
     const { userId, newEmail } = await request.json();
 
     if (!userId || !newEmail) {
       return NextResponse.json(
         { error: 'Missing required fields: userId and newEmail' },
         { status: 400 }
+      );
+    }
+
+    // Check if user has appropriate permissions
+    const userRole = currentUserData.publicMetadata?.role as string;
+    const isAdmin = userRole === 'sysadmin' || userRole === 'developer';
+    const isOrgAdmin = userRole === 'orgadmin';
+    
+    // Allow users to update their own email
+    const isUpdatingOwnEmail = currentUserData.id === userId;
+    
+    if (!isAdmin && !isOrgAdmin && !isUpdatingOwnEmail) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You can only update your own email or admin access required' },
+        { status: 403 }
       );
     }
 
@@ -51,7 +54,8 @@ export async function POST(request: NextRequest) {
     const clerk = await clerkClient();
 
     // If orgadmin, ensure they can only update emails for users in their own organisation
-    if (isOrgAdmin) {
+    // But allow users to update their own email regardless
+    if (isOrgAdmin && !isUpdatingOwnEmail) {
       const targetUser = await clerk.users.getUser(userId);
       const targetUserOrgId = targetUser.publicMetadata?.organisationId as string;
       const currentUserOrgId = currentUserData.publicMetadata?.organisationId as string;

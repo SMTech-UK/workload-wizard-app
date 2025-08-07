@@ -6,37 +6,12 @@
     
     ---
     
-******** CONFIRM VALID BUILD
-
-
-    ## 🔐 1. User Profile & Onboarding (User-side polish)
-    
-    ### 🔧 `/profile` or `/account`
-    
-    * [ ] Implement **user profile management page**
-    
-      * Show name, email, current role(s)
-      * [ ] Allow password update (Clerk)
-      * [ ] Optionally update profile picture, job title, etc.
-    
-    ### 🛬 Onboarding Logic
-    
-    * [ ] Detect `publicMetadata.onboarded === false`
-    * [ ] Redirect to onboarding wizard after first login
-    * [ ] Wizard can:
-    
-      * Confirm name, role, org
-      * Change password
-    * [ ] Set `publicMetadata.onboarded = true` after
-    
-    ---
-    
     ## 🛠️ 2. System Admin Polishing
     
     ### 🧑‍💼 User Management
     
     * [ ] Fix **reset password**
-    * [ ] Fix **table filters** (by org, role, status)
+    * [ ] Add **table filters** (by org, role, status)
     * [ ] Add **login-as functionality** from env (already started?)
     
     ### 🧠 Role Interface
@@ -96,12 +71,7 @@
     
     ---
 
-- Forgotten Password logic so it works without needing code or implement code UI 
-- Change password logic in onboarding
-- Handle change in name, email in onboarding
-
-- [ ] User profile management page (change password etc.)
-- [ ] User onboarding flow (first time login)
+- Allow multiple system roles
 - System Admin User Management (reset password) //TODO: Fix this   
 - System Admin User Management (table filters) //TODO: Fix this
 - Organisation Admin User Management (reset password) //TODO: Fix this

@@ -92,6 +92,8 @@ export function PlaceholderPage({
   )
 }
 
+
+
 // Pre-configured placeholder for common pages
 export function DashboardPlaceholder() {
   const breadcrumbs = [
@@ -130,6 +132,48 @@ export function DashboardPlaceholder() {
     <PlaceholderPage
       breadcrumbs={breadcrumbs}
       description="The dashboard will provide an overview of your workload assignments, upcoming deadlines, and key metrics. You'll be able to view your teaching schedule, research commitments, and administrative tasks all in one place."
+      suggestedActions={suggestedActions}
+    />
+  )
+}
+
+// Pre-configured placeholder for common pages
+export function HomePlaceholder() {
+  const breadcrumbs = [
+    { label: "Home", href: "/" }
+  ]
+
+  const suggestedActions = [
+    {
+      label: "Manage Users",
+      href: "/admin/users",
+      icon: Users,
+      variant: "default" as const
+    },
+    {
+      label: "View Organisation",
+      href: "/organisation",
+      icon: Users,
+      variant: "outline" as const
+    },
+    {
+      label: "Audit Logs",
+      href: "/admin/audit-logs",
+      icon: BarChart3,
+      variant: "outline" as const
+    },
+    {
+      label: "UI Components",
+      href: "/ui",
+      icon: Calendar,
+      variant: "outline" as const
+    }
+  ]
+
+  return (
+    <PlaceholderPage
+      breadcrumbs={breadcrumbs}
+      description="The home page will provide an overview of your workload assignments, upcoming deadlines, and key metrics. You'll be able to view your teaching schedule, research commitments, and administrative tasks all in one place."
       suggestedActions={suggestedActions}
     />
   )
