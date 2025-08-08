@@ -76,7 +76,7 @@ export const list = query({
     entityType: v.optional(v.string()),
     entityId: v.optional(v.string()),
     performedBy: v.optional(v.string()),
-    organisationId: v.optional(v.any()),
+    organisationId: v.optional(v.id("organisations")),
     action: v.optional(v.string()),
     severity: v.optional(v.string()),
     startDate: v.optional(v.number()),
