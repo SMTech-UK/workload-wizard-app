@@ -1,18 +1,18 @@
 import { useQuery } from 'convex/react';
-import { api } from '@/convex/_generated/api';
+import { api } from '../../../convex/_generated/api';
 import { FeatureFlags, FeatureFlagResult } from './types';
 import { getUserFeatureFlagContext } from './auth-integration';
-import { useAuth } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 
 /**
  * Convex query to get user's feature flag context
  * This can be used to store user properties in Convex for feature flag targeting
  */
 export function useUserFeatureFlagContext() {
-  const { user } = useAuth();
+  const { user } = useUser();
   
   // Query user data from Convex if needed
-  const userData = useQuery(api.users.getUser, user?.id ? { userId: user.id } : 'skip');
+  const userData = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
   
   if (!user) {
     return null;
@@ -21,14 +21,7 @@ export function useUserFeatureFlagContext() {
   const context = getUserFeatureFlagContext(user);
   
   // Merge with Convex data if available
-  if (userData) {
-    context.userProperties = {
-      ...context.userProperties,
-      // Add any additional properties from Convex
-      convexUserId: userData._id,
-      // Add other Convex-specific properties
-    };
-  }
+  // Optionally use userData for side-effects or logging; avoid mutating typed shape
 
   return context;
 }
@@ -57,7 +50,7 @@ export function useLogFeatureFlagUsage() {
  * This allows you to store feature flag overrides in your database
  */
 export function useFeatureFlagOverrides() {
-  const { user } = useAuth();
+  const { user } = useUser();
   
   // Query feature flag overrides from Convex
   const overrides = useQuery(
@@ -78,7 +71,7 @@ export function mergeFeatureFlagWithOverrides(
 ): FeatureFlagResult {
   const override = overrides[flagName];
   
-  if (override !== undefined) {
+  if (typeof override === 'boolean') {
     return {
       enabled: override,
       payload: posthogResult.payload,

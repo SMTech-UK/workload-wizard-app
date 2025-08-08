@@ -445,7 +445,22 @@ export async function getAuditLogs(filters?: {
   try {
     // Drop cursor here (typed as Convex Id on server). Client can manage paging with returned nextCursor
     const { cursor: _cursor, ...rest } = filters || {};
-    const result = await convex.query(api.audit.list, rest as any);
+    void _cursor;
+    type AuditListQueryArgs = {
+      entityType?: string;
+      entityId?: string;
+      performedBy?: string;
+      organisationId?: string;
+      action?: string;
+      severity?: string;
+      startDate?: number;
+      endDate?: number;
+      limit?: number;
+      search?: string;
+      timeRange?: number;
+    };
+
+    const result = await convex.query(api.audit.list, rest as AuditListQueryArgs);
     return result; // Return the full response object with logs, hasMore, and nextCursor
   } catch (error) {
     console.error('Error fetching audit logs:', error);

@@ -6,7 +6,8 @@ import { currentUser } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { api } from '../../../convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
-import { logUserCreated, logUserDeleted, logUserUpdated, logUserDeactivated, logUserReactivated, logUserPasswordReset, logUserEmailUpdated } from './auditActions';
+import { logUserCreated, logUserDeleted, logUserUpdated, logUserDeactivated, logUserReactivated } from './auditActions';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { sendUserInvitationEmail } from '../services/emailService';
 
 // Initialize Convex client for server actions
@@ -62,19 +63,20 @@ export async function createUser(data: CreateUserData) {
 
   try {
     // Use provided organisationId or get the first organisation as default
-    let organisationId: string | undefined = data.organisationId;
+    let organisationId: Id<"organisations"> | undefined = data.organisationId as unknown as Id<"organisations">;
     if (!organisationId) {
       const organisations = await convex.query(api.organisations.list);
       if (organisations.length === 0) {
         throw new Error('No organisations found in Convex. Please create an organisation first.');
       }
-      organisationId = organisations[0]._id as unknown as string;
+      organisationId = organisations[0]._id;
     }
 
     // Check if user already exists in Clerk
     
     try {
-      const existingUsers = await clerkClient.users.getUserList({
+      const clerk = await clerkClient();
+      const existingUsers = await clerk.users.getUserList({
         emailAddress: [data.email],
       });
       
@@ -93,7 +95,7 @@ export async function createUser(data: CreateUserData) {
           if (primaryEmail) {
             // Update Clerk user with organisationId if not already set
             if (!existingUser.publicMetadata?.organisationId) {
-              await clerkClient.users.updateUser(existingUser.id, {
+              await (await clerkClient()).users.updateUser(existingUser.id, {
                 publicMetadata: {
                   ...existingUser.publicMetadata,
                   organisationId: organisationId,
@@ -108,7 +110,7 @@ export async function createUser(data: CreateUserData) {
               familyName: existingUser.lastName || '',
               fullName: `${existingUser.firstName || ''} ${existingUser.lastName || ''}`.trim(),
               systemRoles: data.roles,
-              organisationId: organisationId as unknown as string,
+              organisationId: organisationId,
               pictureUrl: existingUser.imageUrl,
               subject: existingUser.id,
               tokenIdentifier: primaryEmail.id,
@@ -127,7 +129,8 @@ export async function createUser(data: CreateUserData) {
     const password = data.password || Math.random().toString(36).substring(2, 15) + '!1';
     
     // Create new user in Clerk
-    const clerkUser = await clerkClient.users.createUser({
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.createUser({
       emailAddress: [data.email],
       username: data.username,
       password: password,
@@ -156,7 +159,7 @@ export async function createUser(data: CreateUserData) {
       familyName: data.lastName,
       fullName: `${data.firstName} ${data.lastName}`,
       systemRoles: data.roles,
-      organisationId: organisationId as unknown as string,
+      organisationId: organisationId,
       pictureUrl: clerkUser.imageUrl,
       subject: clerkUser.id,
       tokenIdentifier: primaryEmail.id,
@@ -192,10 +195,13 @@ export async function createUser(data: CreateUserData) {
     // Assign organisational roles if provided (multi or single)
     if (data.organisationalRoleIds && data.organisationalRoleIds.length > 0) {
       try {
+        const roleIds = (data.organisationalRoleIds as unknown as string[]).map(
+          (rid) => rid as unknown as Id<"user_roles">
+        );
         await convex.mutation(api.organisationalRoles.assignMultipleToUser, {
           userId: clerkUser.id,
-          roleIds: data.organisationalRoleIds as unknown as string[],
-          organisationId: organisationId as unknown as string,
+          roleIds,
+          organisationId: organisationId,
           assignedBy: currentUserData.id,
         });
       } catch (roleError) {
@@ -205,8 +211,8 @@ export async function createUser(data: CreateUserData) {
       try {
         await convex.mutation(api.organisationalRoles.assignToUser, {
           userId: clerkUser.id,
-          roleId: data.organisationalRoleId as unknown as string,
-          organisationId: organisationId as unknown as string,
+          roleId: data.organisationalRoleId as unknown as Id<"user_roles">,
+          organisationId: organisationId,
           assignedBy: currentUserData.id,
         });
       } catch (roleError) {
@@ -219,7 +225,7 @@ export async function createUser(data: CreateUserData) {
     await logUserCreated(
       clerkUser.id,
       primaryEmail.emailAddress,
-      `User created with role: ${data.role}, organisation: ${organisationId}, organisational role: ${data.organisationalRoleId || 'none'}, email invitation: ${emailSent ? 'sent via Resend' : 'not sent'}`
+      `User created with roles: ${data.roles.join(', ') || 'none'}, organisation: ${organisationId}, organisational role: ${data.organisationalRoleId || 'none'}, email invitation: ${emailSent ? 'sent via Resend' : 'not sent'}`
     );
 
     revalidatePath('/admin/users');
@@ -258,7 +264,7 @@ export async function listUsers() {
 
   try {
     // Get users from Convex
-    const convexUsers = await convex.query(api.users.list);
+    const convexUsers = await convex.query(api.users.list, {});
     
     // Transform to match the expected interface
     return convexUsers.map(user => ({
@@ -305,7 +311,7 @@ export async function deleteUser(userId: string) {
     let userExistsInClerk = true;
     
     try {
-      const user = await clerkClient.users.getUser(userId);
+      const user = await (await clerkClient()).users.getUser(userId);
       const primaryEmail = user.emailAddresses.find(
         email => email.id === user.primaryEmailAddressId
       );
@@ -320,12 +326,11 @@ export async function deleteUser(userId: string) {
     }
 
     // Delete from Convex (always required)
-    const convexDeletePromise = convex.mutation(api.users.hardDelete, { userId });
+    await convex.mutation(api.users.hardDelete, { userId });
     
     // Delete from Clerk only if user exists there
-    const promises = [convexDeletePromise];
     if (userExistsInClerk) {
-      const clerkDeletePromise = clerkClient.users.deleteUser(userId).catch((error) => {
+      await (await clerkClient()).users.deleteUser(userId).catch((error) => {
         const httpStatus = (error as { status?: number } | undefined)?.status
         if (httpStatus === 404) {
           console.log(`User ${userId} not found in Clerk during deletion, skipping`);
@@ -333,13 +338,10 @@ export async function deleteUser(userId: string) {
         }
         throw error; // Re-throw other errors
       });
-      promises.push(clerkDeletePromise);
     } else {
       console.log(`Skipping Clerk deletion for user ${userId} - user not found in Clerk`);
     }
     
-    // Wait for all operations to complete
-    await Promise.all(promises);
     
     // Log the user deletion
     await logUserDeleted(userId, userEmail, `User deleted by admin: ${currentUserData.emailAddresses[0]?.emailAddress}${userExistsInClerk ? '' : ' (Clerk: not found)'}`);
@@ -389,7 +391,7 @@ export async function updateUser(userId: string, updates: {
 
     // Get the user being updated to check their organisation
     try {
-      const userToUpdate = await clerkClient.users.getUser(userId);
+      const userToUpdate = await (await clerkClient()).users.getUser(userId);
       const userOrgId = userToUpdate.publicMetadata?.organisationId as string;
       const currentUserOrgId = currentUserData.publicMetadata?.organisationId as string;
       
@@ -404,15 +406,15 @@ export async function updateUser(userId: string, updates: {
   try {
     // Get user details before update for audit logging
     let userEmail = 'unknown';
-    let currentUserData = null;
+    let userToUpdateData: unknown = null;
     
     try {
-      const user = await clerkClient.users.getUser(userId);
+      const user = await (await clerkClient()).users.getUser(userId);
       const primaryEmail = user.emailAddresses.find(
         email => email.id === user.primaryEmailAddressId
       );
       userEmail = primaryEmail?.emailAddress || 'unknown';
-      currentUserData = user;
+      userToUpdateData = user;
     } catch (userError) {
       console.warn('Could not get user details for audit log:', userError);
     }
@@ -422,7 +424,7 @@ export async function updateUser(userId: string, updates: {
       firstName: updates.firstName,
       lastName: updates.lastName,
       publicMetadata: {
-        role: updates.role,
+        roles: updates.roles,
         organisationId: updates.organisationId,
       },
     };
@@ -433,18 +435,19 @@ export async function updateUser(userId: string, updates: {
     }
 
     // Update in Clerk
-    await clerkClient.users.updateUser(userId, clerkUpdateData);
+    await (await clerkClient()).users.updateUser(userId, clerkUpdateData);
     
     // Update in Convex
     await convex.mutation(api.users.update, {
-      userId,
+      id: (await convex.query(api.users.getBySubject, { subject: userId }))?._id as Id<"users">,
       email: updates.email,
       givenName: updates.firstName,
       familyName: updates.lastName,
       fullName: updates.firstName && updates.lastName ? `${updates.firstName} ${updates.lastName}` : undefined,
-              systemRoles: updates.roles || [updates.role],
-      organisationId: updates.organisationId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      systemRoles: updates.roles,
+      organisationId: updates.organisationId as unknown as Id<"organisations">,
       isActive: updates.isActive,
+      currentUserId: currentUserData!.id,
     });
     
     // Create detailed audit message
@@ -452,7 +455,7 @@ export async function updateUser(userId: string, updates: {
     if (updates.firstName !== undefined) changeDetails.push(`first name: ${updates.firstName}`);
     if (updates.lastName !== undefined) changeDetails.push(`last name: ${updates.lastName}`);
     if (updates.email !== undefined) changeDetails.push(`email: ${updates.email}`);
-    if (updates.role !== undefined) changeDetails.push(`role: ${updates.role}`);
+    if (updates.roles !== undefined) changeDetails.push(`roles: ${updates.roles.join(', ')}`);
     if (updates.organisationId !== undefined) changeDetails.push(`organisation: ${updates.organisationId}`);
     if (updates.isActive !== undefined) changeDetails.push(`status: ${updates.isActive ? 'active' : 'inactive'}`);
     if (updates.password !== undefined) changeDetails.push('password: changed');
@@ -460,14 +463,14 @@ export async function updateUser(userId: string, updates: {
     const auditMessage = `User updated by admin: ${currentUserData?.emailAddresses[0]?.emailAddress || 'unknown'}. Changes: ${changeDetails.join(', ')}`;
 
     // Update organisational role if provided
-    if (updates.organisationalRoleId && currentUserData) {
+    if (updates.organisationalRoleId && userToUpdateData) {
       try {
-        const targetOrganisationId = updates.organisationId || currentUserData.publicMetadata?.organisationId as string;
+        const targetOrganisationId = updates.organisationId || (userToUpdateData as { publicMetadata?: { organisationId?: string } }).publicMetadata?.organisationId as string;
         if (targetOrganisationId) {
           await convex.mutation(api.organisationalRoles.assignToUser, {
             userId: userId,
-            roleId: updates.organisationalRoleId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            organisationId: targetOrganisationId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            roleId: updates.organisationalRoleId as unknown as Id<"user_roles">,
+            organisationId: targetOrganisationId as unknown as Id<"organisations">,
             assignedBy: currentUserData.id,
           });
         }
@@ -596,7 +599,7 @@ export async function deactivateUser(userId: string) {
     let userRole = 'unknown';
     
     try {
-      const user = await clerkClient.users.getUser(userId);
+      const user = await (await clerkClient()).users.getUser(userId);
       const primaryEmail = user.emailAddresses.find(
         email => email.id === user.primaryEmailAddressId
       );
@@ -661,7 +664,7 @@ export async function reactivateUser(userId: string) {
     let userEmail = 'unknown';
     
     try {
-      const user = await clerkClient.users.getUser(userId);
+      const user = await (await clerkClient()).users.getUser(userId);
       const primaryEmail = user.emailAddresses.find(
         email => email.id === user.primaryEmailAddressId
       );
@@ -671,10 +674,14 @@ export async function reactivateUser(userId: string) {
     }
 
     // Reactivate in Convex (set isActive to true)
-    await convex.mutation(api.users.update, { 
-      userId,
-      isActive: true 
-    });
+    const target = await convex.query(api.users.getBySubject, { subject: userId });
+    if (target?._id) {
+      await convex.mutation(api.users.update, { 
+        id: target._id as Id<"users">,
+        isActive: true,
+        currentUserId: currentUserData.id,
+      });
+    }
     
     // Log the user reactivation
     await logUserReactivated(

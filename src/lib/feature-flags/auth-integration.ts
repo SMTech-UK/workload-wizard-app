@@ -1,5 +1,6 @@
 import posthog from 'posthog-js';
 import type { UserResource } from '@clerk/types';
+import type { FeatureFlagContext } from './types';
 
 // Track if user has been identified to prevent duplicates
 let identifiedUserId: string | null = null;
@@ -82,7 +83,7 @@ export function identifyUserForFeatureFlags(user: UserResource | null) {
 /**
  * Get user context for feature flag evaluation
  */
-export function getUserFeatureFlagContext(user: UserResource | null) {
+export function getUserFeatureFlagContext(user: UserResource | null): FeatureFlagContext {
   if (!user) {
     return {
       distinctId: undefined,

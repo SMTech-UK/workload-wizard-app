@@ -65,7 +65,7 @@ export async function getServerFeatureFlag(
 /**
  * Server-side function to get user context for feature flags
  */
-export async function getServerUserFeatureFlagContext() {
+export async function getServerUserFeatureFlagContext(): Promise<FeatureFlagContext> {
   const userDetails = await getCurrentUserDetails();
   
   if (!userDetails) {
@@ -75,7 +75,7 @@ export async function getServerUserFeatureFlagContext() {
       userEmail: undefined,
       userProperties: {},
       groups: {},
-    };
+    } as FeatureFlagContext;
   }
 
   return {
@@ -91,10 +91,10 @@ export async function getServerUserFeatureFlagContext() {
       hasOrganisation: !!userDetails.organisationId,
     },
     groups: {
-      organisation: userDetails.organisationId,
-      role: userDetails.role,
+      ...(userDetails.organisationId ? { organisation: userDetails.organisationId } : {}),
+      ...(userDetails.role ? { role: userDetails.role } : {}),
     },
-  };
+  } as FeatureFlagContext;
 }
 
 /**
