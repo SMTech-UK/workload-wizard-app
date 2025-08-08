@@ -34,9 +34,14 @@ export const create = mutation({
     severity: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Normalize here as a safety net in case callers bypass helpers
+    const normalize = (s: string) => s.trim().toLowerCase().replace(/[\s_-]+/g, '.').replace(/\.{2,}/g, '.');
+    const normalizeEntity = (s: string) => s.trim().toLowerCase().replace(/[\s-]+/g, '_');
+    const normalizedAction = normalize(args.action);
+    const normalizedEntityType = normalizeEntity(args.entityType);
     const logId = await ctx.db.insert("audit_logs", {
-      action: args.action,
-      entityType: args.entityType,
+      action: normalizedAction,
+      entityType: normalizedEntityType,
       entityId: args.entityId,
       entityName: args.entityName,
       performedBy: args.performedBy,
@@ -47,7 +52,7 @@ export const create = mutation({
       ipAddress: args.ipAddress,
       userAgent: args.userAgent,
       timestamp: Date.now(),
-      severity: args.severity || 'info',
+      severity: (args.severity as any) || 'info',
     });
 
     return logId;

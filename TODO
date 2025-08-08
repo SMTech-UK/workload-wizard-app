@@ -1,105 +1,53 @@
----
+  ---
+  
+  # ✅ **Today's Task List: Core Foundations Sprint**
+  
+  ## 🎯 **Goal by EOD**
+  
+  > Have **role/permission management fully usable** by both sysadmin and orgadmin, with **auditing**, **UX polish**, and **proven enforcement**, so you can safely layer in workload logic (lecturers/modules) next.
 
-# ✅ **Tomorrow’s Task List: Core Foundations Sprint**
+  ---
 
-## 🎯 **Goal by EOD**
-
-> Have **role/permission management fully usable** by both sysadmin and orgadmin, with **auditing**, **UX polish**, and **proven enforcement**, so you can safely layer in workload logic (lecturers/modules) next.
-
----
-
-## 🛠️ 1. System Admin Enhancements
-
-### 🧠 Role Assignment Interface
-
-* [ ] Add **role assignment dropdown** to `/admin/users` table
-* [ ] Add **bulk role assignment** (check/select multiple → assign modal)
-* [ ] Log audit entries:
-
-  * [ ] `role.assigned`
-  * [ ] `role.revoked`
-
-### 🛂 User Management
-
-* [ ] Add **"reset password"** button to each user row
-* [ ] Add **filter/search** to user table (by name, email, org, status)
-* [ ] Fix audit log links so you can click through to entity (if implemented)
-
----
-
-## 🧑‍🏫 2. Organisation Admin Tools
-
-### 👥 Org User Management
-
-* [ ] Show **user roles per user**
-* [ ] Add **role update dropdown**
-* [ ] Add audit logging on role change
-
-### 🧱 Org Role Management
-
-* [ ] Enable orgadmins to:
-
-  * [ ] Create/edit/delete **their org’s roles**
-  * [ ] Assign permissions to those roles
-* [ ] Add restrictions so orgadmins **cannot affect global roles**
-* [ ] Add label (📎 default / ✏️ custom) next to each permission
-* [ ] Show tooltips on each icon with explanation
-
----
-
-## 🔐 3. Permission System Polish
-
-* [ ] Add wrapper `requireOrgPermission("staff.create")` to enforce access
-* [ ] Ensure sysadmin bypasses checks
-* [ ] Add guardrails: sysadmin **cannot edit orgadmin roles**, and vice versa
-* [ ] Audit:
-
-  * [ ] `permission.assigned`
-  * [ ] `permission.revoked`
-  * [ ] `role.created`
-  * [ ] `role.deleted`
-
----
-
-## 🧪 4. Dev Tooling & Testing (Stretch but useful)
-
-* [ ] `createTestUserWithRole()` util (for test seeds/dev UX)
-* [ ] Seed command:
-
-  * [ ] Creates org with default roles + permissions
-  * [ ] Creates 3 users with different roles
-* [ ] Optional: create `hasPermissionDevTest()` page that logs permission status for current user
-
----
-
-## 📦 5. MVP Prep for Next Sprint
-
-Start rough wireframes/code once above is done:
-
-### 🧑‍🏫 Staff
-
-* [ ] Schema: FT/PT/Bank, contract hours, max teaching hours
-* [ ] Add input form + view
-* [ ] Assign staff to academic year
-
-### 📘 Modules
-
-* [ ] Schema: code, name, hours, academic year
-* [ ] Input: create + view module
-* [ ] Assign modules to staff with role (teaching/admin)
-
-### 📊 Workload Engine (Start Planning)
-
-* [ ] Calculate workload from allocations
-* [ ] Staff dashboard: workload summary + bar chart
-* [ ] Start MVP calendar/prototype with staff view
-
----
-
-## 📁 Optional (Stretch Goals)
-
-* [ ] `/help` route with dummy onboarding / docs
-* [ ] Add Clerk dev middleware that warns if missing `orgId` or `role`
-* [ ] Auto-audit summary for each user (on profile page or modal)
-
----
+  Fix onboarding flow so if user doesnt have onboardingCompleted = true, they are redirected to the onboarding flow.
+  
+  ## 🧪 2. Dev Tooling & Testing (Stretch but useful)
+  
+  * [ ] `createTestUserWithRole()` util (for test seeds/dev UX)
+  * [ ] Seed command:
+  
+    * [ ] Creates org with default roles + permissions
+    * [ ] Creates 3 users with different roles
+  * [ ] Optional: create `hasPermissionDevTest()` page that logs permission status for current user
+  
+  ---
+  
+  ## 📦 3. MVP Prep for Next Sprint
+  
+  ### 🧑‍🏫 Staff
+  
+  * [ ] Schema: FT/PT/Bank, contract hours, max teaching hours
+  * [ ] Add input form + view
+  * [ ] Assign staff to academic year
+  
+  ### 📘 Modules
+  
+  * [ ] Schema: code, name, hours, academic year
+  * [ ] Input: create + view module
+  * [ ] Assign modules to staff with role (teaching/admin)
+  
+  ### 📊 Workload Engine (Start Planning)
+  
+  * [ ] Calculate workload from allocations
+  * [ ] Staff dashboard: workload summary + bar chart
+  * [ ] Start MVP calendar/prototype with staff view
+  
+  ---
+  
+  ## 📁 Optional (Stretch Goals)
+  
+  * [ ] `/help` route with dummy onboarding / docs
+  * [ ] Add Clerk dev middleware that warns if missing `orgId` or `role`
+  * [ ] Auto-audit summary for each user (on profile page or modal)
+  
+  ---
+  

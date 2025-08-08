@@ -60,9 +60,39 @@ export const update = mutation({
     currentUserId: v.string(),
   },
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.currentUserId, "users.edit");
+    // Allow orgadmin to edit users within their own organisation; otherwise require permission
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", args.currentUserId))
+      .first();
+
+    const targetUser = await ctx.db.get(args.id);
+    if (!targetUser) {
+      throw new Error("User not found");
+    }
+
+    const actorIsOrgAdmin = !!actor && Array.isArray(actor.systemRoles) && actor.systemRoles.includes('orgadmin');
+    const sameOrganisation = !!actor && String(actor.organisationId) === String(targetUser.organisationId);
+
+    if (!(actorIsOrgAdmin && sameOrganisation)) {
+      await requirePermission(ctx, args.currentUserId, "users.edit");
+    }
 
     const { id, currentUserId, ...updates } = args;
+
+    // Guardrails: Only system admins (sysadmin/developer/admin) may modify systemRoles
+    if (updates.systemRoles) {
+      const isSystemActor = !!actor && Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
+      if (!isSystemActor) {
+        throw new Error("Unauthorized: Only system administrators may change system roles");
+      }
+      // Prevent assigning protected roles unless actor is sysadmin
+      const assigningProtected = updates.systemRoles.some((r: string) => r === "sysadmin" || r === "developer");
+      const actorIsSysadmin = !!actor && Array.isArray(actor.systemRoles) && actor.systemRoles.includes("sysadmin");
+      if (assigningProtected && !actorIsSysadmin) {
+        throw new Error("Unauthorized: Only sysadmin may assign developer/sysadmin roles");
+      }
+    }
 
     // If email is being updated, ensure it's unique
     if (updates.email) {
@@ -79,7 +109,7 @@ export const update = mutation({
 
     // Update fullName if givenName or familyName is being updated
     if (updates.givenName || updates.familyName) {
-      const currentUser = await ctx.db.get(id);
+      const currentUser = targetUser;
       if (currentUser) {
         const givenName = updates.givenName ?? currentUser.givenName;
         const familyName = updates.familyName ?? currentUser.familyName;
@@ -143,6 +173,25 @@ export const list = query({
     const usersWithOrganisations = await Promise.all(
       users.map(async (user) => {
         const organisation = await ctx.db.get(user.organisationId);
+
+        // Get all current organisational role assignments for this user in their org (support multiple)
+        const assignments = await ctx.db
+          .query("user_role_assignments")
+          .withIndex("by_user_org", (q: any) => q.eq("userId", user.subject).eq("organisationId", user.organisationId))
+          .filter((q: any) => q.eq(q.field("isActive"), true))
+          .collect();
+
+        const organisationalRoles: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+        for (const a of assignments) {
+          const role = await ctx.db.get(a.roleId);
+          if (role && role.isActive) {
+            organisationalRoles.push({ id: role._id, name: role.name, description: role.description });
+          }
+        }
+
+        // Back-compat: primary role as first, if any
+        const organisationalRole = organisationalRoles[0] || null;
+
         return {
           ...user,
           organisation: organisation
@@ -152,6 +201,8 @@ export const list = query({
                 code: organisation.code,
               }
             : undefined,
+          organisationalRoles,
+          organisationalRole,
         };
       })
     );

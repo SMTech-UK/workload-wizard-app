@@ -22,6 +22,7 @@ export interface CreateUserData {
   organisationId?: string;
   sendEmailInvitation?: boolean;
   organisationalRoleId?: string;
+  organisationalRoleIds?: string[];
 }
 
 export async function createUser(data: CreateUserData) {
@@ -188,8 +189,19 @@ export async function createUser(data: CreateUserData) {
       }
     }
 
-    // Assign organisational role if provided
-    if (data.organisationalRoleId) {
+    // Assign organisational roles if provided (multi or single)
+    if (data.organisationalRoleIds && data.organisationalRoleIds.length > 0) {
+      try {
+        await convex.mutation(api.organisationalRoles.assignMultipleToUser, {
+          userId: clerkUser.id,
+          roleIds: data.organisationalRoleIds as any,
+          organisationId: organisationId as any,
+          assignedBy: currentUserData.id,
+        });
+      } catch (roleError) {
+        console.warn('Failed to assign organisational roles:', roleError);
+      }
+    } else if (data.organisationalRoleId) {
       try {
         await convex.mutation(api.organisationalRoles.assignToUser, {
           userId: clerkUser.id,

@@ -27,6 +27,10 @@ interface User {
   organisationId: string;
   isActive: boolean;
   subject?: string; // Clerk user ID
+  organisationalRoles?: {
+    id: string;
+    name: string;
+  }[];
   organisation?: {
     id: string;
     name: string;
@@ -49,6 +53,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
   const [selectedRoles, setSelectedRoles] = useState<string[]>(
     user.systemRoles || user.roles || []
   );
+  const [selectedOrgRoleIds, setSelectedOrgRoleIds] = useState<string[]>([]);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -63,6 +68,10 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
       : "skip"
   );
 
+  useEffect(() => {
+    const incoming = ((user as unknown as { organisationalRoles?: { id: string }[] }).organisationalRoles || []).map((r) => r.id);
+    setSelectedOrgRoleIds(incoming);
+  }, [user]);
 
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -77,7 +86,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
       username: formData.get('username') as string,
       email: formData.get('email') as string,
       systemRoles: selectedRoles,
-      organisationalRoleId: formData.get('organisationalRole') as string,
+      organisationalRoleIds: selectedOrgRoleIds,
       organisationId: isSysadmin ? selectedOrganisationId : user.organisationId,
     };
 
@@ -115,7 +124,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
               lastName: data.lastName,
               username: data.username?.trim() || undefined,
               systemRoles: data.systemRoles,
-              organisationalRoleId: data.organisationalRoleId,
+              organisationalRoleIds: data.organisationalRoleIds,
               organisationId: data.organisationId,
               // Don't include email - it's handled separately if changed
             }),
@@ -367,29 +376,30 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
               )}
             </div>
 
-            {(selectedOrganisationId || !isSysadmin) && (
-              <div className="space-y-2">
-                <Label htmlFor="organisationalRole">Organisational Role</Label>
-                <Select name="organisationalRole" key={selectedOrganisationId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select organisational role" />
-                  </SelectTrigger>
-                <SelectContent>
-                  {organisationalRoles?.map((role) => (
-                    <SelectItem key={role._id} value={role._id}>
+            <div className="space-y-2">
+              <Label>Organisational Roles</Label>
+              <div className="flex flex-wrap gap-2">
+                {organisationalRoles?.map((role) => {
+                  const checked = selectedOrgRoleIds.includes(role._id);
+                  return (
+                    <button
+                      key={role._id}
+                      type="button"
+                      onClick={() => setSelectedOrgRoleIds(checked ? selectedOrgRoleIds.filter(id => id !== role._id) : [...selectedOrgRoleIds, role._id])}
+                      className={`px-2 py-1 rounded border text-xs ${checked ? 'bg-slate-900 text-white' : 'bg-white'}`}
+                    >
                       {role.name}
-                    </SelectItem>
-                  )) || []}
-                </SelectContent>
-              </Select>
-              {(!organisationalRoles || organisationalRoles.length === 0) && (
-                <p className="text-sm text-muted-foreground">
-                  {isSysadmin && !selectedOrganisationId 
-                    ? 'Please select an organisation first' 
-                    : 'No organisational roles found for this organisation.'}
-                </p>
-              )}
+                    </button>
+                  );
+                }) || []}
               </div>
+            </div>
+            {(!organisationalRoles || organisationalRoles.length === 0) && (
+              <p className="text-sm text-muted-foreground">
+                {isSysadmin && !selectedOrganisationId 
+                  ? 'Please select an organisation first' 
+                  : 'No organisational roles found for this organisation.'}
+              </p>
             )}
 
             {/* Password Reset Section */}

@@ -94,19 +94,19 @@ const ACTIONS = [
   'delete',
   'login',
   'logout',
-  'permission_change',
+  'permission.change',
   'error',
   'deactivate',
   'reactivate',
-  'password_reset',
-  'email_update',
-  'status_change',
+  'password.reset',
+  'email.update',
+  'status.change',
   'maintenance',
-  'data_export',
-  'data_import',
-  'login_failed',
-  'account_locked',
-  'suspicious_activity',
+  'data.export',
+  'data.import',
+  'login.failed',
+  'account.locked',
+  'suspicious.activity',
   'permission.assigned',
   'permission.revoked',
   'permission.pushed',
@@ -152,6 +152,16 @@ export function AuditLogsViewer() {
     timeRange: 24,
     limit: 25,
   });
+
+  const formatWords = (input: string, separators: RegExp) =>
+    input
+      .split(separators)
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+
+  const formatActionLabel = (action: string) => formatWords(action, /[._]/g);
+  const formatEntityTypeLabel = (entityType: string) => formatWords(entityType, /[_]/g);
 
   const loadLogs = useCallback(async (page = 1, cursor?: string | null, reset = false) => {
     setIsLoading(true);
@@ -294,7 +304,8 @@ export function AuditLogsViewer() {
   };
 
   const getActionColor = (action: string) => {
-    switch (action) {
+    const a = action.replace(/_/g, '.');
+    switch (a) {
       case 'create':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'update':
@@ -305,25 +316,25 @@ export function AuditLogsViewer() {
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'logout':
         return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'permission_change':
+      case 'permission.change':
       case 'permission.assigned':
       case 'permission.revoked':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'error':
-      case 'login_failed':
-      case 'account_locked':
-      case 'suspicious_activity':
+      case 'login.failed':
+      case 'account.locked':
+      case 'suspicious.activity':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'deactivate':
         return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'reactivate':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'password_reset':
-      case 'email_update':
+      case 'password.reset':
+      case 'email.update':
         return 'bg-indigo-100 text-indigo-800 border-indigo-200';
       case 'maintenance':
-      case 'data_export':
-      case 'data_import':
+      case 'data.export':
+      case 'data.import':
         return 'bg-cyan-100 text-cyan-800 border-cyan-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -595,14 +606,30 @@ export function AuditLogsViewer() {
                           </TableCell>
                           <TableCell>
                             <Badge className={getActionColor(log.action)}>
-                              {log.action.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                              {formatActionLabel(log.action)}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {getEntityIcon(log.entityType)}
                               <div>
-                                <div className="font-medium">{log.entityType.charAt(0).toUpperCase() + log.entityType.slice(1)}</div>
+                                <div className="font-medium">
+                                  {(() => {
+                                    const label = formatEntityTypeLabel(log.entityType);
+                                    const href = (() => {
+                                      switch (log.entityType) {
+                                        case 'user': return `/admin/users`;
+                                        case 'organisation': return `/admin/organisations`;
+                                        case 'permission': return `/admin/permissions`;
+                                        case 'role': return `/admin/permissions`; // roles live under permissions UI
+                                        default: return undefined;
+                                      }
+                                    })();
+                                    return href ? (
+                                      <a className="underline underline-offset-2" href={href}>{label}</a>
+                                    ) : label;
+                                  })()}
+                                </div>
                                 {log.entityName && (
                                   <div className="text-sm text-gray-500">{log.entityName}</div>
                                 )}
@@ -688,14 +715,14 @@ export function AuditLogsViewer() {
                                     <div>
                                       <Label className="text-sm font-medium">Action</Label>
                                       <Badge className={getActionColor(log.action)}>
-                                        {log.action}
+                                        {formatActionLabel(log.action)}
                                       </Badge>
                                     </div>
                                     <div>
                                       <Label className="text-sm font-medium">Entity</Label>
                                       <div className="flex items-center gap-2 mt-1">
                                         {getEntityIcon(log.entityType)}
-                                        <span className="text-sm">{log.entityType}</span>
+                                        <span className="text-sm">{formatEntityTypeLabel(log.entityType)}</span>
                                         {log.entityName && (
                                           <span className="text-sm text-gray-500">- {log.entityName}</span>
                                         )}
@@ -752,7 +779,7 @@ export function AuditLogsViewer() {
                                                   <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               {getEntityIcon(log.entityType)}
-                              <span className="text-sm font-medium">{log.entityType.charAt(0).toUpperCase() + log.entityType.slice(1)}</span>
+                              <span className="text-sm font-medium">{formatEntityTypeLabel(log.entityType)}</span>
                             </div>
                             {log.severity && (
                               <Badge className={getSeverityColor(log.severity)}>
@@ -762,7 +789,7 @@ export function AuditLogsViewer() {
                           </div>
                                               <div className="flex items-center gap-2">
                         <Badge className={getActionColor(log.action)}>
-                          {log.action.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          {formatActionLabel(log.action)}
                         </Badge>
                           <span className="text-xs text-gray-500">
                             {formatTimestamp(log.timestamp)}

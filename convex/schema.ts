@@ -184,6 +184,15 @@ export default defineSchema({
     updatedAt: v.float64(),
   }).index("by_permission_id", ["id"]),
 
+  // 🧩 System Role Templates (used as defaults when creating organisations)
+  system_role_templates: defineTable({
+    name: v.string(), // e.g. 'Admin', 'Manager'
+    description: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_name", ["name"]),
+
   // 🏢 Organisation Roles
   organisation_roles: defineTable({
     name: v.string(),
@@ -196,12 +205,14 @@ export default defineSchema({
   }).index("by_organisation", ["organisationId"]),
 
   // 🔗 Organisation Role Permissions (Junction Table)
+  // NOTE: We use `user_roles` as the single source of truth for org-scoped roles.
   organisation_role_permissions: defineTable({
     organisationId: v.id("organisations"),
-    roleId: v.id("organisation_roles"),
+    roleId: v.id("user_roles"),
     permissionId: v.string(), // FK to system_permissions.id
     isGranted: v.boolean(), // true = granted, false = explicitly denied
     isOverride: v.boolean(), // Whether this overrides the system default
+    staged: v.optional(v.boolean()), // When true, represents a staged change not yet applied
     createdAt: v.float64(),
     updatedAt: v.float64(),
   })

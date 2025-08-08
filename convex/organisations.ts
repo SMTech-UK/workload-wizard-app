@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { ensureDefaultsForOrg } from "./permissions";
 
 // Get all organisations
 export const list = query({
@@ -49,6 +50,14 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    // Seed default roles and permissions for the organisation
+    try {
+      await ensureDefaultsForOrg(ctx, organisationId as any);
+    } catch (err) {
+      // Do not block org creation if seeding fails; it can be re-run
+      console.warn("Failed to seed default roles for organisation", organisationId, err);
+    }
 
     return organisationId;
   },

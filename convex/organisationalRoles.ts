@@ -159,6 +159,64 @@ export const assignToUser = mutation({
   },
 });
 
+// Assign multiple roles to a user (merge RBAC); keeps only the provided set active for the org
+export const assignMultipleToUser = mutation({
+  args: {
+    userId: v.string(),
+    roleIds: v.array(v.id("user_roles")),
+    organisationId: v.id("organisations"),
+    assignedBy: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Validate org
+    const organisation = await ctx.db.get(args.organisationId);
+    if (!organisation || !organisation.isActive) {
+      throw new Error('Organisation not found or inactive');
+    }
+
+    // Validate roles and org membership
+    const roles = await Promise.all(args.roleIds.map((rid) => ctx.db.get(rid)));
+    if (roles.some((r) => !r || !r.isActive || String((r as any).organisationId) !== String(args.organisationId))) {
+      throw new Error('One or more roles invalid for this organisation');
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("subject"), args.userId))
+      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .first();
+    if (!user) throw new Error('User not found in the specified organisation');
+
+    // Deactivate all existing assignments first
+    const existingAssignments = await ctx.db
+      .query("user_role_assignments")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+    for (const assignment of existingAssignments) {
+      await ctx.db.patch(assignment._id, { isActive: false, updatedAt: now });
+    }
+
+    // Create assignments for all provided roles
+    for (const rid of args.roleIds) {
+      await ctx.db.insert("user_role_assignments", {
+        userId: args.userId,
+        roleId: rid,
+        organisationId: args.organisationId,
+        assignedBy: args.assignedBy,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return { assignedCount: args.roleIds.length };
+  },
+});
+
 // Get user's organisational role
 export const getUserRole = query({
   args: { 

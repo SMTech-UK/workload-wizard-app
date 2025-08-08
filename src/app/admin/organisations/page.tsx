@@ -8,21 +8,28 @@ import { OrganisationForm } from '@/components/domain/OrganisationForm';
 import { OrganisationsList } from '@/components/domain/OrganisationsList';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings } from 'lucide-react';
+import { hasAnyRole } from '@/lib/utils';
+import { useQuery } from 'convex/react';
+import { api } from '../../../../convex/_generated/api';
 
 
 export default function AdminOrganisationsPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+  const convexUser = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
+
+  const hasByClerk = hasAnyRole(user, ['sysadmin', 'developer']) || (user?.publicMetadata as any)?.devLoginSession === true;
+  const hasByConvex = !!convexUser && Array.isArray(convexUser.systemRoles) && convexUser.systemRoles.some((r: string) => r === 'sysadmin' || r === 'developer');
 
   useEffect(() => {
-    if (isLoaded && (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer')) {
+    if (isLoaded && !(hasByClerk || hasByConvex)) {
       router.replace('/unauthorised');
     }
-  }, [isLoaded, user, router]);
+  }, [isLoaded, hasByClerk, hasByConvex, router]);
 
   if (!isLoaded) return <p>Loading...</p>;
 
-  if (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer') {
+  if (!(hasByClerk || hasByConvex)) {
     return null; // Will redirect in useEffect
   }
 

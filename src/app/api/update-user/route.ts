@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient, currentUser } from '@clerk/nextjs/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../convex/_generated/api';
+import { logRoleAssignedToUser, logRoleRevokedFromUser } from '@/lib/actions/auditActions';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -18,11 +19,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has appropriate permissions
-      const userRole = currentUserData.publicMetadata?.role as string;
-  const userRoles = currentUserData.publicMetadata?.roles as string[];
-  const isAdmin = userRole === 'sysadmin' || userRole === 'developer' || 
-                 (userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')));
-    const isOrgAdmin = userRole === 'orgadmin';
+    const userRole = currentUserData.publicMetadata?.role as string;
+    const userRoles = (currentUserData.publicMetadata?.roles as string[]) || [];
+    const isAdmin = userRole === 'sysadmin' || userRole === 'developer' ||
+      (userRoles && (userRoles.includes('sysadmin') || userRoles.includes('developer')));
+    const isOrgAdmin = userRole === 'orgadmin' || userRoles.includes('orgadmin');
     
     if (!isAdmin && !isOrgAdmin) {
       return NextResponse.json(
@@ -31,13 +32,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId, firstName, lastName, username, systemRoles, isActive, organisationId, organisationalRoleId } = await request.json();
+    const { userId, firstName, lastName, username, systemRoles, isActive, organisationId, organisationalRoleId, organisationalRoleIds } = await request.json();
 
     if (!userId) {
       return NextResponse.json(
         { error: 'Missing required field: userId' },
         { status: 400 }
       );
+    }
+
+    // Guardrail: orgadmin cannot assign or revoke system-level roles for sysadmin/developer users
+    if (isOrgAdmin && Array.isArray(systemRoles)) {
+      const targetUserPreview = await (await clerkClient()).users.getUser(userId);
+      const targetRoles = (targetUserPreview.publicMetadata?.roles as string[]) || [];
+      const targetIsSystem = targetRoles.includes('sysadmin') || targetRoles.includes('developer');
+      const addingSystem = systemRoles.some((r: string) => r === 'sysadmin' || r === 'developer');
+      if (targetIsSystem || addingSystem) {
+        return NextResponse.json(
+          { error: 'Unauthorized: Org admins cannot modify system roles or users with system roles' },
+          { status: 403 }
+        );
+      }
     }
 
     // Initialize Clerk client
@@ -130,6 +145,7 @@ export async function POST(request: NextRequest) {
           // Continue without failing since Clerk update succeeded
         } else {
           // Prepare Convex updates
+          const previousSystemRoles: string[] = Array.isArray(convexUser.systemRoles) ? convexUser.systemRoles : [];
           const convexUpdates: any = {};
           if (firstName) convexUpdates.givenName = firstName;
           if (lastName) convexUpdates.familyName = lastName;
@@ -148,11 +164,94 @@ export async function POST(request: NextRequest) {
               ...convexUpdates,
             });
           }
+
+          // Log system role changes
+          if (Array.isArray(systemRoles)) {
+            const added = systemRoles.filter((r: string) => !previousSystemRoles.includes(r));
+            const removed = previousSystemRoles.filter((r: string) => !systemRoles.includes(r));
+            const userLabel = convexUser.fullName || convexUser.email;
+            for (const role of added) {
+              await logRoleAssignedToUser(userId, userLabel, role, 'system');
+            }
+            for (const role of removed) {
+              await logRoleRevokedFromUser(userId, userLabel, role, 'system');
+            }
+          }
         }
       }
     } catch (error) {
       console.error('Error updating user in Convex:', error);
       // If Convex update fails, we'll continue since Clerk is the primary source
+    }
+
+    // Organisational role assignment change (optional)
+    if (organisationalRoleIds && Array.isArray(organisationalRoleIds)) {
+      try {
+        const targetOrganisationId = organisationId || (currentUserData.publicMetadata?.organisationId as string);
+        if (targetOrganisationId) {
+          // Guardrail: orgadmin cannot assign roles in other organisations
+          if (isOrgAdmin && targetOrganisationId !== (currentUserData.publicMetadata?.organisationId as string)) {
+            return NextResponse.json(
+              { error: 'Unauthorized: Cannot assign roles outside your organisation' },
+              { status: 403 }
+            );
+          }
+          // Assign multiple roles, merging RBAC
+          await convex.mutation(api.organisationalRoles.assignMultipleToUser, {
+            userId,
+            roleIds: organisationalRoleIds as any,
+            organisationId: targetOrganisationId as any,
+            assignedBy: currentUserData.id,
+          });
+        }
+      } catch (err) {
+        console.warn('Organisational multi-role change failed:', err);
+      }
+    } else if (organisationalRoleId) {
+      try {
+        const targetOrganisationId = organisationId || (currentUserData.publicMetadata?.organisationId as string);
+        if (targetOrganisationId) {
+          // Guardrail: orgadmin cannot assign roles in other organisations
+          if (isOrgAdmin && targetOrganisationId !== (currentUserData.publicMetadata?.organisationId as string)) {
+            return NextResponse.json(
+              { error: 'Unauthorized: Cannot assign roles outside your organisation' },
+              { status: 403 }
+            );
+          }
+          const existingAssignment = await convex.query(api.organisationalRoles.getUserRole, {
+            userId,
+            organisationId: targetOrganisationId as any,
+          });
+
+          await convex.mutation(api.organisationalRoles.assignToUser, {
+            userId,
+            roleId: organisationalRoleId as any,
+            organisationId: targetOrganisationId as any,
+            assignedBy: currentUserData.id,
+          });
+
+          // Audit revoke + assign
+          const convexUserAfter = await convex.query(api.users.getBySubject, { subject: userId });
+          const userLabel = convexUserAfter?.fullName || convexUserAfter?.email;
+          if (existingAssignment?.role?._id && existingAssignment.role.name && existingAssignment.role._id !== organisationalRoleId) {
+            await logRoleRevokedFromUser(userId, userLabel, existingAssignment.role.name, 'organisation', {
+              organisationId: targetOrganisationId,
+              roleId: existingAssignment.role._id,
+            });
+          }
+          try {
+            const newRole = await convex.query(api.organisationalRoles.getById, { roleId: organisationalRoleId as any });
+            if (newRole?.name) {
+              await logRoleAssignedToUser(userId, userLabel, newRole.name, 'organisation', {
+                organisationId: targetOrganisationId,
+                roleId: organisationalRoleId,
+              });
+            }
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('Organisational role change failed:', err);
+      }
     }
 
     return NextResponse.json(

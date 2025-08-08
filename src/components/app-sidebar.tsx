@@ -71,17 +71,17 @@ const getNavigationData = (userRoles?: string[]) => {
           title: "Organisations",
           url: "/admin/organisations",
         },
-        {
-          title: "Permissions",
-          url: "/admin/permissions",
-        },
+        ...(
+          // Show Permissions page to sysadmin or developer (support both single and array roles via getUserRoles)
+          (userRoles?.some(r => r === 'sysadmin' || r === 'developer') ? [{ title: "Permissions", url: "/admin/permissions" }] : [])
+        ),
         {
           title: "Audit Logs",
           url: "/admin/audit-logs",
         },
         {
           title: "Permission Tests",
-          url: "/admin/permission-tests",
+          url: "/admin/permissions/tests",
         },
       ],
     })

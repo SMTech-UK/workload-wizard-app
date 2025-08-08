@@ -5,7 +5,10 @@ import { api } from '../convex/_generated/api'
 
 const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/api/webhooks/clerk', '/terms', '/privacy', '/reset-password'])
 const isAccountRoute = createRouteMatcher(['/account(.*)'])
-const isApiRoute = createRouteMatcher(['/api/complete-onboarding'])
+const isApiRoute = createRouteMatcher([
+  '/api/complete-onboarding',
+  '/api/update-user-email',
+])
 const isOnboardingRoute = createRouteMatcher(['/onboarding', '/onboarding-success'])
 
 // Initialize Convex client for middleware
@@ -37,41 +40,48 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next()
   }
   
-
-  
   // Protect all other routes
   await auth.protect()
-  
-  // Temporarily disabled onboarding check to debug login issue
-  // Check if authenticated user has completed onboarding
-  /*
+
+  // Enforce onboarding completion
   if (userId) {
     try {
-      // Check Convex user record for onboarding completion
-      const user = await convex.query(api.users.getBySubject, { subject: userId })
-      
-      if (user) {
-        const hasCompletedOnboarding = user.onboardingCompleted
-        
-        // If user hasn't completed onboarding, redirect to onboarding page
-        if (!hasCompletedOnboarding && !isOnboardingRoute(req)) {
-          const onboardingUrl = new URL('/onboarding', req.url)
-          return NextResponse.redirect(onboardingUrl)
-        }
-        
-        // If user has completed onboarding but is on onboarding page, redirect to home
-        if (hasCompletedOnboarding && isOnboardingRoute(req)) {
-          const homeUrl = new URL('/', req.url)
-          return NextResponse.redirect(homeUrl)
+      // Prefer Clerk session claims (publicMetadata) for the flag
+      const claimsAny = sessionClaims as any
+      const hasCompletedInClaims = Boolean(
+        claimsAny?.publicMetadata?.onboardingCompleted ??
+        claimsAny?.metadata?.publicMetadata?.onboardingCompleted
+      )
+
+      let hasCompletedOnboarding = hasCompletedInClaims
+
+      // Fallback to Convex user record if claims missing or false
+      if (!hasCompletedOnboarding) {
+        try {
+          const user = await convex.query(api.users.getBySubject, { subject: userId })
+          hasCompletedOnboarding = Boolean(user?.onboardingCompleted)
+        } catch (convexErr) {
+          // Non-fatal; proceed with claims-only decision
+          console.error('Convex onboarding check failed:', convexErr)
         }
       }
+
+      // Redirects based on onboarding status
+      if (!hasCompletedOnboarding && !isOnboardingRoute(req)) {
+        const onboardingUrl = new URL('/onboarding', req.url)
+        return NextResponse.redirect(onboardingUrl)
+      }
+
+      if (hasCompletedOnboarding && isOnboardingRoute(req)) {
+        const dashboardUrl = new URL('/dashboard', req.url)
+        return NextResponse.redirect(dashboardUrl)
+      }
     } catch (error) {
-      console.error('Error checking onboarding status:', error)
-      // On error, allow access but log the issue
+      console.error('Error enforcing onboarding status:', error)
+      // Allow access if check fails unexpectedly
     }
   }
-  */
-  
+
   return NextResponse.next()
 })
 

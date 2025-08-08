@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { listUsers, deleteUser } from '@/lib/actions/userActions';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
-import { Trash2, RefreshCw, UserCheck, UserX, Edit, Filter, Building2, Plus, GitCompareArrows, Eye, ChevronUp, ChevronDown, Search, MoreHorizontal, LogIn } from 'lucide-react';
+import { Trash2, RefreshCw, UserCheck, UserX, Edit, Filter, Building2, Plus, GitCompareArrows, Eye, ChevronUp, ChevronDown, Search, MoreHorizontal, LogIn, UserCog } from 'lucide-react';
 import { EditUserForm } from './EditUserForm';
 import { CreateUserForm } from './CreateUserForm';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@clerk/nextjs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface User {
   id: string;
@@ -59,6 +60,11 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+  const [assigningUser, setAssigningUser] = useState<User | null>(null);
+  const [selectedSystemRoles, setSelectedSystemRoles] = useState<string[]>([]);
+  const [selectedOrgRoleId, setSelectedOrgRoleId] = useState<string | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [isBulkAssign, setIsBulkAssign] = useState(false);
   
   // Sorting state - default to alphabetical by name
   const [sortField, setSortField] = useState<SortField>('name');
@@ -66,6 +72,10 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
   
   const updateLastSignIn = useMutation(api.users.updateLastSignIn);
   const organisations = useQuery(api.organisations.list);
+  const orgRolesForAssign = useQuery(
+    api.organisationalRoles.listByOrganisation,
+    assigningUser && assigningUser.organisationId ? { organisationId: assigningUser.organisationId as any } : 'skip'
+  );
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,6 +129,82 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
+  };
+
+  const openAssignRoles = (user: User) => {
+    setAssigningUser(user);
+    setSelectedSystemRoles(user.roles || []);
+    setSelectedOrgRoleId(null);
+    setIsBulkAssign(false);
+  };
+
+  const submitAssignRoles = async () => {
+    try {
+      if (isBulkAssign) {
+        const targets = sortedUsers.filter(u => selectedUserIds.has(u.id));
+        const sameOrgId = targets.every(u => u.organisationId === targets[0]?.organisationId) ? targets[0]?.organisationId : null;
+        const updates = targets.map(async (u) => {
+          return fetch('/api/update-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: u.subject || u.id,
+              systemRoles: selectedSystemRoles,
+              organisationalRoleId: sameOrgId ? (selectedOrgRoleId || undefined) : undefined,
+              organisationId: u.organisationId,
+            }),
+          }).then(async (r) => {
+            if (!r.ok) {
+              const d = await r.json();
+              throw new Error(d.error || 'Failed to assign roles');
+            }
+          });
+        });
+        await Promise.all(updates);
+        toast({ title: 'Success', description: `Roles updated for ${targets.length} user(s)` });
+        setSelectedUserIds(new Set());
+        setAssigningUser(null);
+        setIsBulkAssign(false);
+        fetchUsers();
+      } else {
+        if (!assigningUser?.subject && !assigningUser?.id) return;
+        const res = await fetch('/api/update-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: assigningUser.subject || assigningUser.id,
+            systemRoles: selectedSystemRoles,
+            organisationalRoleId: selectedOrgRoleId || undefined,
+            organisationId: assigningUser.organisationId,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to assign roles');
+        }
+        toast({ title: 'Success', description: 'Roles updated' });
+        setAssigningUser(null);
+        fetchUsers();
+      }
+    } catch (e) {
+      toast({ title: 'Error', description: e instanceof Error ? e.message : 'Failed to assign roles', variant: 'destructive' });
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUserIds.size === sortedUsers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(sortedUsers.map(u => u.id)));
+    }
+  };
+
+  const toggleSelectUser = (id: string) => {
+    setSelectedUserIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   };
 
   const handleCloseEdit = () => {
@@ -586,13 +672,19 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
 
               {/* Right side - Organisation Selector and User Sync */}
               <div className="flex items-center gap-2 shrink-0">
-                {organisations && organisations.length > 0 && (
+                {selectedUserIds.size > 0 && (
+                  <Button size="sm" onClick={() => { setIsBulkAssign(true); setAssigningUser({} as any); setSelectedOrgRoleId(null); }}>
+                    <UserCog className="h-4 w-4 mr-2" />
+                    Bulk Assign ({selectedUserIds.size})
+                  </Button>
+                )}
+                      {organisations && organisations.length > 0 && (
                   <>
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4" />
                       <span className="text-sm font-medium">View:</span>
                     </div>
-                    <Select value={selectedOrganisationId} onValueChange={setSelectedOrganisationId}>
+                     <Select value={selectedOrganisationId} onValueChange={setSelectedOrganisationId}>
                       <SelectTrigger className="w-60">
                         <SelectValue placeholder="All organisations" />
                       </SelectTrigger>
@@ -611,7 +703,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
                       </Badge>
                     )}
                   </>
-                )}
+                    )}
                 
                 {/* Refresh Button */}
                 <Button onClick={fetchUsers} variant="outline" size="sm" className="shrink-0">
@@ -670,8 +762,11 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
         {/* Users Table */}
         <div className="rounded-md border bg-white">
           <Table>
-            <TableHeader>
+             <TableHeader>
               <TableRow className="bg-muted/50 border-b-2 border-muted-foreground/20">
+                <TableHead className="w-[32px] text-center">
+                  <input type="checkbox" checked={selectedUserIds.size === sortedUsers.length && sortedUsers.length>0} onChange={toggleSelectAll} />
+                </TableHead>
                 <TableHead 
                   className="text-center cursor-pointer hover:bg-muted transition-colors font-semibold text-sm py-4 w-[15%]"
                   onClick={() => handleSort('name')}
@@ -744,7 +839,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
                     {getSortIcon('lastSignIn')}
                   </div>
                 </TableHead>
-                <TableHead className="w-[6%] text-center font-semibold text-sm py-4">Actions</TableHead>
+                 <TableHead className="w-[8%] text-center font-semibold text-sm py-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="min-h-[400px]">
@@ -757,6 +852,9 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
               ) : (
                 sortedUsers.map((user) => (
                   <TableRow key={user.id}>
+                    <TableCell className="text-center">
+                      <input type="checkbox" checked={selectedUserIds.has(user.id)} onChange={() => toggleSelectUser(user.id)} />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-center">
                         {user.firstName && user.lastName 
@@ -828,7 +926,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
                       </Tooltip>
                     </TableCell>
                                             <TableCell>
-                          <DropdownMenu>
+                            <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                 <MoreHorizontal className="h-4 w-4" />
@@ -836,6 +934,11 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => openAssignRoles(user)}>
+                                <UserCog className="mr-2 h-4 w-4" />
+                                <span>Assign Roles</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleEditUser(user)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 <span>Edit User</span>
@@ -911,6 +1014,54 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
           onCancel={handleCancelDelete}
           isDeleting={isDeleting}
         />
+      )}
+
+      {/* Assign Roles Modal */}
+      {assigningUser && (
+        <Dialog open onOpenChange={(o) => { if (!o) setAssigningUser(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Assign Roles</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <div className="text-sm font-medium mb-2">System Roles</div>
+                <div className="flex flex-wrap gap-2">
+                  {['user','orgadmin','sysadmin','developer','trial'].map((role) => {
+                    const checked = selectedSystemRoles.includes(role);
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setSelectedSystemRoles(checked ? selectedSystemRoles.filter(r=>r!==role) : [...selectedSystemRoles, role])}
+                        className={`px-2 py-1 rounded border text-xs ${checked ? 'bg-slate-900 text-white' : 'bg-white'}`}
+                      >
+                        {getRoleLabel(role)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm font-medium mb-2">Organisation Role</div>
+                <Select value={selectedOrgRoleId || ''} onValueChange={(v) => setSelectedOrgRoleId(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(orgRolesForAssign || []).map((r:any)=> (
+                      <SelectItem key={r._id} value={r._id}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setAssigningUser(null)}>Cancel</Button>
+                <Button onClick={submitAssignRoles}>Save</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </TooltipProvider>
   );
