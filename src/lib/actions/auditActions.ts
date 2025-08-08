@@ -28,6 +28,42 @@ async function getRequestInfo() {
   };
 }
 
+function normalizeAction(value: string): string {
+  // Convert spaces/underscores/hyphens to dots, lowercase
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '.')
+    .replace(/\.{2,}/g, '.');
+}
+
+function normalizeEntityType(value: string): string {
+  return value.trim().toLowerCase().replace(/[\s-]+/g, '_');
+}
+
+function normalizeSeverity(value?: string): 'info' | 'warning' | 'error' | 'critical' {
+  const v = (value || 'info').toLowerCase();
+  return (['info', 'warning', 'error', 'critical'] as const).includes(v as any)
+    ? (v as any)
+    : 'info';
+}
+
+function safeStringify(obj?: Record<string, unknown>): string | undefined {
+  if (!obj) return undefined;
+  try {
+    // Stable stringify by sorting keys for readability/diffs
+    const ordered = Object.keys(obj)
+      .sort()
+      .reduce((acc: Record<string, unknown>, key) => {
+        acc[key] = obj[key];
+        return acc;
+      }, {});
+    return JSON.stringify(ordered);
+  } catch {
+    return undefined;
+  }
+}
+
 // Main audit logging function
 export async function logAuditEvent(data: AuditLogData) {
   try {
@@ -39,23 +75,26 @@ export async function logAuditEvent(data: AuditLogData) {
       return;
     }
 
-    // Get user's organisation from metadata
+    // Normalize core fields
+    const action = normalizeAction(data.action);
+    const entityType = normalizeEntityType(data.entityType);
+    const severity = normalizeSeverity(data.severity);
     const organisationId = currentUserData.publicMetadata?.organisationId as string;
 
     // Create the audit log entry
     await convex.mutation(api.audit.create, {
-      action: data.action,
-      entityType: data.entityType,
+      action,
+      entityType,
       entityId: data.entityId,
       entityName: data.entityName,
       performedBy: currentUserData.id,
       performedByName: `${currentUserData.firstName || ''} ${currentUserData.lastName || ''}`.trim() || currentUserData.emailAddresses[0]?.emailAddress,
       organisationId: organisationId,
       details: data.details,
-      metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
+      metadata: safeStringify(data.metadata),
       ipAddress: requestInfo.ipAddress,
       userAgent: requestInfo.userAgent,
-      severity: data.severity || 'info',
+      severity,
     });
   } catch (error) {
     console.error('Failed to log audit event:', error);
@@ -122,7 +161,7 @@ export async function logUserLogout(userId: string, userEmail: string, details?:
 
 export async function logPermissionChange(userId: string, userEmail: string, oldRole: string, newRole: string, details?: string) {
   await logAuditEvent({
-    action: 'permission_change',
+    action: 'permission.change',
     entityType: 'user',
     entityId: userId,
     entityName: userEmail,
@@ -343,6 +382,31 @@ export async function logRoleDeleted(roleId: string, roleName: string, organisat
     entityName: roleName,
     details: details || `Role "${roleName}" deleted`,
     metadata: { organisationId, ...metadata },
+    severity: 'warning',
+  });
+}
+
+// Assignment audit helpers
+export async function logRoleAssignedToUser(userId: string, userEmailOrName: string | undefined, roleName: string, scope: 'system' | 'organisation', extra?: Record<string, unknown>) {
+  await logAuditEvent({
+    action: 'role.assigned',
+    entityType: 'user',
+    entityId: userId,
+    entityName: userEmailOrName,
+    details: `Role assigned: ${roleName} (${scope})`,
+    metadata: { roleName, scope, ...extra },
+    severity: 'info',
+  });
+}
+
+export async function logRoleRevokedFromUser(userId: string, userEmailOrName: string | undefined, roleName: string, scope: 'system' | 'organisation', extra?: Record<string, unknown>) {
+  await logAuditEvent({
+    action: 'role.revoked',
+    entityType: 'user',
+    entityId: userId,
+    entityName: userEmailOrName,
+    details: `Role revoked: ${roleName} (${scope})`,
+    metadata: { roleName, scope, ...extra },
     severity: 'warning',
   });
 }

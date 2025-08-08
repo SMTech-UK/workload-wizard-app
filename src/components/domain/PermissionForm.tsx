@@ -8,6 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { X } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface PermissionFormData {
   id: string;
@@ -24,7 +27,7 @@ interface PermissionFormProps {
   isEditing?: boolean;
 }
 
-const DEFAULT_ROLES = ['Admin', 'Manager', 'Lecturer', 'Viewer'];
+// No fallback roles; if no templates exist, show no default-role options
 
 export function PermissionForm({
   onSubmit,
@@ -42,13 +45,19 @@ export function PermissionForm({
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Load dynamic default role templates (sysadmin-managed)
+  const templates = useQuery(api.permissions.listSystemRoleTemplates);
+  const dynamicRoles: string[] = (templates && templates.length > 0)
+    ? templates.map((t: any) => t.name)
+    : [];
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.id.trim()) {
       newErrors.id = 'Permission ID is required';
-    } else if (!/^[a-zA-Z][a-zA-Z0-9_]*\.[a-zA-Z][a-zA-Z0-9_]*$/.test(formData.id)) {
-      newErrors.id = 'Permission ID must be in format "group.action" (e.g., "users.create")';
+    } else if (!/^[A-Za-z]\w*(?:\.[A-Za-z]\w*)+$/.test(formData.id)) {
+      newErrors.id = 'Permission ID must be dot-separated segments (e.g., "users.create" or "reports.view.basic")';
     }
 
     if (!formData.group.trim()) {
@@ -179,19 +188,44 @@ export function PermissionForm({
                 Select which roles should have this permission by default in new organisations
               </p>
               <div className="space-y-2">
-                {DEFAULT_ROLES.map((role) => (
-                  <div key={role} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`role-${role}`}
-                      checked={formData.defaultRoles.includes(role)}
-                      onCheckedChange={(checked) => handleRoleToggle(role, checked as boolean)}
-                    />
-                    <Label htmlFor={`role-${role}`} className="text-sm">
-                      {role}
-                    </Label>
-                  </div>
-                ))}
+                {dynamicRoles.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No default role templates defined.</p>
+                ) : (
+                  dynamicRoles.map((role) => (
+                    <div key={role} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`role-${role}`}
+                        checked={formData.defaultRoles.includes(role)}
+                        onCheckedChange={(checked) => handleRoleToggle(role, checked as boolean)}
+                      />
+                      <Label htmlFor={`role-${role}`} className="text-sm">
+                        {role}
+                      </Label>
+                    </div>
+                  ))
+                )}
               </div>
+              {templates && templates.length > 0 && (
+                <div className="mt-4">
+                  <Label className="mb-2 block">Available Default Role Templates</Label>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[180px]">Name</TableHead>
+                        <TableHead>Description</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {templates.map((t: any) => (
+                        <TableRow key={t._id}>
+                          <TableCell className="font-medium">{t.name}</TableCell>
+                          <TableCell className="text-muted-foreground">{t.description || ''}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </div>
 
             {/* Form Actions */}

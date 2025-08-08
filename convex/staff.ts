@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requirePermission } from "./permissions";
+import { requireOrgPermission } from "./permissions";
 
 // Create a new lecturer profile
 export const create = mutation({
@@ -15,8 +15,8 @@ export const create = mutation({
     userId: v.string(), // Current user ID for permission check
   },
   handler: async (ctx, args) => {
-    // Check permission
-    await requirePermission(ctx, args.userId, "staff.create");
+    // Check permission within org context
+    await requireOrgPermission(ctx, args.userId, "staff.create", args.organisationId);
 
     const now = Date.now();
     
@@ -51,13 +51,12 @@ export const edit = mutation({
     userId: v.string(), // Current user ID for permission check
   },
   handler: async (ctx, args) => {
-    // Check permission
-    await requirePermission(ctx, args.userId, "staff.edit");
-
+    // Check permission within org context
     const profile = await ctx.db.get(args.profileId);
     if (!profile) {
       throw new Error("Lecturer profile not found");
     }
+    await requireOrgPermission(ctx, args.userId, "staff.edit", profile.organisationId);
 
     const updates: any = { updatedAt: Date.now() };
     

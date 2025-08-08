@@ -24,6 +24,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedOrganisationId, setSelectedOrganisationId] = useState(organisationId || null);
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['user']);
+  const [selectedOrgRoleIds, setSelectedOrgRoleIds] = useState<string[]>([]);
   
   // Get all organisations for sysadmin use
   const organisations = useQuery(api.organisations.list);
@@ -59,7 +60,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
       roles: selectedRoles,
       organisationId: targetOrganisationId,
       sendEmailInvitation: true, // Always send email invitation
-      organisationalRoleId: formData.get('organisationalRole') as string,
+      organisationalRoleId: undefined as unknown as string, // moved to multi-select below
     };
 
     try {
@@ -231,22 +232,25 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
               </div>
             )}
 
-            {/* Organisational Role Selection */}
+            {/* Organisational Roles (multi-select) */}
             {(selectedOrganisationId || !isSysadmin) && (
               <div className="space-y-2">
-                <Label htmlFor="organisationalRole">Organisational Role</Label>
-                <Select name="organisationalRole">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select organisational role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {organisationalRoles?.map((role) => (
-                      <SelectItem key={role._id} value={role._id}>
+                <Label>Organisational Roles</Label>
+                <div className="flex flex-wrap gap-2">
+                  {organisationalRoles?.map((role) => {
+                    const checked = selectedOrgRoleIds.includes(role._id);
+                    return (
+                      <button
+                        key={role._id}
+                        type="button"
+                        onClick={() => setSelectedOrgRoleIds(checked ? selectedOrgRoleIds.filter(id => id !== role._id) : [...selectedOrgRoleIds, role._id])}
+                        className={`px-2 py-1 rounded border text-xs ${checked ? 'bg-slate-900 text-white' : 'bg-white'}`}
+                      >
                         {role.name}
-                      </SelectItem>
-                    )) || []}
-                  </SelectContent>
-                </Select>
+                      </button>
+                    );
+                  }) || []}
+                </div>
                 {(!organisationalRoles || organisationalRoles.length === 0) && (
                   <p className="text-sm text-muted-foreground">
                     {isSysadmin && !selectedOrganisationId 

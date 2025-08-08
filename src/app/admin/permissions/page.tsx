@@ -9,6 +9,10 @@ import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSideb
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   Plus, 
   Edit, 
@@ -17,12 +21,17 @@ import {
   Users, 
   AlertTriangle,
   CheckCircle,
-  Upload
+  Upload,
+  ListPlus,
+  Wand2,
+  ChevronRight,
+  Play
 } from 'lucide-react';
 import { PermissionForm } from '@/components/domain/PermissionForm';
 import { GenericDeleteModal } from '@/components/domain/GenericDeleteModal';
 import { SuccessModal } from '@/components/domain/SuccessModal';
 import { Id } from '../../../../convex/_generated/dataModel';
+import { hasAnyRole } from '@/lib/utils';
 
 interface Permission {
   _id: Id<'system_permissions'>;
@@ -30,6 +39,15 @@ interface Permission {
   group: string;
   description: string;
   defaultRoles: string[];
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface SystemRoleTemplate {
+  _id: Id<'system_role_templates'>;
+  name: string;
+  description?: string;
   isActive: boolean;
   createdAt: number;
   updatedAt: number;
@@ -50,22 +68,46 @@ export default function AdminPermissionsPage() {
 
   // Queries
   const permissionsGrouped = useQuery(api.permissions.getSystemPermissionsGrouped);
+  const systemRoleTemplates = useQuery(api.permissions.listSystemRoleTemplates);
+  const upsertTemplate = useMutation(api.permissions.upsertSystemRoleTemplate);
+  const deleteTemplate = useMutation(api.permissions.deleteSystemRoleTemplate);
+  const convexUser = useQuery(
+    api.users.getBySubject,
+    user?.id ? { subject: user.id } : 'skip'
+  );
 
   // Mutations
   const createPermission = useMutation(api.permissions.createSystemPermission);
   const updatePermission = useMutation(api.permissions.updateSystemPermission);
   const deletePermission = useMutation(api.permissions.deleteSystemPermission);
   const pushToOrgs = useMutation(api.permissions.pushPermissionsToOrganisations);
+  const ensureDefaultsAcrossOrgs = useMutation(api.permissions.ensureDefaultRolesAcrossOrganisations);
+  const importPermissions = useMutation(api.permissions.importSystemPermissions);
+  const createTestOrg = useMutation(api.permissions.createTestOrgWithRoles);
+  const createTestUsers = useMutation(api.permissions.createTestUsers);
+  const [customDefaultRoleNames, setCustomDefaultRoleNames] = useState<string>('');
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importUpsert, setImportUpsert] = useState(true);
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<SystemRoleTemplate | null>(null);
+  const [templateName, setTemplateName] = useState('');
+  const [templateDesc, setTemplateDesc] = useState('');
+  const [deletingTemplate, setDeletingTemplate] = useState<SystemRoleTemplate | null>(null);
+  const [isRunningTests, setIsRunningTests] = useState(false);
+
+  const hasByClerk = hasAnyRole(user, ['sysadmin', 'developer']) || (user?.publicMetadata as any)?.devLoginSession === true;
+  const hasByConvex = !!convexUser && Array.isArray(convexUser.systemRoles) && convexUser.systemRoles.some((r: string) => r === 'sysadmin' || r === 'developer');
 
   useEffect(() => {
-    if (isLoaded && (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer')) {
+    if (isLoaded && !(hasByClerk || hasByConvex)) {
       router.replace('/unauthorised');
     }
-  }, [isLoaded, user, router]);
+  }, [isLoaded, hasByClerk, hasByConvex, router]);
 
   if (!isLoaded) return <p>Loading...</p>;
 
-  if (user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer') {
+  if (!(hasByClerk || hasByConvex)) {
     return null;
   }
 
@@ -189,14 +231,37 @@ export default function AdminPermissionsPage() {
   };
 
   const getGroupColor = (group: string) => {
-    const colors: Record<string, string> = {
+    const explicit: Record<string, string> = {
       staff: 'bg-blue-100 text-blue-800',
       users: 'bg-green-100 text-green-800',
       modules: 'bg-purple-100 text-purple-800',
       admin: 'bg-red-100 text-red-800',
       reports: 'bg-orange-100 text-orange-800',
     };
-    return colors[group] || 'bg-gray-100 text-gray-800';
+    if (explicit[group]) return explicit[group];
+
+    // Deterministic fallback palette for any other group
+    const palette = [
+      'bg-teal-100 text-teal-800',
+      'bg-indigo-100 text-indigo-800',
+      'bg-pink-100 text-pink-800',
+      'bg-cyan-100 text-cyan-800',
+      'bg-amber-100 text-amber-800',
+      'bg-lime-100 text-lime-800',
+      'bg-rose-100 text-rose-800',
+      'bg-fuchsia-100 text-fuchsia-800',
+      'bg-sky-100 text-sky-800',
+      'bg-violet-100 text-violet-800',
+      'bg-slate-100 text-slate-800',
+      'bg-emerald-100 text-emerald-800',
+    ];
+    let hash = 0;
+    for (let i = 0; i < group.length; i++) {
+      hash = ((hash << 5) - hash) + group.charCodeAt(i);
+      hash |= 0; // to 32-bit int
+    }
+    const idx = Math.abs(hash) % palette.length;
+    return palette[idx];
   };
 
   const getAllPermissions = (): Permission[] => {
@@ -212,13 +277,75 @@ export default function AdminPermissionsPage() {
 
   const headerActions = (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm">
+      <Button
+        variant="default"
+        size="sm"
+        onClick={async () => {
+          try {
+            setIsRunningTests(true);
+            await createTestOrg();
+            await createTestUsers();
+            router.push('/admin/permissions/tests');
+          } catch (e) {
+            alert('Failed to run tests: ' + (e as Error).message);
+          } finally {
+            setIsRunningTests(false);
+          }
+        }}
+        title="Run permission tests"
+        disabled={isRunningTests}
+      >
+        <Play className="h-4 w-4 mr-2" />
+        {isRunningTests ? 'Running…' : 'Run Tests'}
+      </Button>
+      <input
+        value={customDefaultRoleNames}
+        onChange={(e) => setCustomDefaultRoleNames(e.target.value)}
+        placeholder="Default roles (comma-separated), e.g. Admin,Manager,Lecturer,Viewer"
+        className="border rounded px-2 py-1 text-sm max-w-[360px]"
+      />
+      <Button variant="outline" size="sm" onClick={async () => {
+        try {
+          const roleNames = customDefaultRoleNames
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean);
+          const result = await ensureDefaultsAcrossOrgs({ performedBy: user?.id, performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress, ...(roleNames.length ? { roleNames } : {}) });
+          setSuccessModal({
+            title: 'Default Roles Ensured',
+            message: `Ensured default roles exist across all active organisations`,
+            details: {
+              'Organisations Processed': result.organisationsProcessed,
+              'Roles Created': result.rolesCreated,
+            },
+          });
+        } catch (e) {
+          alert('Failed to ensure default roles: ' + (e as Error).message);
+        }
+      }}>
         <Upload className="h-4 w-4 mr-2" />
-        Import
+        Seed Defaults
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
+        <Upload className="h-4 w-4 mr-2" />
+        JSON Import
       </Button>
       <Button size="sm" onClick={() => setShowCreateForm(true)}>
         <Plus className="h-4 w-4 mr-2" />
         New Permission
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setEditingTemplate(null);
+          setTemplateName('');
+          setTemplateDesc('');
+          setShowTemplateForm(true);
+        }}
+      >
+        <ListPlus className="h-4 w-4 mr-2" />
+        New Default Role
       </Button>
     </div>
   );
@@ -274,86 +401,128 @@ export default function AdminPermissionsPage() {
         </Card>
       </div>
 
+      {/* Default Role Templates (Sysadmin-managed) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wand2 className="h-4 w-4" /> Default Role Templates
+          </CardTitle>
+          <CardDescription>These roles are used when creating new organisations (and seeding defaults).</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {systemRoleTemplates && systemRoleTemplates.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {systemRoleTemplates.map((r) => (
+                <div key={r._id} className="flex items-center gap-2 border rounded px-2 py-1 text-sm">
+                  <code className="font-mono">{r.name}</code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingTemplate(r as SystemRoleTemplate);
+                      setTemplateName(r.name);
+                      setTemplateDesc(r.description || '');
+                      setShowTemplateForm(true);
+                    }}
+                  >Edit</Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600"
+                    onClick={() => setDeletingTemplate(r as SystemRoleTemplate)}
+                  >Delete</Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No templates yet. Create some to define your organisation defaults.</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Permissions List */}
       {permissionsGrouped && Object.keys(permissionsGrouped).length > 0 ? (
         <div className="space-y-6">
           {Object.entries(permissionsGrouped).map(([group, permissions]) => (
-            <Card key={group}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
+            <Collapsible key={group} defaultOpen={false}>
+              <Card>
+                <CardHeader>
+                  <CollapsibleTrigger className="flex w-full items-center justify-between">
                     <CardTitle className="flex items-center space-x-2">
                       <Badge className={getGroupColor(group)}>
                         {group.toUpperCase()}
                       </Badge>
                       <span>({permissions.length} permissions)</span>
                     </CardTitle>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {permissions.map((permission) => (
-                    <div
-                      key={permission._id}
-                      className="border rounded-lg p-4 space-y-3"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
-                              {permission.id}
-                            </code>
+                    <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
+                  </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {permissions.map((permission) => (
+                        <div
+                          key={permission._id}
+                          className="border rounded-lg p-4 space-y-3"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
+                                  {permission.id}
+                                </code>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {permission.description}
+                              </p>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePushToOrgs(permission.id)}
+                                title="Push to all organisations"
+                              >
+                                <Upload className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setEditingPermission(permission)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteClick(permission)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {permission.description}
-                          </p>
+                          
+                          {permission.defaultRoles.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium mb-2">Default Roles:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {permission.defaultRoles.map((role) => (
+                                  <Badge key={role} variant="secondary" className="text-xs">
+                                    {role}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePushToOrgs(permission.id)}
-                            title="Push to all organisations"
-                          >
-                            <Upload className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingPermission(permission)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteClick(permission)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {permission.defaultRoles.length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium mb-2">Default Roles:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {permission.defaultRoles.map((role) => (
-                              <Badge key={role} variant="secondary" className="text-xs">
-                                {role}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           ))}
         </div>
       ) : (
@@ -420,7 +589,7 @@ export default function AdminPermissionsPage() {
             : "This will permanently remove the permission from the system. If deletion fails, you'll need to remove this permission from all roles first, or use Force Delete."
           }
           confirmButtonText="Delete Permission"
-          showForceDelete={user?.publicMetadata?.role === 'sysadmin' || user?.publicMetadata?.role === 'developer'}
+          showForceDelete={hasAnyRole(user, ['sysadmin', 'developer'])}
           forceDelete={forceDelete}
           onForceDeleteChange={setForceDelete}
           onError={(error) => {
@@ -437,6 +606,125 @@ export default function AdminPermissionsPage() {
           title={successModal.title}
           message={successModal.message}
           details={successModal.details}
+        />
+      )}
+
+      {/* JSON Import Dialog */}
+      <Dialog open={showImport} onOpenChange={setShowImport}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import System Permissions</DialogTitle>
+            <DialogDescription>Paste a JSON array with fields: Permission ID, Group, Description, Default Roles.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <textarea
+              className="w-full h-64 border rounded p-2 font-mono text-sm"
+              placeholder='[\n  {"Permission ID": "org.read", "Group": "org", "Description": "...", "Default Roles": ["Admin"]}\n]'
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+            />
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={importUpsert} onChange={(e) => setImportUpsert(e.target.checked)} />
+              Upsert existing permissions
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImport(false)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                try {
+                  const raw = JSON.parse(importText);
+                  if (!Array.isArray(raw)) throw new Error('JSON must be an array');
+                  const items = raw.map((x: any) => ({
+                    id: x['Permission ID'] ?? x.id,
+                    group: x['Group'] ?? x.group,
+                    description: x['Description'] ?? x.description,
+                    defaultRoles: x['Default Roles'] ?? x.defaultRoles ?? [],
+                  }));
+                  const res = await importPermissions({ items, upsert: importUpsert, performedBy: user?.id, performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress });
+                  setShowImport(false);
+                  setImportText('');
+                  setSuccessModal({
+                    title: 'Import Complete',
+                    message: `Processed ${res.total} item(s).`,
+                    details: { Created: res.created, Updated: res.updated, Skipped: res.skipped },
+                  });
+                } catch (e) {
+                  alert('Import failed: ' + (e as Error).message);
+                }
+              }}
+            >Run Import</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create/Edit Template Dialog */}
+      <Dialog open={showTemplateForm} onOpenChange={setShowTemplateForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingTemplate ? 'Edit Default Role Template' : 'New Default Role Template'}</DialogTitle>
+            <DialogDescription>
+              {editingTemplate ? 'Update the template used when seeding new organisations.' : 'Define a template role name used when seeding new organisations.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tpl-name">Name</Label>
+              <Input id="tpl-name" value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="e.g. Admin" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tpl-desc">Description</Label>
+              <Input id="tpl-desc" value={templateDesc} onChange={(e) => setTemplateDesc(e.target.value)} placeholder="Optional description" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplateForm(false)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                if (!templateName.trim()) return;
+                try {
+                  await upsertTemplate({
+                    ...(editingTemplate ? { id: editingTemplate._id } : {}),
+                    name: templateName.trim(),
+                    description: templateDesc,
+                    performedBy: user?.id,
+                    performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
+                  });
+                  setShowTemplateForm(false);
+                  setEditingTemplate(null);
+                  setTemplateName('');
+                  setTemplateDesc('');
+                } catch (e) {
+                  alert((e as Error).message);
+                }
+              }}
+            >{editingTemplate ? 'Save Changes' : 'Create Template'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Template Confirmation */}
+      {deletingTemplate && (
+        <GenericDeleteModal
+          isOpen={true}
+          onClose={() => setDeletingTemplate(null)}
+          onConfirm={async () => {
+            try {
+              await deleteTemplate({
+                id: deletingTemplate._id,
+                performedBy: user?.id,
+                performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
+              });
+              setDeletingTemplate(null);
+            } catch (e) {
+              alert((e as Error).message);
+            }
+          }}
+          title="Delete Default Role Template"
+          description="This will deactivate the template. Existing organisations are not affected."
+          itemName="default role template"
+          itemDetails={{ Name: deletingTemplate.name, Description: deletingTemplate.description || '' }}
+          confirmButtonText="Delete Template"
         />
       )}
     </StandardizedSidebarLayout>

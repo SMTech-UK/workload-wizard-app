@@ -45,6 +45,7 @@ import {
   Paperclip,
   Settings
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
@@ -94,13 +95,18 @@ export default function OrganisationRolesPage() {
     subject: user?.id || '' 
   });
 
-  // Get organisation roles
-  const organisationRoles = useQuery(api.permissions.getOrganisationRoles, {
-    organisationId: currentUser?.organisationId as any || '',
-  });
+  // Get organisation roles (skip until orgId is available)
+  const organisationRoles = useQuery(
+    api.permissions.getOrganisationRoles,
+    currentUser?.organisationId ? { organisationId: currentUser.organisationId as any } : 'skip'
+  );
 
   // Get system permissions
   const systemPermissions = useQuery(api.permissions.getSystemPermissions);
+  const stagedForRole = useQuery(
+    api.permissions.getOrganisationPermissions,
+    editingRole?._id ? { roleId: editingRole._id as any } : 'skip'
+  );
 
   // Mutations
   const createRole = useMutation(api.permissions.createOrganisationRole);
@@ -117,6 +123,8 @@ export default function OrganisationRolesPage() {
         description: roleDescription.trim() || undefined,
         organisationId: currentUser.organisationId,
         permissions: selectedPermissions,
+        performedBy: user?.id,
+        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
       });
 
       setRoleName('');
@@ -145,6 +153,8 @@ export default function OrganisationRolesPage() {
         name: roleName.trim(),
         description: roleDescription.trim() || undefined,
         permissions: selectedPermissions,
+        performedBy: user?.id,
+        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
       });
 
       setEditingRole(null);
@@ -159,23 +169,32 @@ export default function OrganisationRolesPage() {
 
   const handleDeleteRole = async (roleId: string) => {
     try {
-      await deleteRole({ roleId });
+      await deleteRole({ 
+        roleId,
+        performedBy: user?.id,
+        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+      });
     } catch (error) {
       console.error('Error deleting role:', error);
     }
   };
 
-  const handlePermissionToggle = async (roleId: string, permissionId: string, isGranted: boolean) => {
+  const handlePermissionToggle = async (roleId: string, permissionId: string, isGranted: boolean, acceptStaged?: boolean) => {
     try {
       await updateRolePermissions({
         roleId,
         permissionId,
         isGranted,
+        acceptStaged: !!acceptStaged,
+        performedBy: user?.id,
+        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
       });
     } catch (error) {
       console.error('Error updating permission:', error);
     }
   };
+
+  const [confirmApply, setConfirmApply] = useState<{ roleId: string; permissionId: string; details: { id: string; group: string; description: string } } | null>(null);
 
   const getPermissionSource = (roleName: string, permissionId: string) => {
     const permission = systemPermissions?.find(p => p.id === permissionId);
@@ -456,25 +475,63 @@ export default function OrganisationRolesPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
-                            {permission.source === 'system_default' ? (
-                              <Paperclip className="w-4 h-4 text-blue-500" />
-                            ) : (
-                              <Settings className="w-4 h-4 text-green-500" />
-                            )}
+                          <div className="flex items-center gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                {permission.source === 'system_default' ? (
+                                  <Paperclip className="w-4 h-4 text-blue-500" />
+                                ) : (
+                                  <Settings className="w-4 h-4 text-green-500" />
+                                )}
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {permission.source === 'system_default'
+                                  ? 'Default: granted to this role by the system permission defaults'
+                                  : 'Custom: explicitly assigned to this role in your organisation'}
+                              </TooltipContent>
+                            </Tooltip>
                             <span className="text-sm">
                               {permission.source === 'system_default' ? 'System Default' : 'Custom'}
                             </span>
+                            <Badge variant={permission.source === 'system_default' ? 'secondary' : 'outline'} className="text-[10px] uppercase">
+                              {permission.source === 'system_default' ? 'default' : 'custom'}
+                            </Badge>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Checkbox
-                            checked={permission.isGranted}
-                            onCheckedChange={(checked) => 
-                              handlePermissionToggle(role._id, permission.id, !!checked)
-                            }
-                            disabled={permission.source === 'system_default' && !permission.isOverride}
-                          />
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={permission.isGranted}
+                              onCheckedChange={(checked) => 
+                                handlePermissionToggle(role._id, permission.id, !!checked)
+                              }
+                              disabled={permission.source === 'system_default' && !permission.isOverride}
+                            />
+                            {!permission.isGranted && permission.source === 'system_default' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      className="h-6 px-2 text-xs"
+                                      onClick={() => setConfirmApply({ roleId: role._id, permissionId: permission.id, details: { id: permission.id, group: permission.group, description: permission.description } })}
+                                    >
+                                      Staged change
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <div className="space-y-1">
+                                    <div className="text-xs font-mono">{permission.id}</div>
+                                    <div className="text-xs"><span className="font-semibold">Group:</span> {permission.group}</div>
+                                    <div className="text-xs text-muted-foreground">{permission.description}</div>
+                                    <div className="text-[10px] uppercase tracking-wide text-orange-600">Pushed from system (staged)</div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -485,6 +542,31 @@ export default function OrganisationRolesPage() {
           );
         })}
       </div>
+      {/* Confirm Apply Default Dialog */}
+      {confirmApply && (
+        <Dialog open onOpenChange={(o) => { if (!o) setConfirmApply(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Apply default permission?</DialogTitle>
+              <DialogDescription>
+                This will apply the staged system default permission to this role.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 text-sm">
+              <div><span className="font-semibold">Permission:</span> <code className="bg-muted px-1 py-0.5 rounded">{confirmApply.details.id}</code></div>
+              <div><span className="font-semibold">Group:</span> {confirmApply.details.group}</div>
+              <div className="text-muted-foreground">{confirmApply.details.description}</div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setConfirmApply(null)}>Cancel</Button>
+              <Button onClick={() => {
+                handlePermissionToggle(confirmApply.roleId, confirmApply.permissionId, true, true);
+                setConfirmApply(null);
+              }}>Apply</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </StandardizedSidebarLayout>
   );
 } 
