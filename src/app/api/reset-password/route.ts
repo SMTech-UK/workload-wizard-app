@@ -73,7 +73,6 @@ export async function POST(request: NextRequest) {
     try {
       // Set the password to null/undefined to force a reset
       await clerk.users.updateUser(userId, {
-        password: null,
         publicMetadata: {
           ...user.publicMetadata,
           passwordResetRequestedBy: currentUserData.id,

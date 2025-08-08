@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       if (existingEmail.id !== newEmailAddress.id) {
         try {
           await clerk.emailAddresses.deleteEmailAddress(existingEmail.id);
-        } catch (error: any) {
+        } catch (error) {
           // 404 or other errors are fine - old email might already be removed
           // This is not critical to the main functionality
         }

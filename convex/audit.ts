@@ -71,7 +71,7 @@ export const list = query({
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
     limit: v.optional(v.number()),
-    cursor: v.optional(v.string()),
+    cursor: v.optional(v.id("audit_logs")),
     search: v.optional(v.string()),
     timeRange: v.optional(v.number()),
   },

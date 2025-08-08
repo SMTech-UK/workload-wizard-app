@@ -198,9 +198,9 @@ export const seedDefaultOrgRolesAndPermissions = mutation({
     for (const role of createdRoles) {
       for (const perm of systemPermissions) {
         if (perm.defaultRoles.includes(role.name)) {
-          await ctx.db.insert("organisation_role_permissions", {
+      await ctx.db.insert("organisation_role_permissions", {
             organisationId,
-            roleId: role.id,
+            roleId: role.id as unknown as Id<"user_roles">,
             permissionId: perm.id,
             isGranted: true,
             isOverride: false,
@@ -348,7 +348,7 @@ export const upsertSystemRoleTemplate = mutation({
           severity: "info",
         });
       }
-      return existing._id as Id;
+      return existing._id as Id<"system_role_templates">;
     }
 
     const newId = await ctx.db.insert("system_role_templates", {
@@ -371,7 +371,7 @@ export const upsertSystemRoleTemplate = mutation({
         severity: "info",
       });
     }
-    return newId as Id;
+    return newId as Id<"system_role_templates">;
   },
 });
 
@@ -1085,7 +1085,7 @@ export const createTestOrgWithRoles = mutation({
       });
       testOrg = { _id: newOrgId } as any;
     }
-    const orgId = testOrg._id;
+    const orgId = (testOrg as { _id: Id<"organisations"> })._id;
 
     // Pull templates; fallback to classic set if none exist
     const templates = await ctx.db
@@ -1187,7 +1187,7 @@ export const createTestUsers = mutation({
         });
         userDoc = { _id: userId } as any;
       }
-      createdUsers.push({ subject, id: userDoc._id, role: role.name });
+      createdUsers.push({ subject, id: (userDoc as { _id: Id<"users"> })._id, role: role.name });
 
       const existingAssignment = await ctx.db
         .query("user_role_assignments")
@@ -1689,8 +1689,8 @@ export const requirePermission = async (
 
       // System roles bypass all permission checks
       if (user.systemRoles && user.systemRoles.length > 0) {
-        const systemRoles = ["admin", "sysadmin", "developer"];
-        if (user.systemRoles.some(role => systemRoles.includes(role))) {
+        const systemRoles = ["admin", "sysadmin", "developer"] as const;
+        if (user.systemRoles.some((role: string) => systemRoles.includes(role as any))) {
           return true;
         }
       }
@@ -1851,7 +1851,7 @@ export async function ensureDefaultsForOrg(
   };
 
   let createdCount = 0;
-  for (const rn of defaultRoleNames) {
+  for (const rn of defaultRoleNames ?? []) {
     const r = await ensureRole(rn);
     if (r.created) createdCount += 1;
   }

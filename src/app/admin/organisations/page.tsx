@@ -18,7 +18,9 @@ export default function AdminOrganisationsPage() {
   const router = useRouter();
   const convexUser = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
 
-  const hasByClerk = hasAnyRole(user, ['sysadmin', 'developer']) || (user?.publicMetadata as any)?.devLoginSession === true;
+  const hasByClerk =
+    hasAnyRole(user, ['sysadmin', 'developer']) ||
+    (user?.publicMetadata as Record<string, unknown> | undefined)?.['devLoginSession'] === true;
   const hasByConvex = !!convexUser && Array.isArray(convexUser.systemRoles) && convexUser.systemRoles.some((r: string) => r === 'sysadmin' || r === 'developer');
 
   useEffect(() => {

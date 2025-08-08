@@ -416,14 +416,14 @@ export default function SecurityPage() {
                       </Button>
                       <Button
                         onClick={handlePasswordSave}
-                        disabled={
+                        disabled={Boolean(
                           isLoading || 
                           (passwordData.newPassword && (
                             passwordData.newPassword !== passwordData.confirmPassword ||
                             passwordData.newPassword.length < 8 ||
                             !passwordData.currentPassword
                           ))
-                        }
+                        )}
                       >
                         {isLoading ? (
                           <>

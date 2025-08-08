@@ -26,7 +26,13 @@ export async function syncUsernamesFromClerk() {
   try {
     // Get all users from Clerk
     const clerk = await clerkClient();
-    let allClerkUsers: any[] = [];
+    let allClerkUsers: Array<{
+      id: string;
+      username?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      emailAddresses: Array<{ emailAddress: string }>;
+    }> = [];
     let hasNextPage = true;
     let lastUserId: string | undefined = undefined;
 

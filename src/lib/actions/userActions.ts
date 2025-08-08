@@ -62,13 +62,13 @@ export async function createUser(data: CreateUserData) {
 
   try {
     // Use provided organisationId or get the first organisation as default
-    let organisationId: any = data.organisationId; // eslint-disable-line @typescript-eslint/no-explicit-any
+    let organisationId: string | undefined = data.organisationId;
     if (!organisationId) {
       const organisations = await convex.query(api.organisations.list);
       if (organisations.length === 0) {
         throw new Error('No organisations found in Convex. Please create an organisation first.');
       }
-      organisationId = organisations[0]._id;
+      organisationId = organisations[0]._id as unknown as string;
     }
 
     // Check if user already exists in Clerk
@@ -108,7 +108,7 @@ export async function createUser(data: CreateUserData) {
               familyName: existingUser.lastName || '',
               fullName: `${existingUser.firstName || ''} ${existingUser.lastName || ''}`.trim(),
               systemRoles: data.roles,
-              organisationId: organisationId,
+              organisationId: organisationId as unknown as string,
               pictureUrl: existingUser.imageUrl,
               subject: existingUser.id,
               tokenIdentifier: primaryEmail.id,
@@ -156,7 +156,7 @@ export async function createUser(data: CreateUserData) {
       familyName: data.lastName,
       fullName: `${data.firstName} ${data.lastName}`,
       systemRoles: data.roles,
-      organisationId: organisationId,
+      organisationId: organisationId as unknown as string,
       pictureUrl: clerkUser.imageUrl,
       subject: clerkUser.id,
       tokenIdentifier: primaryEmail.id,
@@ -194,8 +194,8 @@ export async function createUser(data: CreateUserData) {
       try {
         await convex.mutation(api.organisationalRoles.assignMultipleToUser, {
           userId: clerkUser.id,
-          roleIds: data.organisationalRoleIds as any,
-          organisationId: organisationId as any,
+          roleIds: data.organisationalRoleIds as unknown as string[],
+          organisationId: organisationId as unknown as string,
           assignedBy: currentUserData.id,
         });
       } catch (roleError) {
@@ -205,8 +205,8 @@ export async function createUser(data: CreateUserData) {
       try {
         await convex.mutation(api.organisationalRoles.assignToUser, {
           userId: clerkUser.id,
-          roleId: data.organisationalRoleId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-          organisationId: organisationId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          roleId: data.organisationalRoleId as unknown as string,
+          organisationId: organisationId as unknown as string,
           assignedBy: currentUserData.id,
         });
       } catch (roleError) {
@@ -310,9 +310,10 @@ export async function deleteUser(userId: string) {
         email => email.id === user.primaryEmailAddressId
       );
       userEmail = primaryEmail?.emailAddress || 'unknown';
-    } catch (userError: any) {
+    } catch (userError) {
       console.warn('Could not get user details for audit log:', userError);
-      if (userError.status === 404) {
+      const httpStatus = (userError as { status?: number } | undefined)?.status
+      if (httpStatus === 404) {
         userExistsInClerk = false;
         console.log(`User ${userId} not found in Clerk, will skip Clerk deletion`);
       }
@@ -324,8 +325,9 @@ export async function deleteUser(userId: string) {
     // Delete from Clerk only if user exists there
     const promises = [convexDeletePromise];
     if (userExistsInClerk) {
-      const clerkDeletePromise = clerkClient.users.deleteUser(userId).catch((error: any) => {
-        if (error.status === 404) {
+      const clerkDeletePromise = clerkClient.users.deleteUser(userId).catch((error) => {
+        const httpStatus = (error as { status?: number } | undefined)?.status
+        if (httpStatus === 404) {
           console.log(`User ${userId} not found in Clerk during deletion, skipping`);
           return; // Don't throw, just skip
         }

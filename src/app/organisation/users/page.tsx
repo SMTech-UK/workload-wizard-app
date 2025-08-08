@@ -32,6 +32,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useQuery } from 'convex/react';
+import type { Id } from '../../../../convex/_generated/dataModel';
 import { api } from '../../../../convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { deleteUser } from '@/lib/actions/userActions';
@@ -106,14 +107,14 @@ export default function OrganisationUsersPage() {
   });
   const orgRoles = useQuery(
     api.organisationalRoles.listByOrganisation,
-    currentUser?.organisationId ? { organisationId: currentUser.organisationId as any } : 'skip'
+    currentUser?.organisationId ? { organisationId: currentUser.organisationId as unknown as Id<'organisations'> } : 'skip'
   );
 
   // Permission: can this actor assign elevated roles (sysadmin/developer/trial)?
   const canAssignElevated = (() => {
-    const meta: any = user?.publicMetadata as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const meta = user?.publicMetadata as Record<string, unknown> | undefined;
     const roles: string[] = Array.isArray(meta?.roles) ? meta.roles : [];
-    const role: string | undefined = meta?.role;
+    const role: string | undefined = typeof meta?.role === 'string' ? (meta.role as string) : undefined;
     return roles.includes('sysadmin') || roles.includes('developer') || role === 'sysadmin' || role === 'developer';
   })();
   const assignableSystemRoles = canAssignElevated ? ['user','orgadmin','sysadmin','developer','trial'] : ['user','orgadmin'];
@@ -198,7 +199,7 @@ export default function OrganisationUsersPage() {
       );
     }
     if (roleFilter !== 'all') list = list.filter(u => (u.systemRoles || []).includes(roleFilter));
-    if (orgRoleFilter !== 'all') list = list.filter(u => (u as any).organisationalRole?.id === orgRoleFilter); // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (orgRoleFilter !== 'all') list = list.filter(u => (u as unknown as { organisationalRole?: { id: string } }).organisationalRole?.id === orgRoleFilter);
     if (statusFilter !== 'all') list = list.filter(u => u.isActive === (statusFilter === 'active'));
     setFilteredUsers(list);
   };
@@ -230,7 +231,7 @@ export default function OrganisationUsersPage() {
 
   // Assign Roles
   const openAssignRoles = (target: User | null, bulk = false) => {
-    setAssigningUser(bulk ? ({} as any) : target); // eslint-disable-line @typescript-eslint/no-explicit-any
+    setAssigningUser(bulk ? ({} as unknown as User) : target);
     const initialSys = target?.systemRoles || [];
     const clampedSys = initialSys.filter((r) => assignableSystemRoles.includes(r));
     setSelectedSystemRoles(clampedSys);
@@ -464,7 +465,7 @@ export default function OrganisationUsersPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All org roles</SelectItem>
-                            {(orgRoles || []).map((r: any) => (
+                            {(orgRoles || []).map((r: { _id: string; name: string }) => (
                               <SelectItem key={r._id} value={r._id}>{r.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -589,11 +590,11 @@ export default function OrganisationUsersPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="flex items-center gap-2 justify-center">
+            <div className="flex items-center gap-2 justify-center">
                         <ShieldCheck className="w-4 h-4 text-muted-foreground" />
                         <div className="flex flex-wrap gap-1 justify-center">
-                          {(user as any).organisationalRoles && (user as any).organisationalRoles.length > 0 ? (
-                            (user as any).organisationalRoles.map((r: any) => (
+                  {(user as unknown as { organisationalRoles?: Array<{ id: string; name: string }> }).organisationalRoles && (user as unknown as { organisationalRoles?: Array<{ id: string; name: string }> }).organisationalRoles!.length > 0 ? (
+                    (user as unknown as { organisationalRoles: Array<{ id: string; name: string }> }).organisationalRoles.map((r) => (
                               <span key={r.id} className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">{r.name}</span>
                             ))
                           ) : (
@@ -718,7 +719,7 @@ export default function OrganisationUsersPage() {
               <div>
                 <div className="text-sm font-medium mb-2">Organisation Roles</div>
                 <div className="flex flex-wrap gap-2">
-                  {(orgRoles || []).map((r: any) => {
+                  {(orgRoles || []).map((r: { _id: string; name: string }) => {
                     const checked = selectedOrgRoleIds.includes(r._id);
                     return (
                       <button

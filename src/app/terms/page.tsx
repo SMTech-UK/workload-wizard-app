@@ -58,8 +58,8 @@ export default function TermsOfServicePage() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none">
             <p>
-              These Terms of Service ("Terms") govern your use of WorkloadWizard ("Service") 
-              operated by our organisation ("us", "we", or "our"). By accessing or using our 
+              These Terms of Service (&quot;Terms&quot;) govern your use of WorkloadWizard (&quot;Service&quot;) 
+              operated by our organisation (&quot;us&quot;, &quot;we&quot;, or &quot;our&quot;). By accessing or using our 
               Service, you agree to be bound by these Terms.
             </p>
           </CardContent>
@@ -83,7 +83,7 @@ export default function TermsOfServicePage() {
             <div>
               <h4 className="font-semibold mb-2">Prohibited Activities</h4>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                <li>Unauthorised access to other users' data</li>
+                 <li>Unauthorised access to other users&apos; data</li>
                 <li>Sharing login credentials with unauthorised personnel</li>
                 <li>Attempting to circumvent security measures</li>
                 <li>Using the service for non-academic commercial purposes</li>
@@ -156,7 +156,7 @@ export default function TermsOfServicePage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              WorkloadWizard is provided "as is" without warranties of any kind. We shall not be 
+              WorkloadWizard is provided &quot;as is&quot; without warranties of any kind. We shall not be 
               liable for any indirect, incidental, special, consequential, or punitive damages 
               resulting from your use of the service.
             </p>

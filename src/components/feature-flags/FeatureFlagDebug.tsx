@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
  */
 export function FeatureFlagDebug() {
   const [isVisible, setIsVisible] = useState(false);
-  const { enabled, loading, error, source, refresh } = useFeatureFlag(FeatureFlags.BETA_FEATURES);
+  const { enabled, loading, error, source, refresh } = useFeatureFlag(FeatureFlags.PINK_MODE);
   const clearCache = useClearFeatureFlagCache();
 
   // Only show in development
@@ -64,7 +64,7 @@ export function FeatureFlagDebug() {
             {!loading && !error && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-mono text-xs">BETA_FEATURES</span>
+                  <span className="font-mono text-xs">PINK_MODE</span>
                   <div className="flex items-center gap-2">
                     <Badge 
                       variant={enabled ? "default" : "secondary"}

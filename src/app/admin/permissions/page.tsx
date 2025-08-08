@@ -96,7 +96,9 @@ export default function AdminPermissionsPage() {
   const [deletingTemplate, setDeletingTemplate] = useState<SystemRoleTemplate | null>(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
 
-  const hasByClerk = hasAnyRole(user, ['sysadmin', 'developer']) || (user?.publicMetadata as any)?.devLoginSession === true;
+  const hasByClerk =
+    hasAnyRole(user, ['sysadmin', 'developer']) ||
+    (user?.publicMetadata as Record<string, unknown> | undefined)?.['devLoginSession'] === true;
   const hasByConvex = !!convexUser && Array.isArray(convexUser.systemRoles) && convexUser.systemRoles.some((r: string) => r === 'sysadmin' || r === 'developer');
 
   useEffect(() => {
@@ -116,10 +118,18 @@ export default function AdminPermissionsPage() {
     group: string;
     description: string;
     defaultRoles: string[];
+  } | {
+    group: string;
+    description: string;
+    defaultRoles: string[];
   }) => {
+    if (!('id' in data)) return;
     try {
       await createPermission({
-        ...data,
+        id: data.id,
+        group: data.group,
+        description: data.description,
+        defaultRoles: data.defaultRoles,
         performedBy: user?.id,
         performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
       });
@@ -635,11 +645,11 @@ export default function AdminPermissionsPage() {
                 try {
                   const raw = JSON.parse(importText);
                   if (!Array.isArray(raw)) throw new Error('JSON must be an array');
-                  const items = raw.map((x: any) => ({
-                    id: x['Permission ID'] ?? x.id,
-                    group: x['Group'] ?? x.group,
-                    description: x['Description'] ?? x.description,
-                    defaultRoles: x['Default Roles'] ?? x.defaultRoles ?? [],
+                  const items = raw.map((x: Record<string, unknown>) => ({
+                    id: (x['Permission ID'] as string | undefined) ?? (x.id as string),
+                    group: (x['Group'] as string | undefined) ?? (x.group as string),
+                    description: (x['Description'] as string | undefined) ?? (x.description as string),
+                    defaultRoles: (x['Default Roles'] as string[] | undefined) ?? (x.defaultRoles as string[] | undefined) ?? [],
                   }));
                   const res = await importPermissions({ items, upsert: importUpsert, performedBy: user?.id, performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress });
                   setShowImport(false);

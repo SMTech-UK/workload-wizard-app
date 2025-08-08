@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import { 
   FeatureFlagResult, 
   FeatureFlagContext,
@@ -22,7 +22,7 @@ export function useFeatureFlag(
   flagName: FeatureFlags,
   context?: Omit<FeatureFlagContext, 'userId' | 'userEmail' | 'distinctId'>
 ) {
-  const { user, isLoaded } = useAuth();
+  const { user, isLoaded } = useUser();
   const [result, setResult] = useState<FeatureFlagResult>({ enabled: false, source: 'fallback' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -33,7 +33,7 @@ export function useFeatureFlag(
       setError(null);
 
       // Get user context from Clerk
-      const userContext = getUserFeatureFlagContext(user);
+      const userContext = getUserFeatureFlagContext(user ?? null);
       
       // Create a simple context object
       const flagContext: FeatureFlagContext = {
@@ -94,7 +94,7 @@ export function useFeatureFlags(
   flagNames: FeatureFlags[],
   context?: Omit<FeatureFlagContext, 'userId' | 'userEmail' | 'distinctId'>
 ) {
-  const { user } = useAuth();
+  const { user } = useUser();
   const [results, setResults] = useState<Record<FeatureFlags, FeatureFlagResult>>({} as Record<FeatureFlags, FeatureFlagResult>);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -105,7 +105,7 @@ export function useFeatureFlags(
       setError(null);
 
       // Get user context from Clerk
-      const userContext = getUserFeatureFlagContext(user);
+      const userContext = getUserFeatureFlagContext(user ?? null);
       
       // Merge with provided context
       const flagContext: FeatureFlagContext = {

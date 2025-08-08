@@ -638,7 +638,7 @@ export default function PostHogTestPage() {
                         <p className="text-sm text-muted-foreground">{flag.description}</p>
                       )}
                       <p className="text-xs text-muted-foreground font-mono">{flag.key}</p>
-                      {flag.payload && (
+                      {Boolean(flag.payload) && (
                         <p className="text-xs text-muted-foreground">
                           Payload: {String(JSON.stringify(flag.payload as Record<string, unknown>))}
                         </p>

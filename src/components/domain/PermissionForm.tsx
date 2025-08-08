@@ -48,7 +48,7 @@ export function PermissionForm({
   // Load dynamic default role templates (sysadmin-managed)
   const templates = useQuery(api.permissions.listSystemRoleTemplates);
   const dynamicRoles: string[] = (templates && templates.length > 0)
-    ? templates.map((t: any) => t.name)
+    ? templates.map((t: { name: string }) => t.name)
     : [];
 
   const validateForm = () => {
@@ -216,7 +216,7 @@ export function PermissionForm({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {templates.map((t: any) => (
+                      {templates.map((t: { _id: string; name: string; description?: string }) => (
                         <TableRow key={t._id}>
                           <TableCell className="font-medium">{t.name}</TableCell>
                           <TableCell className="text-muted-foreground">{t.description || ''}</TableCell>

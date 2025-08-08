@@ -42,10 +42,9 @@ function normalizeEntityType(value: string): string {
 }
 
 function normalizeSeverity(value?: string): 'info' | 'warning' | 'error' | 'critical' {
-  const v = (value || 'info').toLowerCase();
-  return (['info', 'warning', 'error', 'critical'] as const).includes(v as any)
-    ? (v as any)
-    : 'info';
+  const v = (value || 'info').toLowerCase() as 'info' | 'warning' | 'error' | 'critical';
+  const allowed: Array<'info' | 'warning' | 'error' | 'critical'> = ['info', 'warning', 'error', 'critical'];
+  return allowed.includes(v) ? v : 'info';
 }
 
 function safeStringify(obj?: Record<string, unknown>): string | undefined {
@@ -444,9 +443,9 @@ export async function getAuditLogs(filters?: {
   }
 
   try {
-    // Filter out fields that aren't supported by the Convex function
-    const { search, timeRange, ...convexFilters } = filters || {};
-    const result = await convex.query(api.audit.list, convexFilters);
+    // Drop cursor here (typed as Convex Id on server). Client can manage paging with returned nextCursor
+    const { cursor: _cursor, ...rest } = filters || {};
+    const result = await convex.query(api.audit.list, rest as any);
     return result; // Return the full response object with logs, hasMore, and nextCursor
   } catch (error) {
     console.error('Error fetching audit logs:', error);

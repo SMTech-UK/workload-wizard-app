@@ -8,19 +8,6 @@
 
   ---
 
-  Fix onboarding flow so if user doesnt have onboardingCompleted = true, they are redirected to the onboarding flow.
-  
-  ## 🧪 2. Dev Tooling & Testing (Stretch but useful)
-  
-  * [ ] `createTestUserWithRole()` util (for test seeds/dev UX)
-  * [ ] Seed command:
-  
-    * [ ] Creates org with default roles + permissions
-    * [ ] Creates 3 users with different roles
-  * [ ] Optional: create `hasPermissionDevTest()` page that logs permission status for current user
-  
-  ---
-  
   ## 📦 3. MVP Prep for Next Sprint
   
   ### 🧑‍🏫 Staff

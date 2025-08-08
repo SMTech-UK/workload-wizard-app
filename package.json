@@ -1,6 +1,6 @@
 {
   "name": "workload-wizard-app",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "concurrently \"next dev --turbopack\" \"convex dev\" \"ngrok http 3000\"",

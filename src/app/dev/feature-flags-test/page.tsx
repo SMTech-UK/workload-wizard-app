@@ -37,7 +37,15 @@ export default function FeatureFlagsTestPage() {
   const { user, isLoaded } = useUser();
   const { toast } = useToast();
   const [earlyAccessFeatures, setEarlyAccessFeatures] = useState<EarlyAccessFeature[]>([]);
-  const [allFeatures, setAllFeatures] = useState<any[]>([]);
+  type DiscoveredFeature = {
+    key: string
+    name?: string
+    enabled?: boolean
+    description?: string
+    isEarlyAccess?: boolean
+    [extra: string]: unknown
+  }
+  const [allFeatures, setAllFeatures] = useState<DiscoveredFeature[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
