@@ -107,8 +107,8 @@ export function PermissionForm({
   // Auto-populate group from ID
   useEffect(() => {
     if (!isEditing && formData.id.includes('.')) {
-      const group = formData.id.split('.')[0];
-      setFormData(prev => ({ ...prev, group }));
+      const group = formData.id.split('.')[0] || '';
+      setFormData(prev => ({ ...prev, group } as PermissionFormData));
     }
   }, [formData.id, isEditing]);
 

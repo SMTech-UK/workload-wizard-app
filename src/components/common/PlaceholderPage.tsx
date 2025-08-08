@@ -30,10 +30,10 @@ export function PlaceholderPage({
 }: PlaceholderPageProps) {
   return (
     <StandardizedSidebarLayout
-      breadcrumbs={breadcrumbs}
-      title={title}
-      subtitle={subtitle}
-      headerActions={headerActions}
+      {...(breadcrumbs ? { breadcrumbs } : {})}
+      {...(title ? { title } : {})}
+      {...(subtitle ? { subtitle } : {})}
+      {...(headerActions ? { headerActions } : {})}
     >
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
         <div className="text-center space-y-4 max-w-2xl">

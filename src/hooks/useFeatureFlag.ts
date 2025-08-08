@@ -37,15 +37,15 @@ export function useFeatureFlag(
       
       // Create a simple context object
       const flagContext: FeatureFlagContext = {
-        userId: userContext.userId,
-        userEmail: userContext.userEmail,
-        distinctId: userContext.distinctId,
+        ...(userContext.userId ? { userId: userContext.userId } : {}),
+        ...(userContext.userEmail ? { userEmail: userContext.userEmail } : {}),
+        ...(userContext.distinctId ? { distinctId: userContext.distinctId } : {}),
         userProperties: {
           ...userContext.userProperties,
           ...context?.userProperties,
         },
-        groups: userContext.groups,
-      };
+        ...(userContext.groups ? { groups: userContext.groups } : {}),
+      } as FeatureFlagContext;
 
       const flagResult = await getFeatureFlag(flagName, flagContext);
       
@@ -109,13 +109,15 @@ export function useFeatureFlags(
       
       // Merge with provided context
       const flagContext: FeatureFlagContext = {
-        ...userContext,
-        ...context,
+        ...(userContext.userId ? { userId: userContext.userId } : {}),
+        ...(userContext.userEmail ? { userEmail: userContext.userEmail } : {}),
+        ...(userContext.distinctId ? { distinctId: userContext.distinctId } : {}),
         userProperties: {
           ...userContext.userProperties,
           ...context?.userProperties,
         },
-      };
+        ...(userContext.groups ? { groups: userContext.groups } : {}),
+      } as FeatureFlagContext;
 
       const flagResults = await getFeatureFlags(flagNames, flagContext);
       setResults(flagResults);

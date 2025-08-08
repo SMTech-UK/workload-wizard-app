@@ -81,20 +81,27 @@ export async function logAuditEvent(data: AuditLogData) {
     const organisationId = currentUserData.publicMetadata?.organisationId as string;
 
     // Create the audit log entry
-    await convex.mutation(api.audit.create, {
+    const base = {
       action,
       entityType,
       entityId: data.entityId,
-      entityName: data.entityName,
       performedBy: currentUserData.id,
-      performedByName: `${currentUserData.firstName || ''} ${currentUserData.lastName || ''}`.trim() || currentUserData.emailAddresses[0]?.emailAddress,
-      organisationId: organisationId,
-      details: data.details,
-      metadata: safeStringify(data.metadata),
-      ipAddress: requestInfo.ipAddress,
-      userAgent: requestInfo.userAgent,
       severity,
-    });
+    } as const;
+
+    const optional: Record<string, unknown> = {
+      ...(data.entityName ? { entityName: data.entityName } : {}),
+      ...(currentUserData.firstName || currentUserData.lastName || currentUserData.emailAddresses[0]?.emailAddress
+        ? { performedByName: (`${currentUserData.firstName || ''} ${currentUserData.lastName || ''}`.trim() || currentUserData.emailAddresses[0]?.emailAddress) as string }
+        : {}),
+      ...(organisationId ? { organisationId } : {}),
+      ...(data.details ? { details: data.details } : {}),
+      ...(safeStringify(data.metadata) ? { metadata: safeStringify(data.metadata) as string } : {}),
+      ...(requestInfo.ipAddress ? { ipAddress: requestInfo.ipAddress } : {}),
+      ...(requestInfo.userAgent ? { userAgent: requestInfo.userAgent } : {}),
+    };
+
+    await convex.mutation(api.audit.create, { ...base, ...optional } as any);
   } catch (error) {
     console.error('Failed to log audit event:', error);
     // Don't throw error to avoid breaking the main operation
@@ -131,7 +138,7 @@ export async function logUserUpdated(userId: string, userEmail: string, changes:
     entityId: userId,
     entityName: userEmail,
     details: details || 'User account updated',
-    metadata: { changes },
+    metadata: { changes } as Record<string, unknown>,
     severity: 'info',
   });
 }
@@ -245,7 +252,7 @@ export async function logAcademicYearUpdated(yearId: string, yearName: string, c
     entityId: yearId,
     entityName: yearName,
     details: details || 'Academic year updated',
-    metadata: { changes },
+    metadata: ({ changes } as Record<string, unknown>),
     severity: 'info',
   });
 }
@@ -256,11 +263,11 @@ export async function logError(error: Error, context: string, entityType?: strin
     entityType: entityType || 'system',
     entityId: entityId || 'unknown',
     details: `Error in ${context}: ${error.message}`,
-    metadata: { 
+    metadata: ({ 
       errorName: error.name,
       errorStack: error.stack,
       context 
-    },
+    } as Record<string, unknown>),
     severity: 'error',
   });
 }
@@ -273,7 +280,7 @@ export async function logPermissionCreated(permissionId: string, permissionName:
     entityId: permissionId,
     entityName: permissionName,
     details: details || `System permission "${permissionName}" created`,
-    metadata,
+    ...(metadata ? { metadata } : {}),
     severity: 'info',
   });
 }
@@ -285,7 +292,7 @@ export async function logPermissionUpdated(permissionId: string, permissionName:
     entityId: permissionId,
     entityName: permissionName,
     details: details || `System permission "${permissionName}" updated`,
-    metadata: { changes },
+    metadata: ({ changes } as Record<string, unknown>),
     severity: 'info',
   });
 }
@@ -297,7 +304,7 @@ export async function logPermissionDeleted(permissionId: string, permissionName:
     entityId: permissionId,
     entityName: permissionName,
     details: details || `System permission "${permissionName}" deleted`,
-    metadata,
+    ...(metadata ? { metadata } : {}),
     severity: 'warning',
   });
 }
@@ -309,12 +316,12 @@ export async function logPermissionAssigned(permissionId: string, permissionName
     entityId: permissionId,
     entityName: permissionName,
     details: details || `Permission "${permissionName}" assigned to role "${roleName}"`,
-    metadata: { 
+    metadata: ({ 
       roleId,
       roleName,
       permissionId,
       permissionName 
-    },
+    } as Record<string, unknown>),
     severity: 'info',
   });
 }
@@ -326,12 +333,12 @@ export async function logPermissionRevoked(permissionId: string, permissionName:
     entityId: permissionId,
     entityName: permissionName,
     details: details || `Permission "${permissionName}" revoked from role "${roleName}"`,
-    metadata: { 
+    metadata: ({ 
       roleId,
       roleName,
       permissionId,
       permissionName 
-    },
+    } as Record<string, unknown>),
     severity: 'warning',
   });
 }
@@ -343,7 +350,7 @@ export async function logPermissionPushedToOrgs(permissionId: string, permission
     entityId: permissionId,
     entityName: permissionName,
     details: details || `Permission "${permissionName}" pushed to ${results.organisationsUpdated} organisation(s), creating ${results.assignmentsCreated} new assignment(s)`,
-    metadata: results,
+    metadata: (results as unknown as Record<string, unknown>),
     severity: 'info',
   });
 }
@@ -356,7 +363,7 @@ export async function logRoleCreated(roleId: string, roleName: string, organisat
     entityId: roleId,
     entityName: roleName,
     details: details || `Role "${roleName}" created`,
-    metadata: { organisationId, ...metadata },
+    metadata: ({ organisationId, ...metadata } as Record<string, unknown>),
     severity: 'info',
   });
 }
@@ -368,7 +375,7 @@ export async function logRoleUpdated(roleId: string, roleName: string, changes: 
     entityId: roleId,
     entityName: roleName,
     details: details || `Role "${roleName}" updated`,
-    metadata: { organisationId, changes },
+    metadata: ({ organisationId, changes } as Record<string, unknown>),
     severity: 'info',
   });
 }
@@ -380,7 +387,7 @@ export async function logRoleDeleted(roleId: string, roleName: string, organisat
     entityId: roleId,
     entityName: roleName,
     details: details || `Role "${roleName}" deleted`,
-    metadata: { organisationId, ...metadata },
+    metadata: ({ organisationId, ...metadata } as Record<string, unknown>),
     severity: 'warning',
   });
 }
@@ -391,7 +398,7 @@ export async function logRoleAssignedToUser(userId: string, userEmailOrName: str
     action: 'role.assigned',
     entityType: 'user',
     entityId: userId,
-    entityName: userEmailOrName,
+    ...(userEmailOrName ? { entityName: userEmailOrName } : {}),
     details: `Role assigned: ${roleName} (${scope})`,
     metadata: { roleName, scope, ...extra },
     severity: 'info',
@@ -403,7 +410,7 @@ export async function logRoleRevokedFromUser(userId: string, userEmailOrName: st
     action: 'role.revoked',
     entityType: 'user',
     entityId: userId,
-    entityName: userEmailOrName,
+    ...(userEmailOrName ? { entityName: userEmailOrName } : {}),
     details: `Role revoked: ${roleName} (${scope})`,
     metadata: { roleName, scope, ...extra },
     severity: 'warning',
@@ -594,7 +601,7 @@ export async function logAcademicYearStatusChanged(yearId: string, yearName: str
     entityId: yearId,
     entityName: yearName,
     details: details || `Academic year ${newStatus ? 'activated' : 'deactivated'}`,
-    metadata: { oldStatus, newStatus },
+    metadata: ({ oldStatus, newStatus } as Record<string, unknown>),
     severity: 'info',
   });
 }
@@ -607,7 +614,7 @@ export async function logSystemMaintenance(action: string, details?: string, met
     entityId: 'system',
     entityName: 'System',
     details: details || `System maintenance: ${action}`,
-    metadata,
+    ...(metadata ? { metadata } : {}),
     severity: 'info',
   });
 }
@@ -619,7 +626,7 @@ export async function logDataExport(userId: string, userEmail: string, exportTyp
     entityId: 'export',
     entityName: `${exportType} Export`,
     details: details || `Data export: ${exportType} (${recordCount} records)`,
-    metadata: { exportType, recordCount },
+    metadata: ({ exportType, recordCount } as Record<string, unknown>),
     severity: 'info',
   });
 }
@@ -631,7 +638,7 @@ export async function logDataImport(userId: string, userEmail: string, importTyp
     entityId: 'import',
     entityName: `${importType} Import`,
     details: details || `Data import: ${importType} (${recordCount} records)`,
-    metadata: { importType, recordCount },
+    metadata: ({ importType, recordCount } as Record<string, unknown>),
     severity: 'info',
   });
 }

@@ -72,14 +72,16 @@ export default function AccountFeaturesPage() {
       const allConfigs = getAllFeatureFlagConfigs();
       const localOverrides = getLocalFlagOverrides();
       
-      const earlyAccessConfigs = Object.entries(allConfigs)
+      const earlyAccessConfigs: EarlyAccessFeature[] = Object.entries(allConfigs)
         .filter(([_, config]) => config.rolloutPercentage === 0)
         .map(([flagKey, config]) => ({
           flagKey,
           name: formatFeatureName(config.name),
-          description: config.description,
+          ...(config.description ? { description: config.description } : {}),
           stage: 'beta', // Default stage for config-based features
-          enrolled: localOverrides.hasOwnProperty(flagKey) ? localOverrides[flagKey] : config.defaultValue
+          ...(Object.prototype.hasOwnProperty.call(localOverrides, flagKey)
+            ? { enrolled: !!localOverrides[flagKey] }
+            : { enrolled: config.defaultValue })
         }));
       
       setFeatures(earlyAccessConfigs);

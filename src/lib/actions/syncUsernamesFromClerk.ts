@@ -46,8 +46,8 @@ export async function syncUsernamesFromClerk() {
       allClerkUsers = allClerkUsers.concat(clerkUsersResponse.data);
       hasNextPage = clerkUsersResponse.totalCount > allClerkUsers.length;
       
-      if (clerkUsersResponse.data.length > 0) {
-        lastUserId = clerkUsersResponse.data[clerkUsersResponse.data.length - 1].id;
+      if ((clerkUsersResponse.data?.length || 0) > 0) {
+        lastUserId = clerkUsersResponse.data![clerkUsersResponse.data!.length - 1]!.id;
       } else {
         hasNextPage = false;
       }

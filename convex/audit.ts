@@ -39,21 +39,26 @@ export const create = mutation({
     const normalizeEntity = (s: string) => s.trim().toLowerCase().replace(/[\s-]+/g, '_');
     const normalizedAction = normalize(args.action);
     const normalizedEntityType = normalizeEntity(args.entityType);
-    const logId = await ctx.db.insert("audit_logs", {
+    const base = {
       action: normalizedAction,
       entityType: normalizedEntityType,
       entityId: args.entityId,
-      entityName: args.entityName,
       performedBy: args.performedBy,
-      performedByName: args.performedByName,
-      organisationId: args.organisationId,
-      details: args.details,
-      metadata: args.metadata,
-      ipAddress: args.ipAddress,
-      userAgent: args.userAgent,
       timestamp: Date.now(),
       severity: (args.severity as any) || 'info',
-    });
+    } as const;
+
+    const optional = {
+      ...(args.entityName ? { entityName: args.entityName } : {}),
+      ...(args.performedByName ? { performedByName: args.performedByName } : {}),
+      ...(args.organisationId ? { organisationId: args.organisationId } : {}),
+      ...(args.details ? { details: args.details } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+      ...(args.ipAddress ? { ipAddress: args.ipAddress } : {}),
+      ...(args.userAgent ? { userAgent: args.userAgent } : {}),
+    };
+
+    const logId = await ctx.db.insert("audit_logs", { ...base, ...optional });
 
     return logId;
   },
@@ -143,7 +148,7 @@ export const list = query({
     return {
       logs: filteredLogs,
       hasMore: filteredLogs.length === limit,
-      nextCursor: filteredLogs.length === limit ? filteredLogs[filteredLogs.length - 1]._id : null,
+      nextCursor: filteredLogs.length === limit ? (filteredLogs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -168,7 +173,7 @@ export const getEntityLogs = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 50),
-      nextCursor: logs.length === (args.limit || 50) ? logs[logs.length - 1]._id : null,
+      nextCursor: logs.length === (args.limit || 50) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -191,7 +196,7 @@ export const getUserActivity = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 50),
-      nextCursor: logs.length === (args.limit || 50) ? logs[logs.length - 1]._id : null,
+      nextCursor: logs.length === (args.limit || 50) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -320,7 +325,7 @@ export const getLogsByDateRange = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 100),
-      nextCursor: logs.length === (args.limit || 100) ? logs[logs.length - 1]._id : null,
+      nextCursor: logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -343,7 +348,7 @@ export const getLogsBySeverity = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 100),
-      nextCursor: logs.length === (args.limit || 100) ? logs[logs.length - 1]._id : null,
+      nextCursor: logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -366,7 +371,7 @@ export const getLogsByAction = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 100),
-      nextCursor: logs.length === (args.limit || 100) ? logs[logs.length - 1]._id : null,
+      nextCursor: logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 }); 

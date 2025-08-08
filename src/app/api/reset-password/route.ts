@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
 
     // Initialize Clerk client
     const clerk = createClerkClient({
-      secretKey: process.env.CLERK_SECRET_KEY,
-    });
+      ...(process.env.CLERK_SECRET_KEY ? { secretKey: process.env.CLERK_SECRET_KEY as string } : {}),
+    } as any);
 
     // If orgadmin, ensure they can only reset passwords for users in their own organisation
     if (isOrgAdmin) {

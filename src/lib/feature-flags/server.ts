@@ -1,4 +1,4 @@
-// import { PostHog } from 'posthog-node';
+// Server-only PostHog import was intentionally removed to avoid unused dep.
 import { FeatureFlags, FeatureFlagResult, FeatureFlagContext } from './types';
 import { getFeatureFlagConfig, isValidFeatureFlag } from './config';
 import { getCurrentUserDetails } from '@/lib/auth/currentUser';
@@ -70,9 +70,6 @@ export async function getServerUserFeatureFlagContext(): Promise<FeatureFlagCont
   
   if (!userDetails) {
     return {
-      distinctId: undefined,
-      userId: undefined,
-      userEmail: undefined,
       userProperties: {},
       groups: {},
     } as FeatureFlagContext;
@@ -81,13 +78,12 @@ export async function getServerUserFeatureFlagContext(): Promise<FeatureFlagCont
   return {
     distinctId: userDetails.id,
     userId: userDetails.id,
-    userEmail: userDetails.email,
+    ...(userDetails.email ? { userEmail: userDetails.email } : {}),
     userProperties: {
-      email: userDetails.email,
+      ...(userDetails.email ? { email: userDetails.email } : {}),
       fullName: userDetails.fullName,
-      organisationId: userDetails.organisationId,
-      role: userDetails.role,
-      userType: userDetails.role,
+      ...(userDetails.organisationId ? { organisationId: userDetails.organisationId } : {}),
+      ...(userDetails.role ? { role: userDetails.role, userType: userDetails.role } : {}),
       hasOrganisation: !!userDetails.organisationId,
     },
     groups: {

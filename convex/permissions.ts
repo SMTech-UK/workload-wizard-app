@@ -263,10 +263,11 @@ export const getSystemPermissionsGrouped = query({
 
     // Group by permission group
     const grouped = permissions.reduce((acc, permission) => {
-      if (!acc[permission.group]) {
-        acc[permission.group] = [];
+      const key = permission.group as string;
+      if (!acc[key]) {
+        acc[key] = [] as typeof permissions;
       }
-      acc[permission.group].push(permission);
+      (acc[key] as typeof permissions).push(permission);
       return acc;
     }, {} as Record<string, typeof permissions>);
 
@@ -314,7 +315,7 @@ export const upsertSystemRoleTemplate = mutation({
           entityId: String(args.id),
           entityName: args.name,
           performedBy: args.performedBy,
-          performedByName: args.performedByName,
+          ...(args.performedByName ? { performedByName: args.performedByName } : {}),
           details: `System role template updated: ${args.name}`,
           timestamp: now,
           severity: "info",
@@ -342,7 +343,7 @@ export const upsertSystemRoleTemplate = mutation({
           entityId: String(existing._id),
           entityName: args.name,
           performedBy: args.performedBy,
-          performedByName: args.performedByName,
+          ...(args.performedByName ? { performedByName: args.performedByName } : {}),
           details: `System role template revived/updated: ${args.name}`,
           timestamp: now,
           severity: "info",
@@ -365,7 +366,7 @@ export const upsertSystemRoleTemplate = mutation({
         entityId: String(newId),
         entityName: args.name,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         details: `System role template created: ${args.name}`,
         timestamp: now,
         severity: "info",
@@ -393,7 +394,7 @@ export const deleteSystemRoleTemplate = mutation({
         entityId: String(args.id),
         entityName: tpl.name,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         details: `System role template deleted: ${tpl.name}`,
         timestamp: now,
         severity: "warning",
@@ -462,7 +463,7 @@ export const importSystemPermissions = mutation({
             entityId: item.id,
             entityName: item.id,
             performedBy: args.performedBy,
-            performedByName: args.performedByName,
+            ...(args.performedByName ? { performedByName: args.performedByName } : {}),
             details: `Permission imported: ${item.id}`,
             metadata: JSON.stringify(item),
             timestamp: now,
@@ -493,7 +494,7 @@ export const importSystemPermissions = mutation({
             entityId: existing.id,
             entityName: existing.id,
             performedBy: args.performedBy,
-            performedByName: args.performedByName,
+            ...(args.performedByName ? { performedByName: args.performedByName } : {}),
             details: `Permission upserted via import: ${existing.id}`,
             metadata: JSON.stringify({ oldValues, newValues: item }),
             timestamp: now,
@@ -567,7 +568,7 @@ export const createSystemPermission = mutation({
         entityId: args.id,
         entityName: args.id,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         details: `System permission "${args.id}" created with default roles: ${args.defaultRoles.join(', ')}`,
         metadata: JSON.stringify({
           group: args.group,
@@ -630,7 +631,7 @@ export const updateSystemPermission = mutation({
         entityId: permission.id,
         entityName: permission.id,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         details: `System permission "${permission.id}" updated: ${changes.join(', ')}`,
         metadata: JSON.stringify({
           oldValues,
@@ -727,7 +728,7 @@ export const deleteSystemPermission = mutation({
             entityId: permission.id,
             entityName: permission.id,
             performedBy: args.performedBy,
-            performedByName: args.performedByName,
+            ...(args.performedByName ? { performedByName: args.performedByName } : {}),
             organisationId: role.organisationId,
             details: `Permission "${permission.id}" revoked from role "${role.name}" during force delete`,
             metadata: JSON.stringify({
@@ -760,7 +761,7 @@ export const deleteSystemPermission = mutation({
             entityId: permission.id,
             entityName: permission.id,
             performedBy: args.performedBy,
-            performedByName: args.performedByName,
+            ...(args.performedByName ? { performedByName: args.performedByName } : {}),
             organisationId: orgRolePerm.organisationId,
             details: `Permission "${permission.id}" revoked from organisation role assignment during force delete`,
             metadata: JSON.stringify({
@@ -810,7 +811,7 @@ export const deleteSystemPermission = mutation({
         entityId: permission.id,
         entityName: permission.id,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         details: args.forceDelete 
           ? `System permission "${permission.id}" force deleted. Removed from ${removedFromRoles} user role(s) and ${removedFromOrgRoles} organisation role assignment(s).`
           : `System permission "${permission.id}" deleted.`,
@@ -981,7 +982,7 @@ export const pushPermissionsToOrganisations = mutation({
         entityId: permission.id,
         entityName: permission.id,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         details: `Permission "${permission.id}" pushed to ${organisations.length} organisation(s), creating ${assignmentsCreated} new assignment(s)`,
         metadata: JSON.stringify({
           organisationsUpdated: organisations.length,
@@ -1027,7 +1028,7 @@ export const pushPermissionsToOrganisations = mutation({
               entityId: permission.id,
               entityName: permission.id,
               performedBy: args.performedBy,
-              performedByName: args.performedByName,
+              ...(args.performedByName ? { performedByName: args.performedByName } : {}),
               organisationId: org._id,
               details: args.forceApply
                 ? `Permission "${permission.id}" assigned to role "${role.name}" in organisation "${org.name}"`
@@ -1413,7 +1414,7 @@ export const createOrganisationRole = mutation({
         entityId: roleId,
         entityName: args.name,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         organisationId: args.organisationId,
         details: `Role "${args.name}" created with ${args.permissions.length} permission(s)`,
         metadata: JSON.stringify({
@@ -1481,7 +1482,7 @@ export const updateOrganisationRole = mutation({
         entityId: args.roleId as any,
         entityName: args.name,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         organisationId: role.organisationId,
         details: `Role updated: ${args.name}`,
         metadata: JSON.stringify({
@@ -1560,7 +1561,7 @@ export const deleteOrganisationRole = mutation({
         entityId: args.roleId,
         entityName: role.name,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         organisationId: role.organisationId,
         details: `Role "${role.name}" deleted`,
         metadata: JSON.stringify({
@@ -1656,7 +1657,7 @@ export const updateRolePermissions = mutation({
         entityId: args.permissionId,
         entityName: systemPerm?.id || args.permissionId,
         performedBy: args.performedBy,
-        performedByName: args.performedByName,
+        ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         organisationId: role.organisationId,
         details: `${args.isGranted ? 'Assigned' : 'Revoked'} permission ${args.permissionId} ${args.isGranted ? 'to' : 'from'} role ${role.name}`,
         metadata: JSON.stringify({ roleId: role._id, roleName: role.name, permissionId: args.permissionId, acceptedFromStaged: !!args.acceptStaged }),
@@ -1862,7 +1863,7 @@ export async function ensureDefaultsForOrg(
 export const ensureDefaultRolesForOrganisation = mutation({
   args: { organisationId: v.id("organisations"), performedBy: v.optional(v.string()), performedByName: v.optional(v.string()), roleNames: v.optional(v.array(v.string())) },
   handler: async (ctx, args) => {
-    return ensureDefaultsForOrg(ctx, args.organisationId, { performedBy: args.performedBy, performedByName: args.performedByName, roleNames: args.roleNames ?? undefined });
+    return ensureDefaultsForOrg(ctx, args.organisationId, { ...(args.performedBy ? { performedBy: args.performedBy } : {}), ...(args.performedByName ? { performedByName: args.performedByName } : {}), ...(args.roleNames ? { roleNames: args.roleNames } : {}) });
   },
 });
 
@@ -1879,7 +1880,7 @@ export const ensureDefaultRolesAcrossOrganisations = mutation({
 
     let totalCreated = 0;
     for (const org of orgs) {
-      const result = await ensureDefaultsForOrg(ctx, org._id, { performedBy: args.performedBy, performedByName: args.performedByName, roleNames: args.roleNames ?? undefined });
+      const result = await ensureDefaultsForOrg(ctx, org._id, { ...(args.performedBy ? { performedBy: args.performedBy } : {}), ...(args.performedByName ? { performedByName: args.performedByName } : {}), ...(args.roleNames ? { roleNames: args.roleNames } : {}) });
       totalCreated += result.created;
     }
 

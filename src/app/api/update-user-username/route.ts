@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         username: [newUsername],
       });
 
-      if (existingUser.data.length > 0 && existingUser.data[0].id !== userId) {
+      if ((existingUser.data?.length || 0) > 0 && existingUser.data![0] && existingUser.data![0].id !== userId) {
         return NextResponse.json(
           { error: 'Username is already in use by another user' },
           { status: 409 }

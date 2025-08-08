@@ -66,10 +66,10 @@ export async function createUser(data: CreateUserData) {
     let organisationId: Id<"organisations"> | undefined = data.organisationId as unknown as Id<"organisations">;
     if (!organisationId) {
       const organisations = await convex.query(api.organisations.list);
-      if (organisations.length === 0) {
+      if ((organisations?.length || 0) === 0) {
         throw new Error('No organisations found in Convex. Please create an organisation first.');
       }
-      organisationId = organisations[0]._id;
+      organisationId = organisations[0]!._id;
     }
 
     // Check if user already exists in Clerk
@@ -80,8 +80,8 @@ export async function createUser(data: CreateUserData) {
         emailAddress: [data.email],
       });
       
-      if (existingUsers.data.length > 0) {
-        const existingUser = existingUsers.data[0];
+      if ((existingUsers.data?.length || 0) > 0) {
+        const existingUser = existingUsers.data![0]!;
         
         // Check if user exists in Convex
         const existingConvexUser = await convex.query(api.users.getBySubject, { subject: existingUser.id });
@@ -176,9 +176,11 @@ export async function createUser(data: CreateUserData) {
           username: data.username,
           temporaryPassword: password,
           signInUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || 'https://workload-wiz.xyz/sign-in',
-          adminName: currentUserData.firstName && currentUserData.lastName 
-            ? `${currentUserData.firstName} ${currentUserData.lastName}` 
-            : currentUserData.emailAddresses[0]?.emailAddress,
+          ...(currentUserData.firstName && currentUserData.lastName
+            ? { adminName: `${currentUserData.firstName} ${currentUserData.lastName}` }
+            : currentUserData.emailAddresses[0]?.emailAddress
+              ? { adminName: currentUserData.emailAddresses[0]?.emailAddress as string }
+              : {}),
         });
         
         emailSent = emailResult.success;
@@ -440,15 +442,15 @@ export async function updateUser(userId: string, updates: {
     // Update in Convex
     await convex.mutation(api.users.update, {
       id: (await convex.query(api.users.getBySubject, { subject: userId }))?._id as Id<"users">,
-      email: updates.email,
-      givenName: updates.firstName,
-      familyName: updates.lastName,
-      fullName: updates.firstName && updates.lastName ? `${updates.firstName} ${updates.lastName}` : undefined,
-      systemRoles: updates.roles,
-      organisationId: updates.organisationId as unknown as Id<"organisations">,
-      isActive: updates.isActive,
+      ...(updates.email ? { email: updates.email } : {}),
+      ...(updates.firstName ? { givenName: updates.firstName } : {}),
+      ...(updates.lastName ? { familyName: updates.lastName } : {}),
+      ...(updates.firstName && updates.lastName ? { fullName: `${updates.firstName} ${updates.lastName}` } : {}),
+      ...(updates.roles ? { systemRoles: updates.roles } : {}),
+      ...(updates.organisationId ? { organisationId: updates.organisationId as unknown as Id<"organisations"> } : {}),
+      ...(updates.isActive !== undefined ? { isActive: updates.isActive } : {}),
       currentUserId: currentUserData!.id,
-    });
+    } as any);
     
     // Create detailed audit message
     const changeDetails = [];

@@ -72,17 +72,18 @@ export default function ChartsTestPage() {
   const [selectedOrganisation, setSelectedOrganisation] = useState<string>("")
 
   // Fetch audit statistics
-  const stats = useQuery(api.audit.getStats, {
-    organisationId: selectedOrganisation || undefined,
-    startDate: Date.now() - timeRange,
-    endDate: Date.now(),
-  })
+  const stats = useQuery(
+    api.audit.getStats,
+    selectedOrganisation
+      ? { organisationId: selectedOrganisation, startDate: Date.now() - timeRange, endDate: Date.now() }
+      : { startDate: Date.now() - timeRange, endDate: Date.now() }
+  )
 
   // Fetch recent logs for detailed analysis
-  const recentLogs = useQuery(api.audit.getRecentLogs, {
-    limit: 100,
-    organisationId: selectedOrganisation || undefined,
-  })
+  const recentLogs = useQuery(
+    api.audit.getRecentLogs,
+    selectedOrganisation ? { limit: 100, organisationId: selectedOrganisation } : { limit: 100 }
+  )
 
   // Fetch organisations for filtering
   const organisations = useQuery(api.organisations.list)

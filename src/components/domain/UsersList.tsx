@@ -95,7 +95,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
       setIsLoading(true);
       setError(null);
       const userList = await listUsers();
-      setUsers(userList);
+      setUsers(userList as User[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch users');
     } finally {
@@ -505,7 +505,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
 
   const getRolesDisplay = (roles: string[]) => {
     if (!roles || roles.length === 0) return 'No roles';
-    if (roles.length === 1) return getRoleLabel(roles[0]);
+    if (roles.length === 1 && roles[0]) return getRoleLabel(roles[0]);
     
     // For multiple roles, show the highest priority role first
     const priorityOrder = ['sysadmin', 'developer', 'orgadmin', 'user', 'trial'];
@@ -529,7 +529,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
       return aIndex - bIndex;
     });
     
-    return getRoleBadgeClass(sortedRoles[0]);
+    return getRoleBadgeClass(sortedRoles[0] || 'user');
   };
 
   if (isLoading) {

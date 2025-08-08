@@ -369,21 +369,25 @@ export default function SecurityPage() {
                       <div className="space-y-2">
                         {/* Password strength indicator */}
                         <div className="space-y-1">
-                          <p className={`text-sm ${getPasswordStrength(passwordData.newPassword).color}`}>
-                            Password strength: {getPasswordStrength(passwordData.newPassword).label}
-                          </p>
-                          <div className="flex space-x-1">
-                            {[1, 2, 3, 4, 5].map((level) => (
-                              <div
-                                key={level}
-                                className={`h-1 flex-1 rounded ${
-                                  level <= getPasswordStrength(passwordData.newPassword).strength
-                                    ? getPasswordStrength(passwordData.newPassword).color.replace('text-', 'bg-')
-                                    : 'bg-gray-200'
-                                }`}
-                              />
-                            ))}
-                          </div>
+                          {(() => { const s = getPasswordStrength(passwordData.newPassword); return (
+                            <p className={`text-sm ${s?.color || ''}`}>
+                              Password strength: {s?.label || ''}
+                            </p>
+                          ); })()}
+                          {(() => { const s = getPasswordStrength(passwordData.newPassword); return (
+                            <div className="flex space-x-1">
+                              {[1, 2, 3, 4, 5].map((level) => (
+                                <div
+                                  key={level}
+                                  className={`h-1 flex-1 rounded ${
+                                    level <= (s?.strength || 0)
+                                      ? (s?.color?.replace('text-', 'bg-') || 'bg-gray-200')
+                                      : 'bg-gray-200'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          ); })()}
                         </div>
                         
                         {/* Validation messages */}

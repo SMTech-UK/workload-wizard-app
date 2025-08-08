@@ -92,9 +92,7 @@ export default function OrganisationRolesPage() {
   const [roleDescription, setRoleDescription] = useState('');
 
   // Get current user's organisation
-  const currentUser = useQuery(api.users.getBySubject, { 
-    subject: user?.id || '' 
-  });
+  const currentUser = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
 
   // Get organisation roles (skip until orgId is available)
   const organisationRoles = useQuery(
@@ -121,11 +119,11 @@ export default function OrganisationRolesPage() {
     try {
       await createRole({
         name: roleName.trim(),
-        description: roleDescription.trim() || undefined,
+        ...(roleDescription.trim() ? { description: roleDescription.trim() } : {}),
         organisationId: currentUser.organisationId,
         permissions: selectedPermissions,
-        performedBy: user?.id,
-        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
       });
 
       setRoleName('');
@@ -152,10 +150,10 @@ export default function OrganisationRolesPage() {
       await updateRole({
         roleId: editingRole._id as unknown as Id<'user_roles'>,
         name: roleName.trim(),
-        description: roleDescription.trim() || undefined,
+        ...(roleDescription.trim() ? { description: roleDescription.trim() } : {}),
         permissions: selectedPermissions,
-        performedBy: user?.id,
-        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
       });
 
       setEditingRole(null);
@@ -172,8 +170,8 @@ export default function OrganisationRolesPage() {
     try {
       await deleteRole({ 
         roleId: roleId as unknown as Id<'user_roles'>,
-        performedBy: user?.id,
-        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
       });
     } catch (error) {
       console.error('Error deleting role:', error);
@@ -186,9 +184,9 @@ export default function OrganisationRolesPage() {
         roleId: roleId as unknown as Id<'user_roles'>,
         permissionId,
         isGranted,
-        acceptStaged: !!acceptStaged,
-        performedBy: user?.id,
-        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+        ...(acceptStaged ? { acceptStaged: !!acceptStaged } : {}),
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
       });
     } catch (error) {
       console.error('Error updating permission:', error);

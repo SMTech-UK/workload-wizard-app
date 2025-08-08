@@ -97,14 +97,13 @@ export default function OrganisationUsersPage() {
   const [isBulkAssign, setIsBulkAssign] = useState(false);
 
   // Get current user's organisation
-  const currentUser = useQuery(api.users.getBySubject, { 
-    subject: user?.id || '' 
-  });
+  const currentUser = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
 
   // Get organisation users
-  const organisationUsers = useQuery(api.users.list, {
-    organisationId: currentUser?.organisationId || undefined,
-  });
+  const organisationUsers = useQuery(
+    api.users.list,
+    currentUser?.organisationId ? { organisationId: currentUser.organisationId as unknown as Id<'organisations'> } : 'skip'
+  );
   const orgRoles = useQuery(
     api.organisationalRoles.listByOrganisation,
     currentUser?.organisationId ? { organisationId: currentUser.organisationId as unknown as Id<'organisations'> } : 'skip'
@@ -127,7 +126,7 @@ export default function OrganisationUsersPage() {
 
   const getRolesDisplay = (roles: string[]) => {
     if (!roles || roles.length === 0) return 'No roles';
-    if (roles.length === 1) return getRoleLabel(roles[0]);
+    if (roles.length === 1 && roles[0]) return getRoleLabel(roles[0]);
     const priorityOrder = ['sysadmin', 'developer', 'orgadmin', 'user', 'trial'];
     const sorted = [...roles].sort((a, b) => priorityOrder.indexOf(a) - priorityOrder.indexOf(b));
     return sorted.map(getRoleLabel).join(', ');

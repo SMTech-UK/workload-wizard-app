@@ -29,14 +29,17 @@ export function OrganisationForm() {
     setMessage(null);
 
     const formData = new FormData(event.currentTarget);
-    const data: OrganisationFormData = {
+    const dataBase = {
       name: formData.get('name') as string,
       code: formData.get('code') as string,
-      contactEmail: formData.get('contactEmail') as string || undefined,
-      contactPhone: formData.get('contactPhone') as string || undefined,
-      domain: formData.get('domain') as string || undefined,
-      website: formData.get('website') as string || undefined,
     };
+    const optional = {
+      ...((formData.get('contactEmail') as string) ? { contactEmail: formData.get('contactEmail') as string } : {}),
+      ...((formData.get('contactPhone') as string) ? { contactPhone: formData.get('contactPhone') as string } : {}),
+      ...((formData.get('domain') as string) ? { domain: formData.get('domain') as string } : {}),
+      ...((formData.get('website') as string) ? { website: formData.get('website') as string } : {}),
+    } as Partial<OrganisationFormData>;
+    const data: OrganisationFormData = { ...dataBase, ...optional } as OrganisationFormData;
 
     try {
       await createOrganisation(data);

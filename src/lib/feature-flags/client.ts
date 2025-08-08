@@ -19,7 +19,11 @@ function getLocalFlagOverrides(): Record<string, boolean> {
   
   try {
     const stored = localStorage.getItem(LOCAL_FLAG_OVERRIDES_KEY);
-    return stored ? JSON.parse(stored) : {};
+    const parsed = stored ? JSON.parse(stored) : {};
+    Object.keys(parsed).forEach((k) => {
+      if (typeof parsed[k] !== 'boolean') delete parsed[k];
+    });
+    return parsed;
   } catch (error) {
     console.warn('Failed to get local flag overrides:', error);
     return {};
@@ -101,9 +105,9 @@ export async function getFeatureFlag(
 
   // Check local overrides first (highest priority)
   const localOverrides = getLocalFlagOverrides();
-  if (localOverrides.hasOwnProperty(flagName)) {
+  if (Object.prototype.hasOwnProperty.call(localOverrides, flagName)) {
     const result: FeatureFlagResult = {
-      enabled: localOverrides[flagName],
+      enabled: !!localOverrides[flagName],
       source: 'local-override'
     };
     
@@ -514,20 +518,21 @@ export async function getEarlyAccessFeatures(): Promise<Array<{
         try {
           console.log('PostHog early access features loaded:', posthogFeatures);
           
-          // Filter out features without flagKey and map to our expected format
-          const validPosthogFeatures = posthogFeatures
+      // Filter out features without flagKey and map to a loose format compatible with our UI
+      const validPosthogFeatures = posthogFeatures
             .filter((feature) => feature.flagKey)
             .map((feature) => {
               const enrolled = (feature as { enrolled?: boolean }).enrolled || false;
               console.log(`PostHog feature ${feature.flagKey} enrollment status:`, enrolled);
-              return {
-                flagKey: feature.flagKey!,
-                name: feature.name,
-                description: feature.description || undefined,
-                documentationUrl: feature.documentationUrl || undefined,
-                stage: feature.stage,
-                enrolled: enrolled
-              };
+          const obj: { flagKey: string; name: string; description?: string; documentationUrl?: string; stage: string; enrolled?: boolean } = {
+            flagKey: feature.flagKey!,
+            name: feature.name,
+            stage: feature.stage,
+          };
+          if (feature.description) obj.description = feature.description;
+          if (feature.documentationUrl) obj.documentationUrl = feature.documentationUrl;
+          obj.enrolled = enrolled;
+          return obj;
             });
 
           // Then, add our locally configured feature flags that should be treated as early access
@@ -544,26 +549,26 @@ export async function getEarlyAccessFeatures(): Promise<Array<{
               const localOverrides = getLocalFlagOverrides();
               let isEnabled = false;
               
-              if (localOverrides.hasOwnProperty(flagKey)) {
-                isEnabled = localOverrides[flagKey];
+              if (Object.prototype.hasOwnProperty.call(localOverrides, flagKey)) {
+                isEnabled = !!localOverrides[flagKey];
                 console.log(`Local early access feature ${flagKey} status from override:`, isEnabled);
               } else {
                 isEnabled = posthog.isFeatureEnabled(flagKey) || false;
                 console.log(`Local early access feature ${flagKey} status from PostHog:`, isEnabled);
               }
               
-              return {
+              const obj: { flagKey: string; name: string; description?: string; documentationUrl?: string; stage: string; enrolled?: boolean } = {
                 flagKey: flagKey,
                 name: config?.description || flagKey,
-                description: config?.description || `Early access feature: ${flagKey}`,
-                documentationUrl: undefined,
-                stage: 'beta' as const, // Default stage for local early access features
-                enrolled: isEnabled
+                stage: 'beta',
               };
+              if (config?.description) obj.description = config.description;
+              obj.enrolled = !!isEnabled;
+              return obj;
             });
 
           // Combine both sets of features, avoiding duplicates
-          const allFeatures = [...validPosthogFeatures];
+          const allFeatures: Array<{ flagKey: string; name: string; description?: string; documentationUrl?: string; stage: string; enrolled?: boolean; }> = [...validPosthogFeatures];
           
           // Add local features that aren't already in PostHog features
           localEarlyAccessFeatures.forEach(localFeature => {
@@ -574,7 +579,7 @@ export async function getEarlyAccessFeatures(): Promise<Array<{
           });
 
           console.log('Combined early access features:', allFeatures);
-          resolve(allFeatures);
+          resolve(allFeatures as Array<{ flagKey: string; name: string; description?: string; documentationUrl?: string; stage: string; enrolled?: boolean; }>);
         } catch (error) {
           console.warn('Error processing early access features:', error);
           // Fall back to just local features if PostHog processing fails
@@ -597,7 +602,14 @@ export async function getEarlyAccessFeatures(): Promise<Array<{
               };
             });
           
-          resolve(localEarlyAccessFeatures);
+          resolve(localEarlyAccessFeatures.map(f => ({
+            flagKey: f.flagKey,
+            name: f.name,
+            ...(f.description ? { description: f.description } : {}),
+            ...(f.documentationUrl ? { documentationUrl: f.documentationUrl } : {}),
+            stage: f.stage,
+            enrolled: f.enrolled,
+          })) as Array<{ flagKey: string; name: string; description?: string; documentationUrl?: string; stage: string; enrolled?: boolean; }>);
         }
       }, true, ['concept', 'beta']); // Force reload and get concept + beta features
     } catch (error) {
@@ -621,7 +633,14 @@ export async function getEarlyAccessFeatures(): Promise<Array<{
           };
         });
       
-      resolve(localEarlyAccessFeatures);
+      resolve(localEarlyAccessFeatures.map(f => ({
+        flagKey: f.flagKey,
+        name: f.name,
+        ...(f.description ? { description: f.description } : {}),
+        ...(f.documentationUrl ? { documentationUrl: f.documentationUrl } : {}),
+        stage: f.stage,
+        enrolled: f.enrolled,
+      })) as Array<{ flagKey: string; name: string; description?: string; documentationUrl?: string; stage: string; enrolled?: boolean; }>);
     }
   });
 }
@@ -639,9 +658,9 @@ export async function checkEarlyAccessFeatureEnrollment(flagKey: string): Promis
       // This is a local early access feature flag
       // Check local override first, then fallback to config default
       const localOverrides = getLocalFlagOverrides();
-      if (localOverrides.hasOwnProperty(flagKey)) {
+      if (Object.prototype.hasOwnProperty.call(localOverrides, flagKey)) {
         console.log(`Local early access feature ${flagKey} status from override:`, localOverrides[flagKey]);
-        return localOverrides[flagKey];
+        return !!localOverrides[flagKey];
       }
       
       // Return the config default value for local features
