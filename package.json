@@ -12,11 +12,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --check .",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "test:ui": "playwright test",
     "depcheck": "depcheck --ignore-bin-package=true --ignores=@tailwindcss/postcss,tailwindcss,eslint-config-next,tw-animate-css",
     "depgraph": "madge --circular --extensions ts,tsx src",
-    "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm build && pnpm depcheck && pnpm depgraph"
+    "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
+    "prepare": "husky"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",
@@ -59,6 +60,8 @@
     "concurrently": "^9.2.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
     "depcheck": "^1.4.7",
     "madge": "^8.0.0",
     "prettier": "^3.3.3",
