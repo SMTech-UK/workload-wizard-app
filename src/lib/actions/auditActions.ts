@@ -101,7 +101,7 @@ export async function logAuditEvent(data: AuditLogData) {
       ...(requestInfo.userAgent ? { userAgent: requestInfo.userAgent } : {}),
     };
 
-    await convex.mutation(api.audit.create, { ...base, ...optional } as any);
+    await convex.mutation(api.audit.create, { ...base, ...optional });
   } catch (error) {
     console.error('Failed to log audit event:', error);
     // Don't throw error to avoid breaking the main operation

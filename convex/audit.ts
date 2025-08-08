@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 
 // Interface for audit log entry
 export interface AuditLogEntry {
@@ -9,7 +10,7 @@ export interface AuditLogEntry {
   entityName?: string;
   performedBy: string;
   performedByName?: string;
-  organisationId?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  organisationId?: Id<"organisations">;
   details?: string;
   metadata?: string;
   ipAddress?: string;
@@ -26,7 +27,7 @@ export const create = mutation({
     entityName: v.optional(v.string()),
     performedBy: v.string(),
     performedByName: v.optional(v.string()),
-    organisationId: v.optional(v.any()),
+    organisationId: v.optional(v.id("organisations")),
     details: v.optional(v.string()),
     metadata: v.optional(v.string()),
     ipAddress: v.optional(v.string()),
@@ -39,13 +40,18 @@ export const create = mutation({
     const normalizeEntity = (s: string) => s.trim().toLowerCase().replace(/[\s-]+/g, '_');
     const normalizedAction = normalize(args.action);
     const normalizedEntityType = normalizeEntity(args.entityType);
-    const base = {
+    const base: Omit<AuditLogEntry, "entityName" | "performedByName" | "organisationId" | "details" | "metadata" | "ipAddress" | "userAgent"> & { timestamp: number } = {
       action: normalizedAction,
       entityType: normalizedEntityType,
       entityId: args.entityId,
       performedBy: args.performedBy,
       timestamp: Date.now(),
-      severity: (args.severity as any) || 'info',
+      severity: ((): NonNullable<AuditLogEntry["severity"]> => {
+        const value = args.severity ?? 'info';
+        return value === 'info' || value === 'warning' || value === 'error' || value === 'critical'
+          ? value
+          : 'info';
+      })(),
     } as const;
 
     const optional = {

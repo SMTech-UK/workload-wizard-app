@@ -1,6 +1,6 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type QueryCtx, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Id, type Doc } from "./_generated/dataModel";
 
 /**
  * Check if a user has a specific permission
@@ -40,7 +40,7 @@ export const hasPermission = query({
 
     if (!roleAssignments || roleAssignments.length === 0) return false;
 
-    const roles = (await Promise.all(roleAssignments.map(a => ctx.db.get(a.roleId)))).filter(Boolean) as any[];
+    const roles = (await Promise.all(roleAssignments.map(a => ctx.db.get(a.roleId)))).filter((r): r is Doc<"user_roles"> => Boolean(r));
     if (roles.length === 0) return false;
 
     // Check explicit permission across any role
@@ -284,7 +284,7 @@ export const listSystemRoleTemplates = query({
   handler: async (ctx) => {
     const templates = await ctx.db
       .query("system_role_templates")
-      .filter((q: any) => q.eq(q.field("isActive"), true))
+      .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
     return templates;
   },
@@ -327,7 +327,7 @@ export const upsertSystemRoleTemplate = mutation({
     // Ensure name uniqueness (case-sensitive)
     const existing = await ctx.db
       .query("system_role_templates")
-      .filter((q: any) => q.eq(q.field("name"), args.name))
+      .filter((q) => q.eq(q.field("name"), args.name))
       .first();
     if (existing) {
       // If an inactive template exists with same name, revive it; else update description
@@ -518,8 +518,8 @@ export const getStagedForOrganisation = query({
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("organisation_role_permissions")
-      .withIndex("by_organisation", (q: any) => q.eq("organisationId", args.organisationId))
-      .filter((q: any) => q.eq(q.field("staged"), true))
+      .withIndex("by_organisation", (q) => q.eq("organisationId", args.organisationId))
+      .filter((q) => q.eq(q.field("staged"), true))
       .collect();
     return rows;
   },
@@ -665,7 +665,7 @@ export const checkPermissionUsage = query({
     // Check if permission is used in organisation role permissions
     const orgRolePermissions = await ctx.db
       .query("organisation_role_permissions")
-      .filter((q: any) => q.eq(q.field("permissionId"), args.permissionId))
+      .filter((q) => q.eq(q.field("permissionId"), args.permissionId))
       .collect();
     
     return {
@@ -746,7 +746,7 @@ export const deleteSystemPermission = mutation({
       // Remove from organisation_role_permissions
       const orgRolePermissions = await ctx.db
         .query("organisation_role_permissions")
-        .filter((q: any) => q.eq(q.field("permissionId"), permission.id))
+        .filter((q) => q.eq(q.field("permissionId"), permission.id))
         .collect();
       
       for (const orgRolePerm of orgRolePermissions) {
@@ -789,7 +789,7 @@ export const deleteSystemPermission = mutation({
       // Check if permission is used in organisation role permissions
       const orgRolePermissions = await ctx.db
         .query("organisation_role_permissions")
-        .filter((q: any) => q.eq(q.field("permissionId"), permission.id))
+        .filter((q) => q.eq(q.field("permissionId"), permission.id))
         .collect();
       
       if (orgRolePermissions.length > 0) {
@@ -847,7 +847,7 @@ export const debugOrganisationsAndRoles = query({
   handler: async (ctx) => {
     const organisations = await ctx.db
       .query("organisations")
-      .filter((q: any) => q.eq(q.field("isActive"), true))
+      .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
     const result = [];
@@ -958,7 +958,7 @@ export const pushPermissionsToOrganisations = mutation({
               if (!existingStage) {
                 await ctx.db.insert("organisation_role_permissions", {
                   organisationId: org._id,
-                  roleId: role._id as any,
+                  roleId: role._id,
                   permissionId: permission.id,
                   isGranted: true,
                   isOverride: true,
@@ -1084,35 +1084,35 @@ export const createTestOrgWithRoles = mutation({
         createdAt: now,
         updatedAt: now,
       });
-      testOrg = { _id: newOrgId } as any;
+      testOrg = await ctx.db.get(newOrgId);
     }
     const orgId = (testOrg as { _id: Id<"organisations"> })._id;
 
     // Pull templates; fallback to classic set if none exist
     const templates = await ctx.db
       .query("system_role_templates")
-      .filter((q: any) => q.eq(q.field("isActive"), true))
+      .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
     const roleNames = templates.length > 0 ? templates.map((t: any) => t.name) : ["Admin", "Manager", "Lecturer", "Viewer"];
 
     // Load active system permissions
-    const systemPermissions = await ctx.db
+      const systemPermissions = await ctx.db
       .query("system_permissions")
-      .filter((q: any) => q.eq(q.field("isActive"), true))
+        .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
     // Create roles based on templates and assign permissions from defaultRoles membership
-    const existingRoles = await ctx.db
+      const existingRoles = await ctx.db
       .query("user_roles")
-      .filter((q: any) => q.and(q.eq(q.field("organisationId"), orgId), q.eq(q.field("isActive"), true)))
+        .filter((q) => q.and(q.eq(q.field("organisationId"), orgId), q.eq(q.field("isActive"), true)))
       .collect();
-    const existingRoleNames = new Set(existingRoles.map((r: any) => r.name));
+    const existingRoleNames = new Set(existingRoles.map((r) => r.name));
     const createdRoles: any[] = [];
     for (const roleName of roleNames) {
       if (!existingRoleNames.has(roleName)) {
         const permissionsForRole = systemPermissions
-          .filter((p: any) => Array.isArray(p.defaultRoles) && p.defaultRoles.includes(roleName))
-          .map((p: any) => p.id);
+          .filter((p) => Array.isArray(p.defaultRoles) && p.defaultRoles.includes(roleName))
+          .map((p) => p.id);
         const roleId = await ctx.db.insert("user_roles", {
           name: roleName,
           description: `${roleName} (test)`,
@@ -1157,7 +1157,7 @@ export const createTestUsers = mutation({
     // Get roles in test org
     const roles = await ctx.db
       .query("user_roles")
-      .filter((q: any) => q.eq(q.field("organisationId"), testOrg._id))
+      .filter((q) => q.eq(q.field("organisationId"), testOrg._id))
       .collect();
 
     // helper to slug
@@ -1171,7 +1171,7 @@ export const createTestUsers = mutation({
       const subject = `test_${toSlug(role.name)}_user`;
       let userDoc = await ctx.db
         .query("users")
-        .withIndex("by_subject", (q: any) => q.eq("subject", subject))
+        .withIndex("by_subject", (q) => q.eq("subject", subject))
         .first();
       if (!userDoc) {
         const userId = await ctx.db.insert("users", {
@@ -1186,14 +1186,14 @@ export const createTestUsers = mutation({
           createdAt: now,
           updatedAt: now,
         });
-        userDoc = { _id: userId } as any;
+        userDoc = { _id: userId, subject, organisationId: testOrg._id, isActive: true, createdAt: now, updatedAt: now, email: `${toSlug(role.name)}@test.edu`, givenName: role.name, familyName: "User", fullName: `${role.name} User`, systemRoles: [] } as unknown as Doc<"users">;
       }
       createdUsers.push({ subject, id: (userDoc as { _id: Id<"users"> })._id, role: role.name });
 
       const existingAssignment = await ctx.db
         .query("user_role_assignments")
-        .withIndex("by_user_org", (q: any) => q.eq("userId", subject).eq("organisationId", testOrg._id))
-        .filter((q: any) => q.eq(q.field("isActive"), true))
+        .withIndex("by_user_org", (q) => q.eq("userId", subject).eq("organisationId", testOrg._id))
+        .filter((q) => q.eq(q.field("isActive"), true))
         .first();
       if (!existingAssignment) {
         await ctx.db.insert("user_role_assignments", {
@@ -1248,7 +1248,7 @@ export const createTestUserWithRole = mutation({
     const subject = `test_${toSlug(args.roleName)}_user`;
     let userDoc = await ctx.db
       .query("users")
-      .withIndex("by_subject", (q: any) => q.eq("subject", subject))
+      .withIndex("by_subject", (q) => q.eq("subject", subject))
       .first();
     if (!userDoc) {
       const userId = await ctx.db.insert("users", {
@@ -1263,12 +1263,12 @@ export const createTestUserWithRole = mutation({
         createdAt: now,
         updatedAt: now,
       });
-      userDoc = { _id: userId } as any;
+      userDoc = await ctx.db.get(userId);
     }
     const existingAssignment = await ctx.db
       .query("user_role_assignments")
-      .withIndex("by_user_org", (q: any) => q.eq("userId", subject).eq("organisationId", testOrg._id))
-      .filter((q: any) => q.eq(q.field("isActive"), true))
+      .withIndex("by_user_org", (q) => q.eq("userId", subject).eq("organisationId", testOrg._id))
+      .filter((q) => q.eq(q.field("isActive"), true))
       .first();
     if (!existingAssignment) {
       await ctx.db.insert("user_role_assignments", {
@@ -1479,7 +1479,7 @@ export const updateOrganisationRole = mutation({
       await ctx.db.insert("audit_logs", {
         action: 'role.updated',
         entityType: 'role',
-        entityId: args.roleId as any,
+        entityId: String(args.roleId),
         entityName: args.name,
         performedBy: args.performedBy,
         ...(args.performedByName ? { performedByName: args.performedByName } : {}),
@@ -1675,23 +1675,23 @@ export const updateRolePermissions = mutation({
  * Throws an error if user doesn't have the required permission
  */
 export const requirePermission = async (
-  ctx: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ctx: QueryCtx | MutationCtx,
   userId: string,
   permissionId: string
 ) => {
   const hasPermission = await ctx.db
     .query("users")
-    .withIndex("by_subject", (q: any) => q.eq("subject", userId))
+    .withIndex("by_subject", (q) => q.eq("subject", userId))
     .first()
-    .then(async (user: any) => {
+    .then(async (user: Doc<"users"> | null) => {
       if (!user) {
         return false;
       }
 
       // System roles bypass all permission checks
       if (user.systemRoles && user.systemRoles.length > 0) {
-        const systemRoles = ["admin", "sysadmin", "developer"] as const;
-        if (user.systemRoles.some((role: string) => systemRoles.includes(role as any))) {
+        const systemRoles: ReadonlyArray<string> = ["admin", "sysadmin", "developer"] as const;
+        if (user.systemRoles.some((role: string) => systemRoles.includes(role))) {
           return true;
         }
       }
@@ -1699,10 +1699,10 @@ export const requirePermission = async (
       // Get user's role assignment
       const roleAssignment = await ctx.db
         .query("user_role_assignments")
-        .withIndex("by_user_org", (q: any) =>
+        .withIndex("by_user_org", (q) =>
           q.eq("userId", userId).eq("organisationId", user.organisationId)
         )
-        .filter((q: any) => q.eq(q.field("isActive"), true))
+        .filter((q) => q.eq(q.field("isActive"), true))
         .first();
 
       if (!roleAssignment) {
@@ -1723,7 +1723,7 @@ export const requirePermission = async (
       // Check system defaults for this permission
       const systemPermission = await ctx.db
         .query("system_permissions")
-        .withIndex("by_permission_id", (q: any) => q.eq("id", permissionId))
+        .withIndex("by_permission_id", (q) => q.eq("id", permissionId))
         .first();
 
       if (!systemPermission || !systemPermission.isActive) {
@@ -1747,14 +1747,14 @@ export const requirePermission = async (
  * and has the required permission (or is sysadmin/developer).
  */
 export const requireOrgPermission = async (
-  ctx: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ctx: QueryCtx | MutationCtx,
   userId: string,
   permissionId: string,
   organisationId: string
 ) => {
   const user = await ctx.db
     .query("users")
-    .withIndex("by_subject", (q: any) => q.eq("subject", userId))
+    .withIndex("by_subject", (q) => q.eq("subject", userId))
     .first();
 
   if (!user) {
@@ -1784,8 +1784,8 @@ export const requireOrgPermission = async (
  * `system_permissions.defaultRoles` membership.
  */
 export async function ensureDefaultsForOrg(
-  ctx: any,
-  organisationId: string,
+  ctx: MutationCtx,
+  organisationId: Id<"organisations">,
   options?: { performedBy?: string; performedByName?: string; roleNames?: string[] }
 ) {
   const now = Date.now();
@@ -1793,16 +1793,16 @@ export async function ensureDefaultsForOrg(
   // Fetch existing roles for org
   const existingRoles = await ctx.db
     .query("user_roles")
-    .filter((q: any) => q.and(q.eq(q.field("organisationId"), organisationId), q.eq(q.field("isActive"), true)))
+    .filter((q) => q.and(q.eq(q.field("organisationId"), organisationId), q.eq(q.field("isActive"), true)))
     .collect();
 
-  const existingRoleNames = new Set(existingRoles.map((r: any) => r.name));
+  const existingRoleNames = new Set(existingRoles.map((r) => r.name));
 
   let defaultRoleNames = options?.roleNames;
   if (!defaultRoleNames) {
     const templates = await ctx.db
       .query("system_role_templates")
-      .filter((q: any) => q.eq(q.field("isActive"), true))
+      .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
     defaultRoleNames = templates.length > 0 ? templates.map((t: any) => t.name) : ["Admin", "Manager", "Lecturer", "Viewer"];
   }
@@ -1816,8 +1816,8 @@ export async function ensureDefaultsForOrg(
   const ensureRole = async (roleName: string) => {
     if (!existingRoleNames.has(roleName)) {
       const permissionsForRole = systemPermissions
-        .filter((p: any) => Array.isArray(p.defaultRoles) && p.defaultRoles.includes(roleName))
-        .map((p: any) => p.id);
+        .filter((p) => Array.isArray(p.defaultRoles) && p.defaultRoles.includes(roleName))
+        .map((p) => p.id);
 
       const newRoleId = await ctx.db.insert("user_roles", {
         name: roleName,
@@ -1835,10 +1835,10 @@ export async function ensureDefaultsForOrg(
         await ctx.db.insert("audit_logs", {
           action: "role.created",
           entityType: "role",
-          entityId: newRoleId as any,
+          entityId: String(newRoleId),
           entityName: roleName,
           performedBy: options.performedBy!,
-          performedByName: options.performedByName,
+          ...(options.performedByName ? { performedByName: options.performedByName } : {}),
           organisationId,
           details: `Default role \"${roleName}\" created with ${permissionsForRole.length} permission(s)` ,
           metadata: JSON.stringify({ permissions: permissionsForRole }),
@@ -1875,12 +1875,12 @@ export const ensureDefaultRolesAcrossOrganisations = mutation({
   handler: async (ctx, args) => {
     const orgs = await ctx.db
       .query("organisations")
-      .filter((q: any) => q.eq(q.field("isActive"), true))
+      .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
     let totalCreated = 0;
     for (const org of orgs) {
-      const result = await ensureDefaultsForOrg(ctx, org._id, { ...(args.performedBy ? { performedBy: args.performedBy } : {}), ...(args.performedByName ? { performedByName: args.performedByName } : {}), ...(args.roleNames ? { roleNames: args.roleNames } : {}) });
+      const result = await ensureDefaultsForOrg(ctx as MutationCtx, org._id as Id<"organisations">, { ...(args.performedBy ? { performedBy: args.performedBy } : {}), ...(args.performedByName ? { performedByName: args.performedByName } : {}), ...(args.roleNames ? { roleNames: args.roleNames } : {}) });
       totalCreated += result.created;
     }
 
