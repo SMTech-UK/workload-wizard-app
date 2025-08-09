@@ -21,4 +21,8 @@ export function getEnv(): Env {
   return parsed;
 }
 
+// Parse eagerly at import time to fail fast in production builds
+// Safe in dev/test too
+void getEnv();
+
 
