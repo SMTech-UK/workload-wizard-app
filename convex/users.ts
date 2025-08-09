@@ -154,6 +154,20 @@ export const update = mutation({
     }
 
     await ctx.db.patch(id, updates);
+
+    // Audit update
+    try {
+      await ctx.db.insert("audit_logs", {
+        action: 'update',
+        entityType: 'user',
+        entityId: String(id),
+        performedBy: args.currentUserId,
+        details: 'User updated',
+        metadata: JSON.stringify(updates),
+        timestamp: Date.now(),
+        severity: 'info',
+      });
+    } catch {}
   },
 });
 
@@ -187,6 +201,20 @@ export const updateEmail = mutation({
     await ctx.db.patch(args.userId, {
       email: args.newEmail,
     });
+
+    // Audit email change
+    try {
+      await ctx.db.insert("audit_logs", {
+        action: 'update',
+        entityType: 'user',
+        entityId: String(args.userId),
+        performedBy: currentUser.subject,
+        details: 'User email updated',
+        metadata: JSON.stringify({ newEmail: args.newEmail }),
+        timestamp: Date.now(),
+        severity: 'info',
+      });
+    } catch {}
   },
 });
 
