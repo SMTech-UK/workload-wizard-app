@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { X, Key } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 
 interface User {
   _id?: string;
@@ -64,7 +65,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
   const organisationalRoles = useQuery(
     api.organisationalRoles.listByOrganisation, 
     selectedOrganisationId
-      ? { organisationId: selectedOrganisationId as any } // eslint-disable-line @typescript-eslint/no-explicit-any
+      ? { organisationId: selectedOrganisationId as unknown as Id<'organisations'> }
       : "skip"
   );
 

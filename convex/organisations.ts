@@ -53,7 +53,7 @@ export const create = mutation({
 
     // Seed default roles and permissions for the organisation
     try {
-      await ensureDefaultsForOrg(ctx, organisationId as any);
+      await ensureDefaultsForOrg(ctx, organisationId);
     } catch (err) {
       // Do not block org creation if seeding fails; it can be re-run
       console.warn("Failed to seed default roles for organisation", organisationId, err);

@@ -176,7 +176,7 @@ export function AuditLogsViewer() {
         ...(cursor ? { cursor } : {}),
         ...(filters.limit ? { limit: filters.limit } : {}),
       } as const;
-      const auditLogs = await getAuditLogs(args as any);
+      const auditLogs = await getAuditLogs(args);
       
       // Handle both array and object response formats
       if (Array.isArray(auditLogs)) {

@@ -95,12 +95,12 @@ export async function POST(req: Request) {
   return new Response('Webhook processed successfully', { status: 200 });
 }
 
-async function handleUserCreated(userData: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+async function handleUserCreated(userData: any) {
   console.log('Handling user.created event for user:', userData.id);
   
-  const emailAddresses = userData.email_addresses as Array<Record<string, unknown>>;
+  const emailAddresses = (userData.email_addresses || []) as Array<{ email_address: string; id: string }>;
   const primaryEmail = emailAddresses.find(
-    (email: Record<string, unknown>) => email.id === userData.primary_email_address_id
+    (email) => email.id === (userData.primary_email_address_id || undefined)
   );
 
   if (!primaryEmail) {
@@ -110,7 +110,7 @@ async function handleUserCreated(userData: any) { // eslint-disable-line @typesc
 
   // Set default values if metadata is missing
   const publicMetadata = userData.public_metadata as Record<string, unknown> || {};
-  const roles = (publicMetadata.roles as string[]) || (publicMetadata.role as string) ? [publicMetadata.role as string] : ['user'];
+  const roles = (publicMetadata.roles as string[] | undefined) ?? ((publicMetadata.role as string | undefined) ? [publicMetadata.role as string] : ['user']);
   const organisationId = (publicMetadata.organisationId as string) || '';
 
   console.log('Creating user in Convex:', {
@@ -124,12 +124,12 @@ async function handleUserCreated(userData: any) { // eslint-disable-line @typesc
     // Create user in Convex
     await convex.mutation(api.users.create, {
       email: primaryEmail.email_address as string,
-      username: (userData.username as string) || '',
+      username: (userData as unknown as { username?: string }).username || '',
       givenName: (userData.first_name as string) || '',
       familyName: (userData.last_name as string) || '',
       fullName: `${(userData.first_name as string) || ''} ${(userData.last_name as string) || ''}`.trim(),
       systemRoles: roles,
-      organisationId: organisationId as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      organisationId: organisationId as unknown as any,
       pictureUrl: userData.image_url as string,
       subject: userData.id as string,
       tokenIdentifier: primaryEmail.id as string,
@@ -142,25 +142,25 @@ async function handleUserCreated(userData: any) { // eslint-disable-line @typesc
   }
 }
 
-async function handleUserUpdated(userData: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+async function handleUserUpdated(userData: any) {
   console.log('Handling user.updated event for user:', userData.id);
   
-  const emailAddresses = userData.email_addresses as Array<Record<string, unknown>>;
+  const emailAddresses = (userData.email_addresses || []) as Array<{ email_address: string; id: string }>;
   const primaryEmail = emailAddresses.find(
-    (email: Record<string, unknown>) => email.id === userData.primary_email_address_id
+    (email) => email.id === (userData.primary_email_address_id || undefined)
   );
 
-  const publicMetadata = userData.public_metadata as Record<string, unknown> || {};
+  const publicMetadata = (userData.public_metadata as Record<string, unknown>) || {};
 
   // Update user in Convex using webhook-specific mutation
   await convex.mutation(api.users.updateByWebhook, {
     userId: userData.id as string,
     email: primaryEmail?.email_address as string,
-    username: userData.username as string,
+    username: ((userData as unknown as { username?: string }).username || '') as string,
     givenName: userData.first_name as string,
     familyName: userData.last_name as string,
     fullName: `${(userData.first_name as string) || ''} ${(userData.last_name as string) || ''}`.trim(),
-    systemRoles: publicMetadata.roles as string[] || (publicMetadata.role as string) ? [publicMetadata.role as string] : [],
+    systemRoles: ((publicMetadata.roles as string[]) ?? ((publicMetadata.role as string | undefined) ? [publicMetadata.role as string] : [])),
     organisationId: publicMetadata.organisationId as string,
     pictureUrl: userData.image_url as string,
   });
@@ -168,7 +168,7 @@ async function handleUserUpdated(userData: any) { // eslint-disable-line @typesc
   console.log('User updated in Convex:', userData.id);
 }
 
-async function handleUserDeleted(userData: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+async function handleUserDeleted(userData: any) {
   console.log('Handling user.deleted event for user:', userData.id);
   
   // Soft delete user in Convex
@@ -179,17 +179,18 @@ async function handleUserDeleted(userData: any) { // eslint-disable-line @typesc
   console.log('User deleted from Convex:', userData.id);
 }
 
-async function handleSessionCreated(sessionData: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-  console.log('🔥 HANDLING SESSION.CREATED EVENT for user:', sessionData.user_id);
-  console.log('🔥 Session data:', JSON.stringify(sessionData, null, 2));
+async function handleSessionCreated(sessionData: unknown) {
+  const s = sessionData as { user_id?: string };
+  console.log('🔥 HANDLING SESSION.CREATED EVENT for user:', s.user_id);
+  console.log('🔥 Session data:', JSON.stringify(s, null, 2));
   
   try {
     // Update last sign in time in Convex
     await convex.mutation(api.users.updateLastSignIn, {
-      userId: sessionData.user_id as string,
+      userId: s.user_id as string,
     });
 
-    console.log('✅ Last sign in time updated in Convex for user:', sessionData.user_id);
+    console.log('✅ Last sign in time updated in Convex for user:', s.user_id);
   } catch (error) {
     console.error('❌ Error updating last sign in time:', error);
     throw error;
