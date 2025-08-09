@@ -947,13 +947,15 @@ export const seedAcademicYearPermissions = mutation({
       {
         id: "year.edit.live",
         group: "academic_years",
-        description: "Edit live (published) academic years (e.g. set default, rename, dates)",
+        description:
+          "Edit live (published) academic years (e.g. set default, rename, dates)",
         defaultRoles: ["Admin", "Organisation Admin", "orgadmin"],
       },
       {
         id: "year.edit.staging",
         group: "academic_years",
-        description: "Edit staged/draft academic years (create, modify before publish)",
+        description:
+          "Edit staged/draft academic years (create, modify before publish)",
         defaultRoles: ["Admin", "Organisation Admin", "orgadmin", "Manager"],
       },
       {

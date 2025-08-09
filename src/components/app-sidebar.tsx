@@ -47,6 +47,11 @@ const getNavigationData = (userRoles?: string[]) => {
       url: "/account",
       icon: User,
     },
+    {
+      title: "Modules",
+      url: "/modules",
+      icon: FileText,
+    },
   ];
 
   // Add role-specific navigation
