@@ -3,8 +3,18 @@ import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { getOrganisationIdFromSession } from "@/lib/authz";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
+import { z } from "zod";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+const BodySchema = z.object({
+  userId: z.string().min(1),
+  newUsername: z
+    .string()
+    .min(3)
+    .max(20)
+    .regex(/^[a-zA-Z0-9_-]+$/),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,26 +45,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId, newUsername } = await request.json();
+    const { userId, newUsername } = BodySchema.parse(await request.json());
 
-    if (!userId || !newUsername) {
-      return NextResponse.json(
-        { error: "Missing required fields: userId and newUsername" },
-        { status: 400 },
-      );
-    }
+    // validated by schema
 
-    // Validate username format (basic validation)
-    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-    if (!usernameRegex.test(newUsername)) {
-      return NextResponse.json(
-        {
-          error:
-            "Invalid username format. Use 3-20 characters, letters, numbers, underscore, or dash only.",
-        },
-        { status: 400 },
-      );
-    }
+    // format validated by schema
 
     // Initialize Clerk client
     const clerk = await clerkClient();
