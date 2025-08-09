@@ -132,7 +132,7 @@ export async function createUser(data: CreateUserData) {
               fullName:
                 `${existingUser.firstName || ""} ${existingUser.lastName || ""}`.trim(),
               systemRoles: data.roles,
-              organisationId: organisationId,
+              // org derived server-side when userId is provided
               pictureUrl: existingUser.imageUrl,
               subject: existingUser.id,
               tokenIdentifier: primaryEmail.id,
@@ -186,7 +186,7 @@ export async function createUser(data: CreateUserData) {
       familyName: data.lastName,
       fullName: `${data.firstName} ${data.lastName}`,
       systemRoles: data.roles,
-      organisationId: organisationId,
+      // org derived server-side when userId is provided
       pictureUrl: clerkUser.imageUrl,
       subject: clerkUser.id,
       tokenIdentifier: primaryEmail.id,

@@ -58,6 +58,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let parsed;
+    try {
+      parsed = BodySchema.parse(await request.json());
+    } catch (err) {
+      if (err && typeof err === "object" && "errors" in (err as any)) {
+        return NextResponse.json(
+          { error: "Invalid request body", details: (err as any).errors },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
+
     const {
       userId,
       firstName,
@@ -67,7 +83,7 @@ export async function POST(request: NextRequest) {
       isActive,
       organisationalRoleId,
       organisationalRoleIds,
-    } = BodySchema.parse(await request.json());
+    } = parsed;
 
     // userId existence validated by schema
 
