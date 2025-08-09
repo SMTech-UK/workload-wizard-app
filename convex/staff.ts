@@ -11,12 +11,18 @@ export const create = mutation({
     fte: v.float64(),
     maxTeachingHours: v.float64(),
     totalContract: v.float64(),
-    organisationId: v.id("organisations"),
     userId: v.string(), // Current user ID for permission check
   },
   handler: async (ctx, args) => {
-    // Check permission within org context
-    await requireOrgPermission(ctx, args.userId, "staff.create", args.organisationId);
+    // Derive organisationId from the actor's user record
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", args.userId))
+      .first();
+    if (!actor) throw new Error("Actor not found");
+
+    // Check permission within org context using derived organisationId
+    await requireOrgPermission(ctx, args.userId, "staff.create", actor.organisationId);
 
     const now = Date.now();
     
@@ -27,7 +33,7 @@ export const create = mutation({
       fte: args.fte,
       maxTeachingHours: args.maxTeachingHours,
       totalContract: args.totalContract,
-      organisationId: args.organisationId,
+      organisationId: actor.organisationId,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -58,7 +64,16 @@ export const edit = mutation({
     }
     await requireOrgPermission(ctx, args.userId, "staff.edit", profile.organisationId);
 
-    const updates: any = { updatedAt: Date.now() };
+    const updates: {
+      fullName?: string;
+      email?: string;
+      contract?: string;
+      fte?: number;
+      maxTeachingHours?: number;
+      totalContract?: number;
+      isActive?: boolean;
+      updatedAt: number;
+    } = { updatedAt: Date.now() };
     
     if (args.fullName !== undefined) updates.fullName = args.fullName;
     if (args.email !== undefined) updates.email = args.email;
@@ -75,13 +90,17 @@ export const edit = mutation({
 
 // List lecturer profiles for an organisation
 export const list = query({
-  args: {
-    organisationId: v.id("organisations"),
-  },
+  args: { userId: v.string() },
   handler: async (ctx, args) => {
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", args.userId))
+      .first();
+    if (!actor) throw new Error("Actor not found");
+
     return await ctx.db
       .query("lecturer_profiles")
-      .withIndex("by_organisation", (q) => q.eq("organisationId", args.organisationId))
+      .withIndex("by_organisation", (q) => q.eq("organisationId", actor.organisationId))
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
   },

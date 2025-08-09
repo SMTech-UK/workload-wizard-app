@@ -32,6 +32,7 @@ import { GenericDeleteModal } from '@/components/domain/GenericDeleteModal';
 import { SuccessModal } from '@/components/domain/SuccessModal';
 import { Id } from '../../../../convex/_generated/dataModel';
 import { hasAnyRole } from '@/lib/utils';
+import { PERMISSIONS, DEFAULT_ROLES } from '@/lib/permissions';
 
 interface Permission {
   _id: Id<'system_permissions'>;
@@ -292,6 +293,22 @@ export default function AdminPermissionsPage() {
     { label: "Admin", href: "/admin" },
     { label: "Permissions" }
   ];
+
+  // Canonical registry (code) — read-only view
+  const registryEntries = Object.entries(PERMISSIONS);
+  const registryGrouped = registryEntries.reduce<Record<string, Array<{ id: string; description: string }>>>((acc, [permId, meta]) => {
+    const list = acc[meta.group] ?? [];
+    list.push({ id: permId, description: meta.description });
+    acc[meta.group] = list;
+    return acc;
+  }, {});
+  const defaultRolesForPermission = (permId: string): string[] => {
+    const roles: string[] = [];
+    for (const [role, perms] of Object.entries(DEFAULT_ROLES)) {
+      if (perms.includes(permId as never)) roles.push(role);
+    }
+    return roles;
+  };
 
   const headerActions = (
     <div className="flex items-center gap-2">
@@ -556,6 +573,41 @@ export default function AdminPermissionsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Canonical Registry (read-only from code) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Canonical Registry</CardTitle>
+          <CardDescription>Read-only view sourced from code in <code>src/lib/permissions.ts</code>.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Object.entries(registryGrouped).map(([group, items]) => (
+              <div key={group} className="border rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Badge className={getGroupColor(group)}>{group.toUpperCase()}</Badge>
+                  <span className="text-sm text-muted-foreground">({items.length} permissions)</span>
+                </div>
+                <div className="space-y-2">
+                  {items.map(({ id, description }) => (
+                    <div key={id} className="flex items-start justify-between">
+                      <div>
+                        <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">{id}</code>
+                        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {defaultRolesForPermission(id).map((role) => (
+                          <Badge key={role} variant="secondary" className="text-xs">{role}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Create Permission Modal */}
       {showCreateForm && (

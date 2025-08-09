@@ -11,6 +11,7 @@ import { X } from 'lucide-react';
 import { createUser } from '@/lib/actions/userActions';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 
 interface CreateUserFormProps {
   organisationId?: string; // Optional for sysadmin use
@@ -33,7 +34,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
   const organisationalRoles = useQuery(
     api.organisationalRoles.listByOrganisation, 
     selectedOrganisationId
-      ? { organisationId: selectedOrganisationId as any } // eslint-disable-line @typescript-eslint/no-explicit-any
+      ? { organisationId: selectedOrganisationId as unknown as Id<'organisations'> }
       : "skip"
   );
 

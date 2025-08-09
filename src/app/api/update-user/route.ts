@@ -4,6 +4,7 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../convex/_generated/api';
 import { logRoleAssignedToUser, logRoleRevokedFromUser } from '@/lib/actions/auditActions';
 import type { Id } from '../../../../convex/_generated/dataModel';
+import { getOrganisationIdFromSession } from '@/lib/authz';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId, firstName, lastName, username, systemRoles, isActive, organisationId, organisationalRoleId, organisationalRoleIds } = await request.json();
+    const { userId, firstName, lastName, username, systemRoles, isActive, /* organisationId (ignored) */ organisationalRoleId, organisationalRoleIds } = await request.json();
 
     if (!userId) {
       return NextResponse.json(
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     if (isOrgAdmin) {
       const targetUser = await clerk.users.getUser(userId);
       const targetUserOrgId = targetUser.publicMetadata?.organisationId as string;
-      const currentUserOrgId = currentUserData.publicMetadata?.organisationId as string;
+      const currentUserOrgId = await getOrganisationIdFromSession();
       
       if (targetUserOrgId !== currentUserOrgId) {
         return NextResponse.json(
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
       // Update public metadata if systemRoles or organisationId is different
       const needsMetadataUpdate = 
         (systemRoles && JSON.stringify(systemRoles) !== JSON.stringify(existingClerkUser.publicMetadata?.roles)) ||
-        (organisationId && organisationId !== existingClerkUser.publicMetadata?.organisationId);
+        false; // Organisation is derived server-side, do not trust/propagate client value here
         
       if (needsMetadataUpdate) {
         const nextMeta: Record<string, unknown> = {
@@ -114,9 +115,7 @@ export async function POST(request: NextRequest) {
         if (systemRoles) {
           nextMeta.roles = systemRoles;
         }
-        if (organisationId) {
-          nextMeta.organisationId = organisationId;
-        }
+        // Do not update organisationId from client input
         clerkUpdates.publicMetadata = nextMeta;
       }
 
@@ -155,7 +154,7 @@ export async function POST(request: NextRequest) {
             convexUpdates.fullName = `${firstName || convexUser.givenName} ${lastName || convexUser.familyName}`;
           }
           if (systemRoles) convexUpdates.systemRoles = systemRoles;
-          if (organisationId) convexUpdates.organisationId = organisationId;
+           // Do not update organisationId from client input
           if (typeof isActive === 'boolean') convexUpdates.isActive = isActive;
           
           if (Object.keys(convexUpdates).length > 0) {
@@ -188,10 +187,10 @@ export async function POST(request: NextRequest) {
     // Organisational role assignment change (optional)
     if (organisationalRoleIds && Array.isArray(organisationalRoleIds)) {
       try {
-        const targetOrganisationId = organisationId || (currentUserData.publicMetadata?.organisationId as string);
+        const targetOrganisationId = await getOrganisationIdFromSession();
         if (targetOrganisationId) {
           // Guardrail: orgadmin cannot assign roles in other organisations
-          if (isOrgAdmin && targetOrganisationId !== (currentUserData.publicMetadata?.organisationId as string)) {
+          if (isOrgAdmin && targetOrganisationId !== (await getOrganisationIdFromSession())) {
             return NextResponse.json(
               { error: 'Unauthorized: Cannot assign roles outside your organisation' },
               { status: 403 }
@@ -201,7 +200,6 @@ export async function POST(request: NextRequest) {
           await convex.mutation(api.organisationalRoles.assignMultipleToUser, {
             userId,
             roleIds: organisationalRoleIds as unknown as Id<'user_roles'>[],
-            organisationId: targetOrganisationId as unknown as Id<'organisations'>,
             assignedBy: currentUserData.id,
           });
         }
@@ -210,24 +208,20 @@ export async function POST(request: NextRequest) {
       }
     } else if (organisationalRoleId) {
       try {
-        const targetOrganisationId = organisationId || (currentUserData.publicMetadata?.organisationId as string);
+        const targetOrganisationId = await getOrganisationIdFromSession();
         if (targetOrganisationId) {
           // Guardrail: orgadmin cannot assign roles in other organisations
-          if (isOrgAdmin && targetOrganisationId !== (currentUserData.publicMetadata?.organisationId as string)) {
+          if (isOrgAdmin && targetOrganisationId !== (await getOrganisationIdFromSession())) {
             return NextResponse.json(
               { error: 'Unauthorized: Cannot assign roles outside your organisation' },
               { status: 403 }
             );
           }
-          const existingAssignment = await convex.query(api.organisationalRoles.getUserRole, {
-            userId,
-            organisationId: targetOrganisationId as unknown as Id<'organisations'>,
-          });
+          const existingAssignment = await convex.query(api.organisationalRoles.getUserRole, { userId });
 
           await convex.mutation(api.organisationalRoles.assignToUser, {
             userId,
             roleId: organisationalRoleId as unknown as Id<'user_roles'>,
-            organisationId: targetOrganisationId as unknown as Id<'organisations'>,
             assignedBy: currentUserData.id,
           });
 

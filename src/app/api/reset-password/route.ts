@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
+import { getOrganisationIdFromSession } from '@/lib/authz';
 import { createClerkClient } from '@clerk/clerk-sdk-node';
 
 export async function POST(request: NextRequest) {
@@ -40,13 +41,13 @@ export async function POST(request: NextRequest) {
     // Initialize Clerk client
     const clerk = createClerkClient({
       ...(process.env.CLERK_SECRET_KEY ? { secretKey: process.env.CLERK_SECRET_KEY as string } : {}),
-    } as any);
+    });
 
     // If orgadmin, ensure they can only reset passwords for users in their own organisation
     if (isOrgAdmin) {
       const targetUser = await clerk.users.getUser(userId);
       const targetUserOrgId = targetUser.publicMetadata?.organisationId as string;
-      const currentUserOrgId = currentUserData.publicMetadata?.organisationId as string;
+      const currentUserOrgId = await getOrganisationIdFromSession();
       
       if (targetUserOrgId !== currentUserOrgId) {
         return NextResponse.json(

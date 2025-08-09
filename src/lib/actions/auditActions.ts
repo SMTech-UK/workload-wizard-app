@@ -4,6 +4,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { headers } from 'next/headers';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { hasAdminAccess } from '@/lib/auth/permissions';
 
 // Initialize Convex client for server actions
@@ -101,7 +102,7 @@ export async function logAuditEvent(data: AuditLogData) {
       ...(requestInfo.userAgent ? { userAgent: requestInfo.userAgent } : {}),
     };
 
-    await convex.mutation(api.audit.create, { ...base, ...optional } as any);
+    await convex.mutation(api.audit.create, { ...base, ...optional });
   } catch (error) {
     console.error('Failed to log audit event:', error);
     // Don't throw error to avoid breaking the main operation
@@ -457,7 +458,7 @@ export async function getAuditLogs(filters?: {
       entityType?: string;
       entityId?: string;
       performedBy?: string;
-      organisationId?: string;
+      organisationId?: Id<'organisations'>;
       action?: string;
       severity?: string;
       startDate?: number;
