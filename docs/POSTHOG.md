@@ -81,8 +81,16 @@ export function BetaBanner() {
 ## Testing the proxy
 
 - Dev direct connection: default `NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com`
-- Force proxy in dev: run `node test-proxy.js` and check Network requests to `/e/*`
+- Force proxy in dev: check Network requests to `/e/*` (see steps below)
 - Production uses `/e` automatically via rewrites
+
+### Optional developer proxy test steps (previous `test-proxy.js`)
+
+1. Start the dev server (`pnpm dev`).
+2. Visit any page, then verify:
+   - `/e/capture/` responds (proxy endpoint)
+   - `/e/static/` serves assets (static proxy)
+3. In DevTools Network tab, confirm analytics requests go to `/e/*`.
 
 ## Security considerations
 
