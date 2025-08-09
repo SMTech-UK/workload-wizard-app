@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ensureDefaultsForOrg } from "./permissions";
+import { writeAudit } from "./audit";
 
 // Get all organisations
 export const list = query({
@@ -67,14 +68,14 @@ export const create = mutation({
 
     // Audit create
     try {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx, {
         action: "create",
         entityType: "organisation",
         entityId: String(organisationId),
         entityName: args.name,
-        ...(subject ? { performedBy: subject } : { performedBy: "system" }),
+        performedBy: subject ?? "system",
+        organisationId: organisationId,
         details: `Organisation created (${args.code})`,
-        timestamp: now,
         severity: "info",
       });
     } catch {}
@@ -108,14 +109,14 @@ export const update = mutation({
 
     // Audit update
     try {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx, {
         action: "update",
         entityType: "organisation",
         entityId: String(id),
         performedBy: subject,
+        organisationId: id,
         details: "Organisation updated",
         metadata: JSON.stringify(updates),
-        timestamp: now,
         severity: "info",
       });
     } catch {}
@@ -139,13 +140,13 @@ export const remove = mutation({
     try {
       const identity = await ctx.auth.getUserIdentity();
       const subject = identity?.subject ?? "system";
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx, {
         action: "delete",
         entityType: "organisation",
         entityId: String(args.id),
         performedBy: subject,
+        organisationId: args.id,
         details: "Organisation deactivated",
-        timestamp: now,
         severity: "warning",
       });
     } catch {}

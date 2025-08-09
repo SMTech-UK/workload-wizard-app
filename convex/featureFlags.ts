@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { writeAudit } from "./audit";
 
 // Schema for feature flag overrides
 export const featureFlagOverrides = {
@@ -94,7 +95,7 @@ export const setOverride = mutation({
     }
 
     // Audit
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "flags.updated",
       entityType: "flag",
       entityId: args.flagName,
@@ -105,7 +106,6 @@ export const setOverride = mutation({
         flagName: args.flagName,
         enabled: args.enabled,
       }),
-      timestamp: now,
       severity: "info",
     });
 
@@ -137,7 +137,7 @@ export const removeOverride = mutation({
       // Audit
       const identity = await ctx.auth.getUserIdentity();
       const subject = identity?.subject ?? "system";
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx, {
         action: "flags.updated",
         entityType: "flag",
         entityId: args.flagName,
@@ -147,7 +147,6 @@ export const removeOverride = mutation({
           userId: args.userId,
           flagName: args.flagName,
         }),
-        timestamp: Date.now(),
         severity: "warning",
       });
       return true;

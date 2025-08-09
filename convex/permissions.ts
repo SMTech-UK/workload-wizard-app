@@ -780,7 +780,7 @@ export const deleteSystemPermission = mutation({
 
         // Log permission revocation
         if (args.performedBy) {
-          await ctx.db.insert("audit_logs", {
+          await writeAudit(ctx, {
             action: "permission.revoked",
             entityType: "permission",
             entityId: permission.id,
@@ -797,7 +797,6 @@ export const deleteSystemPermission = mutation({
               organisationId: role.organisationId,
               viaForceDelete: true,
             }),
-            timestamp: now,
             severity: "warning",
           });
         }
@@ -815,7 +814,7 @@ export const deleteSystemPermission = mutation({
 
         // Log permission revocation
         if (args.performedBy) {
-          await ctx.db.insert("audit_logs", {
+          await writeAudit(ctx, {
             action: "permission.revoked",
             entityType: "permission",
             entityId: permission.id,
@@ -831,7 +830,6 @@ export const deleteSystemPermission = mutation({
               organisationId: orgRolePerm.organisationId,
               viaForceDelete: true,
             }),
-            timestamp: now,
             severity: "warning",
           });
         }

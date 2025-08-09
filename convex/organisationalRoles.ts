@@ -127,7 +127,7 @@ export const update = mutation({
     });
 
     // Audit update
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "role.updated",
       entityType: "role",
       entityId: String(roleId),
@@ -136,7 +136,6 @@ export const update = mutation({
       organisationId: existing.organisationId,
       details: "Updated role",
       metadata: JSON.stringify(updates),
-      timestamp: now,
       severity: "info",
     });
 
@@ -167,7 +166,7 @@ export const remove = mutation({
       updatedAt: now,
     });
 
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "role.deleted",
       entityType: "role",
       entityId: String(args.roleId),
@@ -175,7 +174,6 @@ export const remove = mutation({
       performedBy: subject,
       organisationId: existing.organisationId,
       details: `Deleted role "${existing.name}"`,
-      timestamp: now,
       severity: "warning",
     });
 
@@ -249,7 +247,7 @@ export const assignToUser = mutation({
     });
 
     // Audit
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "user.role_changed",
       entityType: "user",
       entityId: args.userId,
@@ -258,7 +256,6 @@ export const assignToUser = mutation({
       organisationId: role.organisationId,
       details: `Assigned role "${role.name}"`,
       metadata: JSON.stringify({ roleId: role._id, roleName: role.name }),
-      timestamp: now,
       severity: "info",
     });
 
@@ -331,7 +328,7 @@ export const assignMultipleToUser = mutation({
     }
 
     // Audit summary
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "user.role_changed",
       entityType: "user",
       entityId: args.userId,
@@ -340,7 +337,6 @@ export const assignMultipleToUser = mutation({
       organisationId: orgId,
       details: `Assigned ${args.roleIds.length} role(s)`,
       metadata: JSON.stringify({ roleIds: args.roleIds }),
-      timestamp: now,
       severity: "info",
     });
 

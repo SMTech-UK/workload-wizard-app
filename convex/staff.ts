@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireOrgPermission } from "./permissions";
+import { writeAudit } from "./audit";
 
 // Create a new lecturer profile
 export const create = mutation({
@@ -45,7 +46,7 @@ export const create = mutation({
     });
 
     // Audit create
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "create",
       entityType: "lecturer_profile",
       entityId: String(profileId),
@@ -59,7 +60,6 @@ export const create = mutation({
         maxTeachingHours: args.maxTeachingHours,
         totalContract: args.totalContract,
       }),
-      timestamp: now,
       severity: "info",
     });
 
@@ -117,7 +117,7 @@ export const edit = mutation({
     await ctx.db.patch(args.profileId, updates);
 
     // Audit update
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "update",
       entityType: "lecturer_profile",
       entityId: String(args.profileId),
@@ -125,7 +125,6 @@ export const edit = mutation({
       organisationId: profile.organisationId,
       details: "Updated lecturer profile",
       metadata: JSON.stringify(updates),
-      timestamp: Date.now(),
       severity: "info",
     });
 

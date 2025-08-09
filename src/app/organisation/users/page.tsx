@@ -375,7 +375,6 @@ export default function OrganisationUsersPage() {
       }
       setAssigningUser(null);
     } catch (e) {
-       
       console.error(e);
     }
   };
