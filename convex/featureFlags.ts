@@ -43,6 +43,19 @@ export const setOverride = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
+    // identify actor
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = identity?.subject ?? 'system';
+    const actor = subject !== 'system'
+      ? await ctx.db.query('users').withIndex('by_subject', (q) => q.eq('subject', subject)).first()
+      : null;
+    const isSystem = !!actor && Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ['admin','sysadmin','developer'].includes(r));
+
+    // allow self override or admin
+    if (actor && !isSystem && actor.subject !== args.userId) {
+      throw new Error('Forbidden');
+    }
+
     // Check if override already exists
     const existing = await ctx.db
       .query('featureFlagOverrides')
@@ -60,10 +73,9 @@ export const setOverride = mutation({
         enabled: args.enabled,
         updatedAt: now,
       });
-      return existing._id;
     } else {
       // Create new override
-      return await ctx.db.insert('featureFlagOverrides', {
+      await ctx.db.insert('featureFlagOverrides', {
         userId: args.userId,
         flagName: args.flagName,
         enabled: args.enabled,
@@ -71,6 +83,20 @@ export const setOverride = mutation({
         updatedAt: now,
       });
     }
+
+    // Audit
+    await ctx.db.insert('audit_logs', {
+      action: 'flags.updated',
+      entityType: 'flag',
+      entityId: args.flagName,
+      performedBy: subject,
+      details: `Override ${args.enabled ? 'enabled' : 'disabled'} for user ${args.userId}`,
+      metadata: JSON.stringify({ userId: args.userId, flagName: args.flagName, enabled: args.enabled }),
+      timestamp: now,
+      severity: 'info',
+    });
+
+    return true;
   },
 });
 
@@ -95,6 +121,19 @@ export const removeOverride = mutation({
 
     if (existing) {
       await ctx.db.delete(existing._id);
+      // Audit
+      const identity = await ctx.auth.getUserIdentity();
+      const subject = identity?.subject ?? 'system';
+      await ctx.db.insert('audit_logs', {
+        action: 'flags.updated',
+        entityType: 'flag',
+        entityId: args.flagName,
+        performedBy: subject,
+        details: `Override removed for user ${args.userId}`,
+        metadata: JSON.stringify({ userId: args.userId, flagName: args.flagName }),
+        timestamp: Date.now(),
+        severity: 'warning',
+      });
       return true;
     }
 
