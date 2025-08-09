@@ -24,7 +24,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId, newEmail } = BodySchema.parse(await request.json());
+    let parsed;
+    try {
+      parsed = BodySchema.parse(await request.json());
+    } catch (err) {
+      if (err && typeof err === "object" && "errors" in (err as any)) {
+        return NextResponse.json(
+          { error: "Invalid request body", details: (err as any).errors },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
+
+    const { userId, newEmail } = parsed;
 
     // validated by schema
 
