@@ -46,8 +46,8 @@ See `src/lib/permissions.ts` for the canonical `PERMISSIONS` and `DEFAULT_ROLES`
 
 ## Canonical docs
 
-- Permissions: `./PERMISSION_SYSTEM_GUIDE.md`
-- Audit: `./AUDIT_LOGGING_GUIDE.md`
+- Permissions: `./docs/PERMISSIONS.md`
+- Audit: `./docs/AUDIT.md`
 - Email: `./docs/EMAIL.md`
 - Feature Flags: `./docs/FEATURE_FLAGS.md`
 - PostHog: `./docs/POSTHOG.md`
