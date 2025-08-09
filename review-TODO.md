@@ -30,10 +30,14 @@ Acceptance
 
 ### PR 3/8 — AuthZ discipline in Convex (derive org, avoid trusting client)
 
-Tasks
+Status
 
-- For Convex mutations we own that currently accept `organisationId`, derive organisation from the actor/user context and/or ID lookups instead of trusting client input.
-- Ensure security-sensitive Convex paths emit audit entries consistently.
+- Implemented for `convex/users.create`: now derives `organisationId` from the actor for authenticated flows; `organisationId` is optional and only used for system/webhook calls. Updated callers to stop passing client org in actor flows. Tests/build green.
+- Audit normalisation helper (`writeAudit`) is reused across key mutations (`organisations`, `organisationalRoles`, `staff`, `featureFlags`, and relevant `permissions` paths).
+
+Remaining
+
+- Quick follow-up sweeps will continue to enforce derived org semantics on any future org-scoped mutations as they are introduced.
 
 Acceptance
 
@@ -53,9 +57,9 @@ Acceptance
 
 ### PR 5 — Audit centralisation (optional but recommended)
 
-Tasks
+Status
 
-- Introduce a small server-side helper for audit inserts (normalise action/entity/severity and enrich optional fields uniformly) and reuse across Convex mutations instead of open-coded `ctx.db.insert("audit_logs", ...)`.
+- Centralised: added/standardised `writeAudit` and refactored `convex/organisations.ts`, `convex/organisationalRoles.ts`, `convex/staff.ts`, `convex/featureFlags.ts`, and force-delete paths in `convex/permissions.ts` to use it.
 
 Acceptance
 
