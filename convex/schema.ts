@@ -9,9 +9,19 @@ export default defineSchema({
     endDate: v.string(),
     isActive: v.boolean(),
     staging: v.boolean(),
+    organisationId: v.id("organisations"),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+    isDefaultForOrg: v.boolean(),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  })
+    .index("by_organisation", ["organisationId"]) // filter by org
+    .index("by_org_status", ["organisationId", "status"]) // filter by org + status
+    .index("by_status", ["status"]), // sometimes filter by status alone
 
   // 🏛️ Organisation
   organisations: defineTable({
