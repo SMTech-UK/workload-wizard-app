@@ -16,6 +16,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { YearSwitcher } from "@/components/common/YearSwitcher";
 
 export interface BreadcrumbItem {
   label: string;
@@ -78,11 +79,10 @@ export function StandardizedSidebarLayout({
 
           <div className="flex-1"></div>
 
-          {headerActions && (
-            <div className="flex items-center gap-2 px-4 justify-end">
-              {headerActions}
-            </div>
-          )}
+          <div className="flex items-center gap-3 px-4 justify-end">
+            <YearSwitcher />
+            {headerActions}
+          </div>
         </header>
 
         {(title || subtitle) && (
