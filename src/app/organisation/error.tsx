@@ -1,3 +1,5 @@
+"use client";
+
 export default function OrgError({ error }: { error: Error & { digest?: string } }) {
   return (
     <div className="p-6">
