@@ -61,6 +61,26 @@ export default defineSchema({
     updatedAt: v.float64(),
   }).index("by_subject", ["subject"]),
 
+  // 🎓 Courses
+  courses: defineTable({
+    code: v.string(),
+    name: v.string(),
+    organisationId: v.id("organisations"),
+    leaderProfileId: v.optional(v.id("lecturer_profiles")),
+    studentCount: v.optional(v.number()),
+    campuses: v.optional(v.array(v.string())),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_organisation", ["organisationId"]),
+
+  // 🎓 Course Years
+  course_years: defineTable({
+    courseId: v.id("courses"),
+    yearNumber: v.number(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_course", ["courseId"]),
+
   // 📋 Audit Logs
   audit_logs: defineTable({
     action: v.string(), // 'create', 'update', 'delete', 'login', 'logout', 'permission_change', etc.

@@ -28,6 +28,28 @@ export interface Organisation {
   updatedAt: number;
 }
 
+// 🎓 Course
+export interface Course {
+  id: string;
+  code: string;
+  name: string;
+  organisationId: string;
+  leaderProfileId?: string;
+  studentCount?: number;
+  campuses?: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+// 🎓 Course Year
+export interface CourseYear {
+  id: string;
+  courseId: string;
+  yearNumber: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // 👥 User (Core Identity)
 export interface User {
   id: string;

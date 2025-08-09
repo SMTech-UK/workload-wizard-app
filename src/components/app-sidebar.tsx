@@ -43,6 +43,11 @@ const getNavigationData = (userRoles?: string[]) => {
       isActive: true,
     },
     {
+      title: "Courses",
+      url: "/courses",
+      icon: Building2,
+    },
+    {
       title: "Account",
       url: "/account",
       icon: User,

@@ -1,4 +1,9 @@
-import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
+import {
+  mutation,
+  query,
+  type QueryCtx,
+  type MutationCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import { type Id, type Doc } from "./_generated/dataModel";
 import { requireOrgPermission } from "./permissions";
@@ -16,7 +21,10 @@ async function getActor(ctx: QueryCtx | MutationCtx, userId: string) {
 
 function isSystemUser(user: Doc<"users">): boolean {
   const systemRoleIds = ["sysadmin", "developer", "dev"]; // do not treat 'admin' as system-wide
-  return Array.isArray(user.systemRoles) && user.systemRoles.some((r: string) => systemRoleIds.includes(r));
+  return (
+    Array.isArray(user.systemRoles) &&
+    user.systemRoles.some((r: string) => systemRoleIds.includes(r))
+  );
 }
 
 async function hasOrgPermission(
@@ -26,7 +34,12 @@ async function hasOrgPermission(
   organisationId: Id<"organisations">,
 ): Promise<boolean> {
   try {
-    await requireOrgPermission(ctx, userId, permissionId, organisationId as unknown as string);
+    await requireOrgPermission(
+      ctx,
+      userId,
+      permissionId,
+      organisationId as unknown as string,
+    );
     return true;
   } catch {
     return false;
@@ -72,9 +85,11 @@ export async function canEditYear(
 ) {
   const user = await getActor(ctx, userId);
   if (isSystemUser(user)) return true;
-  const organisationId = (typeof yearOrOrgId === "string"
-    ? (yearOrOrgId as unknown as Id<"organisations">)
-    : (yearOrOrgId as Doc<"academic_years">).organisationId) as Id<"organisations">;
+  const organisationId = (
+    typeof yearOrOrgId === "string"
+      ? (yearOrOrgId as unknown as Id<"organisations">)
+      : (yearOrOrgId as Doc<"academic_years">).organisationId
+  ) as Id<"organisations">;
   if (String(user.organisationId) !== String(organisationId)) return false;
   return hasOrgPermission(ctx, userId, "year.edit", organisationId);
 }
@@ -84,18 +99,32 @@ export const listForOrganisation = query({
   handler: async (ctx, args) => {
     const user = await getActor(ctx, args.userId);
     const orgId = user.organisationId as Id<"organisations">;
-    const canLive = isSystemUser(user) || (await hasOrgPermission(ctx, args.userId, "year.view.live", orgId));
-    const canStaging = isSystemUser(user) || (await hasOrgPermission(ctx, args.userId, "year.view.staging", orgId));
-    const canArchived = isSystemUser(user) || (await hasOrgPermission(ctx, args.userId, "year.view.archived", orgId));
+    const canLive =
+      isSystemUser(user) ||
+      (await hasOrgPermission(ctx, args.userId, "year.view.live", orgId));
+    const canStaging =
+      isSystemUser(user) ||
+      (await hasOrgPermission(ctx, args.userId, "year.view.staging", orgId));
+    const canArchived =
+      isSystemUser(user) ||
+      (await hasOrgPermission(ctx, args.userId, "year.view.archived", orgId));
 
     if (!canLive && !canStaging && !canArchived) return [];
 
     const rows = await ctx.db
       .query("academic_years")
-      .withIndex("by_organisation", (q) => q.eq("organisationId", user.organisationId))
+      .withIndex("by_organisation", (q) =>
+        q.eq("organisationId", user.organisationId),
+      )
       .filter((q) => {
-        const liveCond = q.and(q.eq(q.field("status"), "published"), q.eq(q.field("staging"), false));
-        const stagingCond = q.or(q.eq(q.field("staging"), true), q.eq(q.field("status"), "draft"));
+        const liveCond = q.and(
+          q.eq(q.field("status"), "published"),
+          q.eq(q.field("staging"), false),
+        );
+        const stagingCond = q.or(
+          q.eq(q.field("staging"), true),
+          q.eq(q.field("status"), "draft"),
+        );
         const archivedCond = q.eq(q.field("status"), "archived");
         const clauses: any[] = [];
         if (canLive) clauses.push(liveCond);
@@ -145,7 +174,9 @@ export const create = mutation({
     if (args.isDefaultForOrg) {
       const existingDefaults = await ctx.db
         .query("academic_years")
-        .withIndex("by_organisation", (q) => q.eq("organisationId", user.organisationId))
+        .withIndex("by_organisation", (q) =>
+          q.eq("organisationId", user.organisationId),
+        )
         .filter((q) => q.eq(q.field("isDefaultForOrg"), true))
         .collect();
       for (const row of existingDefaults) {
@@ -199,19 +230,26 @@ export const update = mutation({
     const now = Date.now();
     const updates: Partial<Doc<"academic_years">> = { updatedAt: now } as any;
     if (typeof args.name !== "undefined") (updates as any).name = args.name;
-    if (typeof args.startDate !== "undefined") (updates as any).startDate = args.startDate;
-    if (typeof args.endDate !== "undefined") (updates as any).endDate = args.endDate;
+    if (typeof args.startDate !== "undefined")
+      (updates as any).startDate = args.startDate;
+    if (typeof args.endDate !== "undefined")
+      (updates as any).endDate = args.endDate;
     if (typeof args.isDefaultForOrg !== "undefined") {
       (updates as any).isDefaultForOrg = args.isDefaultForOrg;
       if (args.isDefaultForOrg) {
         const others = await ctx.db
           .query("academic_years")
-          .withIndex("by_organisation", (q) => q.eq("organisationId", year.organisationId))
+          .withIndex("by_organisation", (q) =>
+            q.eq("organisationId", year.organisationId),
+          )
           .filter((q) => q.eq(q.field("isDefaultForOrg"), true))
           .collect();
         for (const other of others) {
           if (String(other._id) !== String(year._id)) {
-            await ctx.db.patch(other._id, { isDefaultForOrg: false, updatedAt: now });
+            await ctx.db.patch(other._id, {
+              isDefaultForOrg: false,
+              updatedAt: now,
+            });
           }
         }
       }
@@ -225,7 +263,11 @@ export const setStatus = mutation({
   args: {
     userId: v.string(),
     id: v.id("academic_years"),
-    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
   },
   handler: async (ctx, args) => {
     const year = await ctx.db.get(args.id);
@@ -238,12 +280,15 @@ export const setStatus = mutation({
         : args.status === "published"
           ? "year.edit.live"
           : "year.edit.staging";
-    const can = isSystemUser(await getActor(ctx, args.userId)) || (await hasOrgPermission(ctx, args.userId, requiredPerm, orgId));
+    const can =
+      isSystemUser(await getActor(ctx, args.userId)) ||
+      (await hasOrgPermission(ctx, args.userId, requiredPerm, orgId));
     if (!can) throw new Error("Permission denied");
     const now = Date.now();
-    await ctx.db.patch(args.id, { status: args.status as YearStatus, updatedAt: now });
+    await ctx.db.patch(args.id, {
+      status: args.status as YearStatus,
+      updatedAt: now,
+    });
     return args.id;
   },
 });
-
-
