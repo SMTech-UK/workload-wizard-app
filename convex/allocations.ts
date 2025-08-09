@@ -41,19 +41,22 @@ export const assignLecturer = mutation({
     );
 
     const now = Date.now();
-    const id = await ctx.db.insert("group_allocations" as any, {
-      groupId: args.groupId,
-      lecturerId: args.lecturerId,
-      academicYearId: args.academicYearId,
-      organisationId: args.organisationId,
-      type: args.type,
-      hoursComputed: baseHours,
-      ...(typeof args.hoursOverride === "number"
-        ? { hoursOverride: args.hoursOverride }
-        : {}),
-      createdAt: now,
-      updatedAt: now,
-    } as any);
+    const id = await ctx.db.insert(
+      "group_allocations" as any,
+      {
+        groupId: args.groupId,
+        lecturerId: args.lecturerId,
+        academicYearId: args.academicYearId,
+        organisationId: args.organisationId,
+        type: args.type,
+        hoursComputed: baseHours,
+        ...(typeof args.hoursOverride === "number"
+          ? { hoursOverride: args.hoursOverride }
+          : {}),
+        createdAt: now,
+        updatedAt: now,
+      } as any,
+    );
 
     try {
       await writeAudit(ctx, {
@@ -72,7 +75,10 @@ export const assignLecturer = mutation({
 
 // List allocations for a lecturer in a year
 export const listForLecturer = query({
-  args: { lecturerId: v.id("lecturer_profiles"), academicYearId: v.id("academic_years") },
+  args: {
+    lecturerId: v.id("lecturer_profiles"),
+    academicYearId: v.id("academic_years"),
+  },
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("group_allocations" as any)
@@ -89,7 +95,10 @@ export const listForLecturer = query({
 
 // Compute basic totals for a lecturer in a year (MVP)
 export const computeLecturerTotals = query({
-  args: { lecturerId: v.id("lecturer_profiles"), academicYearId: v.id("academic_years") },
+  args: {
+    lecturerId: v.id("lecturer_profiles"),
+    academicYearId: v.id("academic_years"),
+  },
   handler: async (ctx, args) => {
     // Permission: allocations.view within lecturer's org (derive via lecturer profile)
     const lecturer = await ctx.db.get(args.lecturerId);
@@ -115,10 +124,24 @@ export const computeLecturerTotals = query({
 
     const lectureHours = allocations
       .filter((a) => a.type === "teaching")
-      .reduce((sum, a) => sum + (typeof a.hoursOverride === "number" ? a.hoursOverride : a.hoursComputed || 0), 0);
+      .reduce(
+        (sum, a) =>
+          sum +
+          (typeof a.hoursOverride === "number"
+            ? a.hoursOverride
+            : a.hoursComputed || 0),
+        0,
+      );
     const adminHours = allocations
       .filter((a) => a.type === "admin")
-      .reduce((sum, a) => sum + (typeof a.hoursOverride === "number" ? a.hoursOverride : a.hoursComputed || 0), 0);
+      .reduce(
+        (sum, a) =>
+          sum +
+          (typeof a.hoursOverride === "number"
+            ? a.hoursOverride
+            : a.hoursComputed || 0),
+        0,
+      );
 
     return {
       allocatedTeaching: lectureHours,
@@ -174,5 +197,3 @@ export const remove = mutation({
     return args.allocationId;
   },
 });
-
-

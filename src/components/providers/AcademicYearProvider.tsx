@@ -56,7 +56,9 @@ export function AcademicYearProvider({
   const convexUser = useQuery(
     apiAny.users.getBySubject,
     user?.id ? { subject: user.id } : "skip",
-  ) as { systemRoles?: string[]; organisationId?: Id<"organisations"> } | undefined;
+  ) as
+    | { systemRoles?: string[]; organisationId?: Id<"organisations"> }
+    | undefined;
 
   const isManagement = useMemo(() => {
     const roles = convexUser?.systemRoles || [];
@@ -68,7 +70,8 @@ export function AcademicYearProvider({
   }, [convexUser]);
 
   const orgIdStr = useMemo(
-    () => (convexUser?.organisationId ? String(convexUser.organisationId) : null),
+    () =>
+      convexUser?.organisationId ? String(convexUser.organisationId) : null,
     [convexUser],
   );
 
@@ -90,12 +93,16 @@ export function AcademicYearProvider({
     } catch {}
   }, [orgIdStr]);
 
-  const setIncludeDrafts = useCallback((v: boolean) => {
-    setIncludeDraftsState(v);
-    try {
-      if (orgIdStr) localStorage.setItem(`ay_drafts:${orgIdStr}`, v ? "1" : "0");
-    } catch {}
-  }, [orgIdStr]);
+  const setIncludeDrafts = useCallback(
+    (v: boolean) => {
+      setIncludeDraftsState(v);
+      try {
+        if (orgIdStr)
+          localStorage.setItem(`ay_drafts:${orgIdStr}`, v ? "1" : "0");
+      } catch {}
+    },
+    [orgIdStr],
+  );
 
   const years = useMemo(() => {
     if (!isManagement || !includeDrafts) {
@@ -142,12 +149,15 @@ export function AcademicYearProvider({
     }
   }, [years, currentYearId, defaultYearId, orgIdStr]);
 
-  const setCurrentYearId = useCallback((id: string) => {
-    setCurrentYearIdState(id);
-    try {
-      if (orgIdStr) localStorage.setItem(`ay_current:${orgIdStr}`, id);
-    } catch {}
-  }, [orgIdStr]);
+  const setCurrentYearId = useCallback(
+    (id: string) => {
+      setCurrentYearIdState(id);
+      try {
+        if (orgIdStr) localStorage.setItem(`ay_current:${orgIdStr}`, id);
+      } catch {}
+    },
+    [orgIdStr],
+  );
 
   // Mutations
   const updateYear = useMutation(apiAny.academicYears.update);

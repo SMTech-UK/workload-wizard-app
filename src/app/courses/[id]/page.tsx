@@ -18,7 +18,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAcademicYear } from "@/components/providers/AcademicYearProvider";
 import {
   Table,
@@ -208,7 +214,9 @@ function CourseYearModules({ yearId }: { yearId: string }) {
                   <span>
                     {a.module?.code} {a.link.isCore ? "(Core)" : "(Optional)"}
                   </span>
-                  <ModuleIterationAndGroupsAndAllocations moduleId={String(a.module?._id)} />
+                  <ModuleIterationAndGroupsAndAllocations
+                    moduleId={String(a.module?._id)}
+                  />
                   <button
                     className="ml-1 text-destructive"
                     onClick={async () => {
@@ -234,7 +242,11 @@ function CourseYearModules({ yearId }: { yearId: string }) {
   );
 }
 
-function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string }) {
+function ModuleIterationAndGroupsAndAllocations({
+  moduleId,
+}: {
+  moduleId: string;
+}) {
   const { currentYear } = useAcademicYear();
   const iteration = useQuery(
     api.modules.getIterationForYear,
@@ -249,12 +261,17 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
 
   const groups = useQuery(
     (api as any).groups.listByIteration,
-    hasIteration ? ({ moduleIterationId: (iteration as any)._id } as any) : ("skip" as any),
+    hasIteration
+      ? ({ moduleIterationId: (iteration as any)._id } as any)
+      : ("skip" as any),
   );
   const createGroup = useMutation((api as any).groups.create);
 
   // Allocations UI bits
-  const profiles = useQuery((api as any).staff.list, (api as any) ? ({ userId: "me" } as any) : ("skip" as any));
+  const profiles = useQuery(
+    (api as any).staff.list,
+    (api as any) ? ({ userId: "me" } as any) : ("skip" as any),
+  );
   const assign = useMutation((api as any).allocations.assignLecturer);
   const removeAllocation = useMutation((api as any).allocations.remove);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -263,16 +280,21 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
   const [hoursOverride, setHoursOverride] = useState<string>("");
   const listAllocations = useQuery(
     (api as any).allocations.listForGroup,
-    selectedGroupId ? ({ groupId: selectedGroupId as any } as any) : ("skip" as any),
+    selectedGroupId
+      ? ({ groupId: selectedGroupId as any } as any)
+      : ("skip" as any),
   ) as Array<{ allocation: any; lecturer: any }> | undefined;
 
-  if (!currentYear) return <span className="text-muted-foreground">Select AY</span>;
+  if (!currentYear)
+    return <span className="text-muted-foreground">Select AY</span>;
 
   return (
     <div className="inline-flex items-center gap-2">
       {hasIteration ? (
         <>
-          <span className="text-emerald-700">Iteration: {currentYear.name}</span>
+          <span className="text-emerald-700">
+            Iteration: {currentYear.name}
+          </span>
           <button
             className="text-xs underline"
             onClick={async () => {
@@ -287,7 +309,9 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
             + Add Group
           </button>
           {Array.isArray(groups) && groups.length > 0 ? (
-            <span className="text-xs text-muted-foreground">{groups.length} group(s)</span>
+            <span className="text-xs text-muted-foreground">
+              {groups.length} group(s)
+            </span>
           ) : null}
           {Array.isArray(groups) && groups.length > 0 ? (
             <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
@@ -301,7 +325,10 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
                 <div className="space-y-4">
                   <div>
                     <Label>Group</Label>
-                    <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                    <Select
+                      value={selectedGroupId}
+                      onValueChange={setSelectedGroupId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select group" />
                       </SelectTrigger>
@@ -316,7 +343,10 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
                   </div>
                   <div>
                     <Label>Lecturer</Label>
-                    <Select value={selectedLecturerId} onValueChange={setSelectedLecturerId}>
+                    <Select
+                      value={selectedLecturerId}
+                      onValueChange={setSelectedLecturerId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select lecturer" />
                       </SelectTrigger>
@@ -367,7 +397,9 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
                 </DialogFooter>
                 {!!selectedGroupId && Array.isArray(listAllocations) && (
                   <div className="mt-4 border-t pt-3 space-y-2">
-                    <div className="text-sm font-medium">Existing allocations</div>
+                    <div className="text-sm font-medium">
+                      Existing allocations
+                    </div>
                     {listAllocations.length === 0 ? (
                       <div className="text-sm text-muted-foreground">None</div>
                     ) : (
@@ -377,7 +409,9 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
                             <TableHead>Lecturer</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead className="text-right">Hours</TableHead>
-                            <TableHead className="w-24 text-right">Actions</TableHead>
+                            <TableHead className="w-24 text-right">
+                              Actions
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -393,7 +427,8 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
                                 <TableCell className="py-2">
                                   <div className="leading-tight">
                                     <div className="font-medium text-sm">
-                                      {lecturer?.fullName || allocation.lecturerId}
+                                      {lecturer?.fullName ||
+                                        allocation.lecturerId}
                                     </div>
                                     {lecturer?.email && (
                                       <div className="text-xs text-muted-foreground">
@@ -412,7 +447,9 @@ function ModuleIterationAndGroupsAndAllocations({ moduleId }: { moduleId: string
                                   <button
                                     className="text-xs text-destructive underline"
                                     onClick={async () => {
-                                      await removeAllocation({ allocationId: allocation._id } as any);
+                                      await removeAllocation({
+                                        allocationId: allocation._id,
+                                      } as any);
                                     }}
                                   >
                                     Remove

@@ -8,7 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMemo, useState } from "react";
 
 export default function AcademicYearsAdminPage() {
@@ -57,7 +63,9 @@ export default function AcademicYearsAdminPage() {
                   id="name"
                   placeholder="2025/26"
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -66,7 +74,9 @@ export default function AcademicYearsAdminPage() {
                   id="start"
                   type="date"
                   value={form.startDate}
-                  onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, startDate: e.target.value }))
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -75,14 +85,18 @@ export default function AcademicYearsAdminPage() {
                   id="end"
                   type="date"
                   value={form.endDate}
-                  onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, endDate: e.target.value }))
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select
                   value={form.status}
-                  onValueChange={(v) => setForm((f) => ({ ...f, status: v as any }))}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, status: v as any }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
@@ -98,7 +112,12 @@ export default function AcademicYearsAdminPage() {
                   <input
                     type="checkbox"
                     checked={form.isDefaultForOrg}
-                    onChange={(e) => setForm((f) => ({ ...f, isDefaultForOrg: e.target.checked }))}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        isDefaultForOrg: e.target.checked,
+                      }))
+                    }
                   />
                   Set as default for organisation
                 </label>
@@ -115,7 +134,13 @@ export default function AcademicYearsAdminPage() {
                     status: form.status,
                     isDefaultForOrg: form.isDefaultForOrg,
                   } as any);
-                  setForm({ name: "", startDate: "", endDate: "", status: "draft", isDefaultForOrg: false });
+                  setForm({
+                    name: "",
+                    startDate: "",
+                    endDate: "",
+                    status: "draft",
+                    isDefaultForOrg: false,
+                  });
                 }}
               >
                 Create
@@ -133,10 +158,18 @@ export default function AcademicYearsAdminPage() {
               {Array.isArray(years) && years.length ? (
                 <ul className="divide-y rounded border">
                   {years.map((y) => (
-                    <li key={String(y._id)} className="p-3 flex items-center justify-between">
+                    <li
+                      key={String(y._id)}
+                      className="p-3 flex items-center justify-between"
+                    >
                       <div className="space-y-1">
                         <div className="font-medium">
-                          {y.name} {y.isDefaultForOrg ? <span className="text-xs text-muted-foreground">• default</span> : null}
+                          {y.name}{" "}
+                          {y.isDefaultForOrg ? (
+                            <span className="text-xs text-muted-foreground">
+                              • default
+                            </span>
+                          ) : null}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {y.startDate} → {y.endDate} · {y.status}
@@ -148,7 +181,11 @@ export default function AcademicYearsAdminPage() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            await update({ userId: user!.id, id: y._id, isDefaultForOrg: true } as any);
+                            await update({
+                              userId: user!.id,
+                              id: y._id,
+                              isDefaultForOrg: true,
+                            } as any);
                           }}
                         >
                           Set default
@@ -157,7 +194,11 @@ export default function AcademicYearsAdminPage() {
                           variant="secondary"
                           size="sm"
                           onClick={async () => {
-                            await setStatus({ userId: user!.id, id: y._id, status: "published" } as any);
+                            await setStatus({
+                              userId: user!.id,
+                              id: y._id,
+                              status: "published",
+                            } as any);
                           }}
                         >
                           Publish
@@ -166,7 +207,11 @@ export default function AcademicYearsAdminPage() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            await setStatus({ userId: user!.id, id: y._id, status: "draft" } as any);
+                            await setStatus({
+                              userId: user!.id,
+                              id: y._id,
+                              status: "draft",
+                            } as any);
                           }}
                         >
                           Mark draft
@@ -175,7 +220,11 @@ export default function AcademicYearsAdminPage() {
                           variant="destructive"
                           size="sm"
                           onClick={async () => {
-                            await setStatus({ userId: user!.id, id: y._id, status: "archived" } as any);
+                            await setStatus({
+                              userId: user!.id,
+                              id: y._id,
+                              status: "archived",
+                            } as any);
                           }}
                         >
                           Archive
@@ -185,7 +234,9 @@ export default function AcademicYearsAdminPage() {
                   ))}
                 </ul>
               ) : (
-                <div className="text-sm text-muted-foreground">No academic years found.</div>
+                <div className="text-sm text-muted-foreground">
+                  No academic years found.
+                </div>
               )}
             </div>
           </CardContent>
@@ -194,5 +245,3 @@ export default function AcademicYearsAdminPage() {
     </StandardizedSidebarLayout>
   );
 }
-
-

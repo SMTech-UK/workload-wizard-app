@@ -50,7 +50,10 @@ export default function CoursesPage() {
               className="space-y-3"
               onSubmit={async (e) => {
                 e.preventDefault();
-                await createCourse({ code: form.code.trim(), name: form.name.trim() } as any);
+                await createCourse({
+                  code: form.code.trim(),
+                  name: form.name.trim(),
+                } as any);
                 setForm({ code: "", name: "" });
               }}
             >
@@ -59,7 +62,9 @@ export default function CoursesPage() {
                 <Input
                   id="code"
                   value={form.code}
-                  onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, code: e.target.value }))
+                  }
                   placeholder="CSE100"
                 />
               </div>
@@ -68,11 +73,17 @@ export default function CoursesPage() {
                 <Input
                   id="name"
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
                   placeholder="Computer Science"
                 />
               </div>
-              <button className="btn btn-primary w-full" disabled={!canSubmit} type="submit">
+              <button
+                className="btn btn-primary w-full"
+                disabled={!canSubmit}
+                type="submit"
+              >
                 Create
               </button>
             </form>
@@ -89,14 +100,19 @@ export default function CoursesPage() {
                 <ul className="divide-y">
                   {courses.map((c: any) => (
                     <li key={c._id} className="py-2">
-                      <Link href={`/courses/${c._id}`} className="hover:underline">
+                      <Link
+                        href={`/courses/${c._id}`}
+                        className="hover:underline"
+                      >
                         <span className="font-medium">{c.code}</span> — {c.name}
                       </Link>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <div className="text-sm text-muted-foreground">No courses yet.</div>
+                <div className="text-sm text-muted-foreground">
+                  No courses yet.
+                </div>
               )}
             </div>
           </CardContent>

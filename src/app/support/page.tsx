@@ -33,7 +33,10 @@ export default function SupportPage() {
 
   return (
     <StandardizedSidebarLayout
-      breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Support" }]}
+      breadcrumbs={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Support" },
+      ]}
       title="Support"
       subtitle="Get help, give feedback, and follow progress"
     >
@@ -45,9 +48,15 @@ export default function SupportPage() {
               <CardTitle className="text-lg">{link.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">{link.description}</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {link.description}
+              </p>
               <Button asChild>
-                <Link href={link.href} target="_blank" rel="noreferrer noopener">
+                <Link
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
                   Visit <ExternalLink className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -58,5 +67,3 @@ export default function SupportPage() {
     </StandardizedSidebarLayout>
   );
 }
-
-

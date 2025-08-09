@@ -46,7 +46,9 @@ export const create = mutation({
       totalContract: args.totalContract,
       ...(args.role ? { role: args.role } : {}),
       ...(args.teamName ? { teamName: args.teamName } : {}),
-      ...(args.prefWorkingLocation ? { prefWorkingLocation: args.prefWorkingLocation } : {}),
+      ...(args.prefWorkingLocation
+        ? { prefWorkingLocation: args.prefWorkingLocation }
+        : {}),
       ...(args.prefSpecialism ? { prefSpecialism: args.prefSpecialism } : {}),
       ...(args.prefNotes ? { prefNotes: args.prefNotes } : {}),
       organisationId: actor.organisationId,
@@ -135,8 +137,10 @@ export const edit = mutation({
     if (args.isActive !== undefined) updates.isActive = args.isActive;
     if (args.role !== undefined) updates.role = args.role;
     if (args.teamName !== undefined) updates.teamName = args.teamName;
-    if (args.prefWorkingLocation !== undefined) updates.prefWorkingLocation = args.prefWorkingLocation;
-    if (args.prefSpecialism !== undefined) updates.prefSpecialism = args.prefSpecialism;
+    if (args.prefWorkingLocation !== undefined)
+      updates.prefWorkingLocation = args.prefWorkingLocation;
+    if (args.prefSpecialism !== undefined)
+      updates.prefSpecialism = args.prefSpecialism;
     if (args.prefNotes !== undefined) updates.prefNotes = args.prefNotes;
 
     await ctx.db.patch(args.profileId, updates);

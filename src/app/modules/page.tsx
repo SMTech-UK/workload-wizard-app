@@ -94,7 +94,9 @@ export default function ModulesPage() {
 
         <Card className="md:col-span-2">
           <CardHeader>
-              <CardTitle>All Modules {currentYear ? `— ${currentYear.name}` : ""}</CardTitle>
+            <CardTitle>
+              All Modules {currentYear ? `— ${currentYear.name}` : ""}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

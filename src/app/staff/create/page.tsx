@@ -34,7 +34,10 @@ export default function CreateLecturerProfilePage() {
 
   return (
     <StandardizedSidebarLayout
-      breadcrumbs={[{ label: "Staff", href: "/staff" }, { label: "Create Profile" }]}
+      breadcrumbs={[
+        { label: "Staff", href: "/staff" },
+        { label: "Create Profile" },
+      ]}
       title="Create Lecturer Profile"
     >
       <Card>
@@ -65,50 +68,130 @@ export default function CreateLecturerProfilePage() {
           >
             <div className="space-y-2">
               <Label htmlFor="fullName">Name</Label>
-              <Input id="fullName" value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} />
+              <Input
+                id="fullName"
+                value={form.fullName}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, fullName: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Input id="role" value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} />
+              <Input
+                id="role"
+                value={form.role}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, role: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="team">Team</Label>
-              <Input id="team" value={form.teamName} onChange={(e) => setForm((f) => ({ ...f, teamName: e.target.value }))} />
+              <Input
+                id="team"
+                value={form.teamName}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, teamName: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="contract">Contract</Label>
-              <Input id="contract" value={form.contract} onChange={(e) => setForm((f) => ({ ...f, contract: e.target.value }))} />
+              <Input
+                id="contract"
+                value={form.contract}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, contract: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="fte">FTE</Label>
-              <Input id="fte" type="number" inputMode="decimal" value={form.fte} onChange={(e) => setForm((f) => ({ ...f, fte: e.target.value }))} />
+              <Input
+                id="fte"
+                type="number"
+                inputMode="decimal"
+                value={form.fte}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, fte: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="maxTeaching">Max Teaching Hours</Label>
-              <Input id="maxTeaching" type="number" inputMode="numeric" value={form.maxTeachingHours} onChange={(e) => setForm((f) => ({ ...f, maxTeachingHours: e.target.value }))} />
+              <Input
+                id="maxTeaching"
+                type="number"
+                inputMode="numeric"
+                value={form.maxTeachingHours}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, maxTeachingHours: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="totalContract">Total Contract Hours</Label>
-              <Input id="totalContract" type="number" inputMode="numeric" value={form.totalContract} onChange={(e) => setForm((f) => ({ ...f, totalContract: e.target.value }))} />
+              <Input
+                id="totalContract"
+                type="number"
+                inputMode="numeric"
+                value={form.totalContract}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, totalContract: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="prefWork">Preferred Working Location</Label>
-              <Input id="prefWork" value={form.prefWorkingLocation} onChange={(e) => setForm((f) => ({ ...f, prefWorkingLocation: e.target.value }))} />
+              <Input
+                id="prefWork"
+                value={form.prefWorkingLocation}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    prefWorkingLocation: e.target.value,
+                  }))
+                }
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="specialism">Specialism</Label>
-              <Input id="specialism" value={form.prefSpecialism} onChange={(e) => setForm((f) => ({ ...f, prefSpecialism: e.target.value }))} />
+              <Input
+                id="specialism"
+                value={form.prefSpecialism}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, prefSpecialism: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="notes">Notes</Label>
-              <Input id="notes" value={form.prefNotes} onChange={(e) => setForm((f) => ({ ...f, prefNotes: e.target.value }))} />
+              <Input
+                id="notes"
+                value={form.prefNotes}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, prefNotes: e.target.value }))
+                }
+              />
             </div>
             <div className="md:col-span-2">
-              <Button type="submit" className="w-full" disabled={!canSubmit || !user?.id}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={!canSubmit || !user?.id}
+              >
                 Create Profile
               </Button>
             </div>
@@ -118,5 +201,3 @@ export default function CreateLecturerProfilePage() {
     </StandardizedSidebarLayout>
   );
 }
-
-

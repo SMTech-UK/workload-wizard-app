@@ -35,7 +35,9 @@ export default function FeaturebaseMessenger() {
   ) as { systemRoles?: string[]; organisationId?: string } | undefined;
   const orgDoc = useQuery(
     (api as any).organisations.get,
-    convexUser?.organisationId ? ({ organisationId: convexUser.organisationId } as any) : ("skip" as any),
+    convexUser?.organisationId
+      ? ({ organisationId: convexUser.organisationId } as any)
+      : ("skip" as any),
   ) as { name?: string } | undefined;
   const roleAssignments = useQuery(
     (api as any).organisationalRoles.getUserRoles,
@@ -44,17 +46,37 @@ export default function FeaturebaseMessenger() {
 
   const context = useMemo(() => {
     const email = user?.primaryEmailAddress?.emailAddress || undefined;
-    const fullName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : undefined;
-    const organisationId = (user?.publicMetadata?.organisationId as string) || convexUser?.organisationId || undefined;
+    const fullName = user
+      ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+      : undefined;
+    const organisationId =
+      (user?.publicMetadata?.organisationId as string) ||
+      convexUser?.organisationId ||
+      undefined;
     const role = (user?.publicMetadata?.role as string) || undefined;
-    const systemRolesArr = (user?.publicMetadata?.roles as string[]) || convexUser?.systemRoles || [];
+    const systemRolesArr =
+      (user?.publicMetadata?.roles as string[]) ||
+      convexUser?.systemRoles ||
+      [];
     const organisationName = orgDoc?.name || undefined;
     const orgAssignedRolesArr = (roleAssignments || [])
       .map((r) => r.role?.name)
       .filter(Boolean) as string[];
-    const systemRoles = systemRolesArr.length ? systemRolesArr.join(",") : undefined;
-    const orgRoles = orgAssignedRolesArr.length ? orgAssignedRolesArr.join(",") : undefined;
-    return { email, fullName, organisationId, role, systemRoles, orgRoles, organisationName };
+    const systemRoles = systemRolesArr.length
+      ? systemRolesArr.join(",")
+      : undefined;
+    const orgRoles = orgAssignedRolesArr.length
+      ? orgAssignedRolesArr.join(",")
+      : undefined;
+    return {
+      email,
+      fullName,
+      organisationId,
+      role,
+      systemRoles,
+      orgRoles,
+      organisationName,
+    };
   }, [user, convexUser, orgDoc, roleAssignments]);
 
   const hasBootedRef = useRef<string | null>(null);
@@ -104,22 +126,24 @@ export default function FeaturebaseMessenger() {
         }
       } catch {}
 
-    const createdAtIso = user?.createdAt ? new Date(user.createdAt as any).toISOString() : undefined;
-    const payload: BootPayload = {
-      appId,
-      email: context.email,
-      userId: user?.id,
-      createdAt: createdAtIso,
-      theme: "light",
-      language: "en",
-      userHash,
-      organisationId: context.organisationId,
-      organisationName: context.organisationName,
-      role: context.role,
-      fullName: context.fullName,
-      systemRoles: (context as any).systemRoles,
-      orgRoles: (context as any).orgRoles,
-    };
+      const createdAtIso = user?.createdAt
+        ? new Date(user.createdAt as any).toISOString()
+        : undefined;
+      const payload: BootPayload = {
+        appId,
+        email: context.email,
+        userId: user?.id,
+        createdAt: createdAtIso,
+        theme: "light",
+        language: "en",
+        userHash,
+        organisationId: context.organisationId,
+        organisationName: context.organisationName,
+        role: context.role,
+        fullName: context.fullName,
+        systemRoles: (context as any).systemRoles,
+        orgRoles: (context as any).orgRoles,
+      };
 
       // Remove undefined keys to avoid sending junk
       Object.keys(payload).forEach((k) => {

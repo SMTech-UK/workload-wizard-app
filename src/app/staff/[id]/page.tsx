@@ -36,7 +36,10 @@ export default function StaffProfilePage() {
 
   return (
     <StandardizedSidebarLayout
-      breadcrumbs={[{ label: "Staff", href: "/staff" }, { label: profile.fullName }]}
+      breadcrumbs={[
+        { label: "Staff", href: "/staff" },
+        { label: profile.fullName },
+      ]}
       title={profile.fullName}
       subtitle={profile.email}
     >
@@ -63,7 +66,9 @@ export default function StaffProfilePage() {
             <CardTitle>Module Allocations (current AY)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">Coming soon: list allocations scoped to selected AY.</div>
+            <div className="text-sm text-muted-foreground">
+              Coming soon: list allocations scoped to selected AY.
+            </div>
           </CardContent>
         </Card>
 
@@ -72,12 +77,12 @@ export default function StaffProfilePage() {
             <CardTitle>Admin Allocations</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">Coming soon: list admin allocations by category.</div>
+            <div className="text-sm text-muted-foreground">
+              Coming soon: list admin allocations by category.
+            </div>
           </CardContent>
         </Card>
       </div>
     </StandardizedSidebarLayout>
   );
 }
-
-

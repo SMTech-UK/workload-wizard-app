@@ -115,5 +115,3 @@ export const remove = mutation({
     return args.id;
   },
 });
-
-
