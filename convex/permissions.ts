@@ -336,7 +336,7 @@ export const upsertSystemRoleTemplate = mutation({
         updatedAt: now,
       });
       if (args.performedBy) {
-        await ctx.db.insert("audit_logs", {
+        await writeAudit(ctx as MutationCtx, {
           action: "update",
           entityType: "system_role_template",
           entityId: String(args.id),
@@ -346,7 +346,6 @@ export const upsertSystemRoleTemplate = mutation({
             ? { performedByName: args.performedByName }
             : {}),
           details: `System role template updated: ${args.name}`,
-          timestamp: now,
           severity: "info",
         });
       }
@@ -366,7 +365,7 @@ export const upsertSystemRoleTemplate = mutation({
         updatedAt: now,
       });
       if (args.performedBy) {
-        await ctx.db.insert("audit_logs", {
+        await writeAudit(ctx as MutationCtx, {
           action: "update",
           entityType: "system_role_template",
           entityId: String(existing._id),
@@ -376,7 +375,6 @@ export const upsertSystemRoleTemplate = mutation({
             ? { performedByName: args.performedByName }
             : {}),
           details: `System role template revived/updated: ${args.name}`,
-          timestamp: now,
           severity: "info",
         });
       }
@@ -391,7 +389,7 @@ export const upsertSystemRoleTemplate = mutation({
       updatedAt: now,
     });
     if (args.performedBy) {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "create",
         entityType: "system_role_template",
         entityId: String(newId),
@@ -401,7 +399,6 @@ export const upsertSystemRoleTemplate = mutation({
           ? { performedByName: args.performedByName }
           : {}),
         details: `System role template created: ${args.name}`,
-        timestamp: now,
         severity: "info",
       });
     }
@@ -421,7 +418,7 @@ export const deleteSystemRoleTemplate = mutation({
     const now = Date.now();
     await ctx.db.patch(args.id, { isActive: false, updatedAt: now });
     if (args.performedBy) {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "delete",
         entityType: "system_role_template",
         entityId: String(args.id),
@@ -431,7 +428,6 @@ export const deleteSystemRoleTemplate = mutation({
           ? { performedByName: args.performedByName }
           : {}),
         details: `System role template deleted: ${tpl.name}`,
-        timestamp: now,
         severity: "warning",
       });
     }
@@ -1593,10 +1589,10 @@ export const createOrganisationRole = mutation({
 
     // Log audit event
     if (subject) {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "role.created",
         entityType: "role",
-        entityId: roleId,
+        entityId: String(roleId),
         entityName: args.name,
         performedBy: subject,
         ...(args.performedByName
@@ -1609,7 +1605,6 @@ export const createOrganisationRole = mutation({
           permissions: args.permissions,
           organisationId: actor.organisationId,
         }),
-        timestamp: now,
         severity: "info",
       });
     }
@@ -1671,8 +1666,7 @@ export const updateOrganisationRole = mutation({
 
     // Audit
     if (subject) {
-      const now = Date.now();
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "role.updated",
         entityType: "role",
         entityId: String(args.roleId),
@@ -1695,7 +1689,6 @@ export const updateOrganisationRole = mutation({
             permissions: args.permissions,
           },
         }),
-        timestamp: now,
         severity: "info",
       });
     }
@@ -1770,10 +1763,10 @@ export const deleteOrganisationRole = mutation({
 
     // Log audit event
     if (subject) {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "role.deleted",
         entityType: "role",
-        entityId: args.roleId,
+        entityId: String(args.roleId),
         entityName: role.name,
         performedBy: subject,
         ...(args.performedByName
@@ -1787,7 +1780,6 @@ export const deleteOrganisationRole = mutation({
           organisationId: role.organisationId,
           wasDefault: role.isDefault,
         }),
-        timestamp: now,
         severity: "warning",
       });
     }
@@ -1877,7 +1869,7 @@ export const updateRolePermissions = mutation({
         .withIndex("by_permission_id", (q) => q.eq("id", args.permissionId))
         .first();
 
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: args.isGranted
           ? args.acceptStaged
             ? "permission.assigned"
@@ -1898,7 +1890,6 @@ export const updateRolePermissions = mutation({
           permissionId: args.permissionId,
           acceptedFromStaged: !!args.acceptStaged,
         }),
-        timestamp: Date.now(),
         severity: args.isGranted ? "info" : "warning",
       });
     }
