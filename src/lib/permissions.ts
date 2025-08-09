@@ -40,8 +40,17 @@ export const DEFAULT_ROLES: Record<string, PermissionId[]> = {
 };
 
 export async function seedDefaultOrgRoles(organisationId: string) {
-  // TODO: persist via Convex/DB; idempotent upsert for roles & their permissions
-  return { organisationId, roles: Object.keys(DEFAULT_ROLES) };
+  // Idempotently ensure default roles for an org via Convex helper.
+  const { ConvexHttpClient } = await import("convex/browser");
+  const { api } = await import("../../convex/_generated/api");
+  const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+  const res = await client.mutation(
+    api.permissions.ensureDefaultRolesForOrganisation,
+    {
+      organisationId: organisationId as unknown as any,
+    },
+  );
+  return { organisationId, created: res.created };
 }
 
 export function listPermissionsByGroup(): Record<
