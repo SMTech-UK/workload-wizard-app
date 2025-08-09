@@ -115,10 +115,23 @@ export default defineSchema({
   modules: defineTable({
     code: v.string(),
     name: v.string(),
+    credits: v.optional(v.number()),
     organisationId: v.id("organisations"),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  }).index("by_organisation", ["organisationId"]),
+
+  // 🔗 Course Year <> Module links (junction table)
+  course_year_modules: defineTable({
+    courseYearId: v.id("course_years"),
+    moduleId: v.id("modules"),
+    isCore: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_course_year", ["courseYearId"]) // list modules for a course year
+    .index("by_module", ["moduleId"]) // list years using a module
+    .index("by_course_year_module", ["courseYearId", "moduleId"]), // enforce uniqueness in code
 
   // 🎓 Module Iterations
   module_iterations: defineTable({
