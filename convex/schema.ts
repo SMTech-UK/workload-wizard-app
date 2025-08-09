@@ -141,7 +141,10 @@ export default defineSchema({
     weeks: v.array(v.number()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  })
+    .index("by_module", ["moduleId"]) // list iterations for a module
+    .index("by_year", ["academicYearId"]) // list iterations for a year
+    .index("by_module_year", ["moduleId", "academicYearId"]), // enforce uniqueness in code
 
   // 👨‍🏫 Lecturer Profiles
   lecturer_profiles: defineTable({
