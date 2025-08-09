@@ -12,6 +12,11 @@ export const create = mutation({
     fte: v.float64(),
     maxTeachingHours: v.float64(),
     totalContract: v.float64(),
+    role: v.optional(v.string()),
+    teamName: v.optional(v.string()),
+    prefWorkingLocation: v.optional(v.string()),
+    prefSpecialism: v.optional(v.string()),
+    prefNotes: v.optional(v.string()),
     userId: v.string(), // Current user ID for permission check
   },
   handler: async (ctx, args) => {
@@ -39,6 +44,11 @@ export const create = mutation({
       fte: args.fte,
       maxTeachingHours: args.maxTeachingHours,
       totalContract: args.totalContract,
+      ...(args.role ? { role: args.role } : {}),
+      ...(args.teamName ? { teamName: args.teamName } : {}),
+      ...(args.prefWorkingLocation ? { prefWorkingLocation: args.prefWorkingLocation } : {}),
+      ...(args.prefSpecialism ? { prefSpecialism: args.prefSpecialism } : {}),
+      ...(args.prefNotes ? { prefNotes: args.prefNotes } : {}),
       organisationId: actor.organisationId,
       isActive: true,
       createdAt: now,
@@ -78,6 +88,11 @@ export const edit = mutation({
     maxTeachingHours: v.optional(v.float64()),
     totalContract: v.optional(v.float64()),
     isActive: v.optional(v.boolean()),
+    role: v.optional(v.string()),
+    teamName: v.optional(v.string()),
+    prefWorkingLocation: v.optional(v.string()),
+    prefSpecialism: v.optional(v.string()),
+    prefNotes: v.optional(v.string()),
     userId: v.string(), // Current user ID for permission check
   },
   handler: async (ctx, args) => {
@@ -101,6 +116,11 @@ export const edit = mutation({
       maxTeachingHours?: number;
       totalContract?: number;
       isActive?: boolean;
+      role?: string;
+      teamName?: string;
+      prefWorkingLocation?: string;
+      prefSpecialism?: string;
+      prefNotes?: string;
       updatedAt: number;
     } = { updatedAt: Date.now() };
 
@@ -113,6 +133,11 @@ export const edit = mutation({
     if (args.totalContract !== undefined)
       updates.totalContract = args.totalContract;
     if (args.isActive !== undefined) updates.isActive = args.isActive;
+    if (args.role !== undefined) updates.role = args.role;
+    if (args.teamName !== undefined) updates.teamName = args.teamName;
+    if (args.prefWorkingLocation !== undefined) updates.prefWorkingLocation = args.prefWorkingLocation;
+    if (args.prefSpecialism !== undefined) updates.prefSpecialism = args.prefSpecialism;
+    if (args.prefNotes !== undefined) updates.prefNotes = args.prefNotes;
 
     await ctx.db.patch(args.profileId, updates);
 

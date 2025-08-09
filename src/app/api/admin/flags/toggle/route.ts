@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { recordAudit } from "@/lib/audit";
 import { z } from "zod";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/../convex/_generated/api";
 
 const BodySchema = z.object({ name: z.string().min(1), enabled: z.boolean() });
 
@@ -21,8 +23,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const { name, enabled } = BodySchema.parse(await req.json());
-    // TODO: write to Convex overrides table. For now, accept and respond.
-    // Audit: flags.updated
+    if (!process.env.NEXT_PUBLIC_CONVEX_URL)
+      return NextResponse.json(
+        { error: "Convex URL not configured" },
+        { status: 500 },
+      );
+    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+    await client.mutation(api.featureFlags.setOverride, {
+      userId,
+      flagName: name,
+      enabled,
+    });
     await recordAudit({
       action: "flags.updated",
       actorId: userId,

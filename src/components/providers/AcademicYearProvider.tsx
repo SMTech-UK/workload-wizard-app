@@ -56,7 +56,7 @@ export function AcademicYearProvider({
   const convexUser = useQuery(
     apiAny.users.getBySubject,
     user?.id ? { subject: user.id } : "skip",
-  ) as { systemRoles?: string[] } | undefined;
+  ) as { systemRoles?: string[]; organisationId?: Id<"organisations"> } | undefined;
 
   const isManagement = useMemo(() => {
     const roles = convexUser?.systemRoles || [];
@@ -67,6 +67,11 @@ export function AcademicYearProvider({
     );
   }, [convexUser]);
 
+  const orgIdStr = useMemo(
+    () => (convexUser?.organisationId ? String(convexUser.organisationId) : null),
+    [convexUser],
+  );
+
   // Fetch academic years for organisation, server decides visibility based on permissions
   const allYears = (useQuery(
     apiAny.academicYears.listForOrganisation,
@@ -74,7 +79,23 @@ export function AcademicYearProvider({
   ) || []) as AcademicYear[];
 
   // UI toggle: include drafts (only meaningful for management)
-  const [includeDrafts, setIncludeDrafts] = useState<boolean>(false);
+  const [includeDrafts, setIncludeDraftsState] = useState<boolean>(false);
+
+  // Load persisted includeDrafts per org
+  React.useEffect(() => {
+    if (!orgIdStr) return;
+    try {
+      const raw = localStorage.getItem(`ay_drafts:${orgIdStr}`);
+      if (raw !== null) setIncludeDraftsState(raw === "1");
+    } catch {}
+  }, [orgIdStr]);
+
+  const setIncludeDrafts = useCallback((v: boolean) => {
+    setIncludeDraftsState(v);
+    try {
+      if (orgIdStr) localStorage.setItem(`ay_drafts:${orgIdStr}`, v ? "1" : "0");
+    } catch {}
+  }, [orgIdStr]);
 
   const years = useMemo(() => {
     if (!isManagement || !includeDrafts) {
@@ -101,20 +122,32 @@ export function AcademicYearProvider({
 
   // Ensure we always have a selection when years change
   React.useEffect(() => {
+    if (!orgIdStr) return;
+    // Try to restore from storage first
+    try {
+      const stored = localStorage.getItem(`ay_current:${orgIdStr}`);
+      if (stored && years.some((y) => String(y._id) === stored)) {
+        if (currentYearId !== stored) setCurrentYearIdState(stored);
+        return;
+      }
+    } catch {}
+    // Otherwise ensure a sensible default
     if (!currentYearId && defaultYearId) {
       setCurrentYearIdState(defaultYearId);
     } else if (
       currentYearId &&
       years.every((y) => String(y._id) !== currentYearId)
     ) {
-      // Selected year disappeared from the filtered list; fall back to default
       setCurrentYearIdState(defaultYearId);
     }
-  }, [years, currentYearId, defaultYearId]);
+  }, [years, currentYearId, defaultYearId, orgIdStr]);
 
   const setCurrentYearId = useCallback((id: string) => {
     setCurrentYearIdState(id);
-  }, []);
+    try {
+      if (orgIdStr) localStorage.setItem(`ay_current:${orgIdStr}`, id);
+    } catch {}
+  }, [orgIdStr]);
 
   // Mutations
   const updateYear = useMutation(apiAny.academicYears.update);
@@ -145,8 +178,7 @@ export function AcademicYearProvider({
 
   const refreshNonce = useState<number>(0)[1];
   const refresh = useCallback(() => {
-    // Convex useQuery will refetch when args object identity changes; bump a local nonce through includeDrafts toggle
-    setIncludeDrafts((v) => v);
+    // Convex useQuery will refetch when args object identity changes; bump a local nonce
     refreshNonce((n) => n + 1);
   }, [refreshNonce]);
 

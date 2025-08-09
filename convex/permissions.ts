@@ -549,6 +549,48 @@ export const importSystemPermissions = mutation({
 });
 
 /**
+ * Seed planning MVP permissions for courses/modules/iterations/groups/allocations.
+ */
+export const seedPlanningMvpPermissions = mutation({
+  args: { performedBy: v.optional(v.string()), performedByName: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const items = [
+      { id: "courses.view", group: "courses", description: "View courses", defaultRoles: ["Admin", "Manager", "Lecturer", "Viewer"] },
+      { id: "courses.create", group: "courses", description: "Create courses", defaultRoles: ["Admin", "Manager"] },
+      { id: "courses.edit", group: "courses", description: "Edit courses", defaultRoles: ["Admin", "Manager"] },
+      { id: "courses.delete", group: "courses", description: "Delete courses", defaultRoles: ["Admin"] },
+      { id: "courses.years.add", group: "courses", description: "Add course years", defaultRoles: ["Admin", "Manager"] },
+      { id: "modules.view", group: "modules", description: "View modules", defaultRoles: ["Admin", "Manager", "Lecturer", "Viewer"] },
+      { id: "modules.create", group: "modules", description: "Create modules", defaultRoles: ["Admin", "Manager"] },
+      { id: "modules.edit", group: "modules", description: "Edit modules", defaultRoles: ["Admin", "Manager"] },
+      { id: "modules.delete", group: "modules", description: "Delete modules", defaultRoles: ["Admin"] },
+      { id: "modules.link", group: "modules", description: "Attach module to course year", defaultRoles: ["Admin", "Manager"] },
+      { id: "modules.unlink", group: "modules", description: "Detach module from course year", defaultRoles: ["Admin", "Manager"] },
+      { id: "iterations.create", group: "iterations", description: "Create module iterations for an academic year", defaultRoles: ["Admin", "Manager"] },
+      { id: "groups.view", group: "groups", description: "View groups", defaultRoles: ["Admin", "Manager", "Lecturer", "Viewer"] },
+      { id: "groups.create", group: "groups", description: "Create groups", defaultRoles: ["Admin", "Manager"] },
+      { id: "groups.delete", group: "groups", description: "Delete groups", defaultRoles: ["Admin", "Manager"] },
+      { id: "allocations.view", group: "allocations", description: "View allocations totals", defaultRoles: ["Admin", "Manager", "Lecturer"] },
+      { id: "allocations.assign", group: "allocations", description: "Assign lecturer to group", defaultRoles: ["Admin", "Manager"] },
+    ];
+
+    const res = await (ctx as any).runMutation(
+      {
+        path: "permissions/importSystemPermissions",
+      },
+      {
+        items,
+        upsert: true,
+        performedBy: args.performedBy,
+        performedByName: args.performedByName,
+      },
+    );
+
+    return res;
+  },
+});
+
+/**
  * List staged organisation role permission changes for an organisation
  */
 export const getStagedForOrganisation = query({
@@ -2136,6 +2178,14 @@ export const requireOrgPermission = async (
   // Must be operating within their own organisation
   if (String(user.organisationId) !== String(organisationId)) {
     throw new Error("Permission denied: cross-organisation access not allowed");
+  }
+
+  // Organisation admins are allowed for org-scoped permissions within their org
+  if (
+    Array.isArray(user.systemRoles) &&
+    user.systemRoles.some((r: string) => r === "orgadmin")
+  ) {
+    return true;
   }
 
   // Then enforce the permission

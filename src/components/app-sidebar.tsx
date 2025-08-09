@@ -52,6 +52,16 @@ const getNavigationData = (userRoles?: string[]) => {
       url: "/modules",
       icon: FileText,
     },
+    {
+      title: "Staff",
+      url: "/staff",
+      icon: Users,
+    },
+    {
+      title: "Create Staff Profile",
+      url: "/staff/create",
+      icon: UserCheck,
+    },
   ];
 
   // Add role-specific navigation
@@ -67,6 +77,10 @@ const getNavigationData = (userRoles?: string[]) => {
         {
           title: "Overview",
           url: "/admin",
+        },
+        {
+          title: "Academic Years",
+          url: "/admin/academic-years",
         },
         {
           title: "Users Management",
@@ -146,6 +160,22 @@ const getNavigationData = (userRoles?: string[]) => {
         {
           title: "Settings",
           url: "/organisation/settings",
+        },
+        {
+          title: "Academic Years",
+          url: "/admin/academic-years",
+        },
+        {
+          title: "Courses",
+          url: "/courses",
+        },
+        {
+          title: "Modules",
+          url: "/modules",
+        },
+        {
+          title: "Staff",
+          url: "/staff",
         },
       ],
     });

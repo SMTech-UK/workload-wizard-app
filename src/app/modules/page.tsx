@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout";
+import { useAcademicYear } from "@/components/providers/AcademicYearProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Label } from "@/components/ui/label";
 
 export default function ModulesPage() {
   const modules = useQuery(api.modules.listByOrganisation);
+  const { currentYear } = useAcademicYear();
   const create = useMutation(api.modules.create);
 
   const [form, setForm] = useState({ code: "", name: "", credits: "" });
@@ -92,7 +94,7 @@ export default function ModulesPage() {
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>All Modules</CardTitle>
+              <CardTitle>All Modules {currentYear ? `— ${currentYear.name}` : ""}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

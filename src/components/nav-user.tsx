@@ -8,6 +8,7 @@ import {
   User,
   Palette,
   Shield,
+  LifeBuoy,
 } from "lucide-react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -130,6 +131,12 @@ export function NavUser() {
                 <Link href="/account">
                   <User className="mr-2 h-4 w-4" />
                   Account
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/support">
+                  <LifeBuoy className="mr-2 h-4 w-4" />
+                  Support
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

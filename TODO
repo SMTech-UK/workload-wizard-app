@@ -1,282 +1,164 @@
+# ⏭️ Tomorrow’s Tasks (towards MVP)
+
+1) Lecturer assignment dialog (finish)
+   - Show computed hours preview from module credits before submit
+   - Validate override hours; surface errors via toast; keep dialog state stable on failure
+   - Ensure audit entries on assign/remove; confirm staff totals update instantly
+
+2) Lecturer profiles (edit/deactivate)
+   - Add edit form at `src/app/staff/[id]/page.tsx` (inline or modal)
+   - Deactivate/reactivate actions; permission gate; audit on changes
+   - Optional: link to Clerk user if `email` matches; display linked status
+
+3) Iteration details page
+   - New page consolidating groups + allocations (breadcrumbs, AY-aware)
+   - CRUD: create group; assign/unassign lecturer; show allocations table
+   - Route: `src/app/courses/[id]/iterations/[iterationId]/page.tsx` (or `/iterations/[id]`) and reuse existing Convex queries
+
+4) Course & module management UIs
+   - Add edit/delete for course and module with confirm modals
+   - Wire to Convex `courses.update/remove`, `modules.update/remove`; audit all
+   - Optimistic UI; surface server errors with toast
+
+5) Feature flags admin page (MVP)
+   - List current flags and user overrides; toggle via `/api/admin/flags/toggle`
+   - Read overrides from Convex; show effective value; permission gate to admins
+
+6) Permission-aware UI states
+   - Centralize gating util for org vs system roles; disable/hide forbidden actions
+   - Ensure 403 routes redirect to `/unauthorised`; toast on client-denied actions
+
+7) Error handling pass
+   - Wrap all mutations in try/catch; show `useToast` errors; no stale loading states
+
+8) Ops
+   - Expose a safe trigger to run `permissions.seedPlanningMvpPermissions` in non-dev
+   - Add a short admin-only button on `/admin/permissions` (guarded)
+
+9) Tests (targeted)
+   - Unit: permissions for orgadmin bypass vs granular perms
+   - Unit: allocations compute totals math
+   - Smoke: create course→year→module→iteration→group→assign (Vitest happy path)
+
+— Keep existing sections below for broader roadmap and manual testing.
+
 # ✅ Today’s MVP Sprint (foundations → first allocations)
 
 > **Outcome by EOD:** you can create a course + year, attach modules, create an iteration for the current academic year, make groups, and allocate a lecturer — with year visibility (draft vs published) enforced.
 
 ---
 
-## 0) Prep (5 mins)
+## Next UI tasks
 
-* Update `dev` and create a working branch.
+**Enhance lecturer assignment**
 
-```bash
-git checkout dev
-git pull
-git checkout -b feature/year-visibility-and-guards
-```
+* Show computed hours preview from module credits before submit
+* Show existing allocations list per group (with remove/edit)
 
----
+**Lecturer profiles UI**
 
-## 1) Academic year visibility & guards
+* Create/list/edit lecturer profiles (feeds assignment dialog)
 
-**Why:** lets management plan next year privately; staff only see published.
+**Course/module management**
 
-**Do:**
+* Add edit/delete UI with confirmations and audits
 
-* Add to `academic_years`: `status: 'draft'|'published'|'archived'`, `isDefaultForOrg: boolean`.
-* Add helpers `canViewYear`, `canEditYear` and use them in every AY-scoped query/mutation you touch today.
-* Add indices you’ll filter on (orgId, status).
+**Iteration details**
 
-**Accept:**
+* Dedicated page consolidating groups and allocations
 
-* Staff can **only** query published years.
-* Org admins/sysadmins can view **draft** and **published**.
+**Feature flags admin page**
 
-**Git:**
+* List user overrides and allow toggling (reads/writes Convex overrides)
 
-```bash
-git add .
-git commit -m "feat(years): add status + guards; enforce visibility in queries"
-git push -u origin feature/year-visibility-and-guards
-```
+**Permission-aware UI states**
 
-**Open PR:** `feat: academic year visibility & access guards`
-Merge into `dev` when green.
+* Disable/hide actions based on role/permissions
 
----
+**Error handling**
 
-## 2) Year switcher in UI (staff vs management)
+* Add error toasts for mutation failures
 
-**New branch:**
+**Staff capacity UX**
 
-```bash
-git checkout dev
-git pull
-git checkout -b feature/year-switcher-ui
-```
+* Visual bars and filters on `/staff` once contracts/max hours populated
 
-**Do:**
+**Ops**
 
-* Header **Year Switcher** component:
+* Run `permissions.seedPlanningMvpPermissions` in non-dev envs
 
-  * Staff: list **published** years only (default = org default).
-  * Management: toggle to see **draft** + set default year.
-* Store current AY in global state (context/store) and pass to pages.
+## Later / roadmap
 
-**Accept:**
+- Lecturer profiles
+  - Edit profile page (all fields), deactivate/reactivate
+  - Avatar sync (if linked user), link profile ⇄ user
+  - Per-lecturer admin allocations table (create/edit/remove)
 
-* Switching year updates lists (modules/iterations/groups) without reload.
-* Staff never see draft years.
+- Allocations
+  - Profile page: module allocations table (scoped to selected AY), sort/filter/export CSV
+  - Group allocations: inline edit hours, bulk assign/remove, totals by module and course
+  - Iteration details page: full groups & allocations management with summaries
 
-**Git:**
+- Courses & Modules
+  - Edit/delete UIs with confirmations and optimistic updates
+  - Module code uniqueness surfaces as inline validation
 
-```bash
-git add .
-git commit -m "feat(ui): global academic year switcher with role-aware visibility"
-git push -u origin feature/year-switcher-ui
-```
+- Organisations & Roles
+  - Move user between organisations; multi-org membership UX
+  - Role assignment UI improvements (multi-select, search), show effective permissions
+  - Replace orgadmin bypass with seeded granular perms for orgadmin
 
-**PR:** `feat: global year switcher (role-aware)` → merge to `dev`.
+- Academic Years
+  - Server preference to persist selected AY per user (beyond localStorage)
+  - Year cloning and bulk status changes
 
----
+- Feature flags
+  - Admin page: list all flags, per-user overrides, optional org overrides, rollout % controls
 
-## 3) Courses & course years (definitions)
+- Quality
+  - Error toasts standardised; zod validation across forms
+  - Playwright E2E for core flows; snapshot key pages
+  - Metrics: capture key events (create/update/delete) and allocation changes
 
-**New branch:**
+## Testing checklist (manual)
 
-```bash
-git checkout dev
-git pull
-git checkout -b feature/courses-and-years
-```
+- Lecturer assignment dialog
+  - Opens and loads groups for selected iteration and lecturers for org
+  - Computed hours preview matches module credits; override saves and persists
+  - Allocation appears in table; Remove deletes and audit entry is written
+  - Permission gating: orgadmin/manager can assign; lecturer-only user cannot
 
-**Do:**
+- Lecturer profiles UI
+  - Create profile; appears in assignment list; edit and deactivate works
+  - Permission gating enforced; audit entries on create/update/delete
 
-* Convex: `courses` (code, name, orgId) + `course_years` (courseId, yearNumber).
-* UI `/courses`: create/list courses.
-* Course detail: **Years** tab (add Y1/Y2/…).
+- Course/module management
+  - Edit/delete course and module with confirmations; uniqueness errors surface
+  - Audits on create/update/delete; permissions enforced server and UI
 
-**Accept:**
+- Iteration details page
+  - Lists groups and allocations; create group; assign/remove lecturer
+  - Respects selected academic year; switching AY updates lists
 
-* Can create a course, add Year 1.
+- Feature flags admin
+  - Toggle writes via `/api/admin/flags/toggle` to Convex overrides
+  - `getFlags()` reflects override for current user; audit `flags.updated` exists
+  - Non-admin access is denied (redirects/403)
 
-**Git:**
+- Permission-aware UI states
+  - As sysadmin/orgadmin: all actions enabled; as lecturer/viewer: actions disabled/hidden
+  - Server still blocks forbidden actions (verify error surfaced as toast)
 
-```bash
-git add .
-git commit -m "feat(courses): schema + CRUD; course years tab"
-git push -u origin feature/courses-and-years
-```
+- Error handling
+  - Simulate bad input/network; toasts show errors; no partial/dirty UI states remain
 
-**PR:** `feat: courses & course years` → merge to `dev`.
+- Staff capacity UX
+  - Bars update after allocations; thresholds show green/amber/red appropriately
+  - Basic filter/sort (if present) updates the list correctly
 
----
-
-## 4) Modules and link to course years
-
-**New branch:**
-
-```bash
-git checkout dev
-git pull
-git checkout -b feature/modules-and-linking
-```
-
-**Do:**
-
-* Convex: `modules` (code, name, credits, orgId).
-* Join table `course_year_modules` (courseYearId, moduleId, isCore).
-* UI `/modules`: list/create.
-* In course year view: attach/detach modules.
-
-**Accept:**
-
-* Can attach Module A to Course X, Year 1.
-
-**Git:**
-
-```bash
-git add .
-git commit -m "feat(modules): schema + CRUD; link modules to course years"
-git push -u origin feature/modules-and-linking
-```
-
-**PR:** `feat: modules + course-year linking` → merge to `dev`.
-
----
-
-## 5) Module iterations for the selected academic year
-
-**New branch:**
-
-```bash
-git checkout dev
-git pull
-git checkout -b feature/module-iterations-ay
-```
-
-**Do:**
-
-* Convex: `module_iterations` (moduleId, academicYearId, totalHours? optional).
-* UI: from a course year’s attached modules, **create iteration for current AY**.
-
-**Accept:**
-
-* For AY 25/26 you can create Module A (Iteration #1).
-
-**Git:**
-
-```bash
-git add .
-git commit -m "feat(iterations): create module iterations per academic year"
-git push -u origin feature/module-iterations-ay
-```
-
-**PR:** `feat: module iterations for selected AY` → merge to `dev`.
-
----
-
-## 6) Groups for an iteration (basic planner)
-
-**New branch:**
-
-```bash
-git checkout dev
-git pull
-git checkout -b feature/groups-basic
-```
-
-**Do:**
-
-* Convex: `module_groups` (moduleIterationId, name, campusId?, sizePlanned, dayOfWeek?, weekPattern?).
-* UI: on an iteration, **Add Group** (start simple: manual count; campus optional today).
-* Show groups list under the iteration.
-
-> auto-splitting by cohort size can come tomorrow; manual first keeps momentum.
-
-**Accept:**
-
-* Create 2–3 groups under Module A (Iteration #1).
-
-**Git:**
-
-```bash
-git add .
-git commit -m "feat(groups): groups under module iteration (manual, MVP)"
-git push -u origin feature/groups-basic
-```
-
-**PR:** `feat: module groups (manual create) under iterations` → merge to `dev`.
-
----
-
-## 7) Allocate lecturer to a group (first allocation)
-
-**New branch:**
-
-```bash
-git checkout dev
-git pull
-git checkout -b feature/group-allocations-mvp
-```
-
-**Do:**
-
-* Convex: `group_allocations` (groupId, lecturerId, hoursComputed, hoursOverride?, type:'teaching'|'admin', academicYearId, orgId).
-* Calculation (MVP): derive hours via module credits + multiplier OR allow manual override (save both).
-* UI: on a group, **Assign Lecturer** dialog (pick lecturer, see computed hours, allow override).
-
-**Accept:**
-
-* Assign a lecturer to a group; allocation appears and persists.
-
-**Git:**
-
-```bash
-git add .
-git commit -m "feat(allocations): assign lecturer to group with computed/override hours"
-git push -u origin feature/group-allocations-mvp
-```
-
-**PR:** `feat: lecturer → group allocations (MVP)` → merge to `dev`.
-
----
-
-## 8) Staff capacity roll-up (list view)
-
-**New branch:**
-
-```bash
-git checkout dev
-git pull
-git checkout -b feature/staff-capacity-rollup
-```
-
-**Do:**
-
-* Calc util: `computeLecturerTotals(lecturerId, academicYearId)`:
-
-  * totalContract (FTE × base, or override)
-  * maxTeaching (by contract type AP/TA/RA × FTE, or override)
-  * allocatedTeaching (sum group allocations)
-  * allocatedAdmin (from admin allocations if present; else 0 today)
-  * allocatedTotal, availableTeaching, capacity, overload flag
-* UI `/staff`: table with bars (green/amber/red).
-
-**Accept:**
-
-* See totals update after you allocate someone to a group.
-
-**Git:**
-
-```bash
-git add .
-git commit -m "feat(staff): capacity roll-up and list view for selected AY"
-git push -u origin feature/staff-capacity-rollup
-```
-
-**PR:** `feat: staff capacity roll-up (AY-scoped)` → merge to `dev`.
-
----
+- E2E smoke flow
+  - Switch to published AY; create course and Year 1; create module and attach to year
+  - Create iteration for selected AY; create a group; assign lecturer; verify in `/staff`
 
 ## 9) Release to dev preview
 
@@ -304,21 +186,3 @@ git push origin v0.3.1-mvp-slice-1
   * keep **AY 26/27** in **draft** visible only to management.
 * Create **Course → Year → Module → Iteration → Groups**.
 * Allocate a **Lecturer** to a **Group** and see hours reflected in **/staff** totals.
-
----
-
-## 🧹 Commit/PR hygiene (repeat for each branch)
-
-* Use **Conventional Commits** (`feat`, `fix`, `chore`, `docs`, `refactor`, `test`).
-* Small, focused commits; descriptive scope:
-  `feat(groups): add create/list UI under iteration`
-* Open **Draft PR** immediately and keep pushing to it.
-* PR template checklist:
-
-  * [ ] Org & AY scoping enforced
-  * [ ] Permission checks on server + UI guard
-  * [ ] Audit entries added (create/update/delete)
-  * [ ] Indexes added for new queries
-  * [ ] Screenshots/GIF of UI
-
----

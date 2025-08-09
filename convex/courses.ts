@@ -1,11 +1,28 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audit";
+import { requireOrgPermission } from "./permissions";
 
 // List courses for an organisation
 export const listByOrganisation = query({
   args: { organisationId: v.id("organisations") },
   handler: async (ctx, args) => {
+    // Only allow listing courses in your own organisation (or system roles)
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return [];
+    const actor = await ctx.db
+      .query("users" as any)
+      .withIndex("by_subject" as any, (q) =>
+        (q as any).eq("subject", identity.subject),
+      )
+      .first();
+    if (!actor) return [];
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "courses.view",
+      args.organisationId as any,
+    );
     const courses = await ctx.db
       .query("courses" as any)
       .withIndex("by_organisation" as any, (q) =>
@@ -48,6 +65,13 @@ export const create = mutation({
       )
       .first();
     if (!actor) throw new Error("User not found");
+
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "courses.create",
+      actor.organisationId as any,
+    );
 
     // Check uniqueness of code within organisation
     const existing = await ctx.db
@@ -111,6 +135,13 @@ export const update = mutation({
     const course = await (ctx.db as any).get(args.id as any);
     if (!course) throw new Error("Course not found");
 
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "courses.edit",
+      course.organisationId as any,
+    );
+
     const now = Date.now();
     const updates: Record<string, unknown> = {
       code: args.code,
@@ -149,6 +180,13 @@ export const remove = mutation({
     const existing = await (ctx.db as any).get(args.id as any);
     if (!existing) return args.id;
 
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "courses.delete",
+      existing.organisationId as any,
+    );
+
     await (ctx.db as any).delete(args.id as any);
 
     try {
@@ -174,6 +212,17 @@ export const remove = mutation({
 export const listYears = query({
   args: { courseId: v.id("courses") },
   handler: async (ctx, args) => {
+    const course = await (ctx.db as any).get(args.courseId as any);
+    if (!course) return [];
+    // Permission: courses.view (same org as course)
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return [];
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "courses.view",
+      course.organisationId as any,
+    );
     const years = await ctx.db
       .query("course_years" as any)
       .withIndex("by_course" as any, (q) =>
@@ -193,6 +242,13 @@ export const addYear = mutation({
     if (!identity?.subject) throw new Error("Unauthenticated");
     const course = await (ctx.db as any).get(args.courseId as any);
     if (!course) throw new Error("Course not found");
+
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "courses.years.add",
+      course.organisationId as any,
+    );
 
     // Ensure unique yearNumber per course
     const exists = await ctx.db

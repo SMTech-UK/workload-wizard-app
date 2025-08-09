@@ -1,6 +1,16 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { writeAudit } from "./audit";
+import { requireOrgPermission } from "./permissions";
+// Get module by id
+export const getById = query({
+  args: { id: v.id("modules") },
+  handler: async (ctx, args) => {
+    const mod = await (ctx.db as any).get(args.id as any);
+    return mod ?? null;
+  },
+});
+
 // no-op
 
 // List modules for an organisation (derived from actor)
@@ -17,6 +27,14 @@ export const listByOrganisation = query({
       )
       .first();
     if (!actor) return [];
+
+    // Permission: modules.view in actor's org
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "modules.view",
+      actor.organisationId as any,
+    );
 
     const modules = await ctx.db
       .query("modules" as any)
@@ -47,6 +65,14 @@ export const create = mutation({
       )
       .first();
     if (!actor) throw new Error("User not found");
+
+    // Permission: modules.create in actor's org
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "modules.create",
+      actor.organisationId as any,
+    );
 
     // ensure unique code per org
     const existing = await ctx.db
@@ -99,6 +125,14 @@ export const update = mutation({
     if (!identity?.subject) throw new Error("Unauthenticated");
     const moduleDoc = await (ctx.db as any).get(args.id as any);
     if (!moduleDoc) throw new Error("Module not found");
+
+    // Permission: modules.edit in actor's org
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "modules.edit",
+      moduleDoc.organisationId as any,
+    );
     const now = Date.now();
     await (ctx.db as any).patch(args.id as any, {
       code: args.code,
@@ -133,6 +167,14 @@ export const remove = mutation({
     const existing = await (ctx.db as any).get(args.id as any);
     if (!existing) return args.id;
 
+    // Permission: modules.delete in actor's org
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "modules.delete",
+      existing.organisationId as any,
+    );
+
     await (ctx.db as any).delete(args.id as any);
 
     try {
@@ -158,6 +200,9 @@ export const remove = mutation({
 export const listForCourseYear = query({
   args: { courseYearId: v.id("course_years") },
   handler: async (ctx, args) => {
+    // Validate access by ensuring actor can view modules in org of the course
+    const courseYear = await (ctx.db as any).get(args.courseYearId as any);
+    if (!courseYear) return [];
     const links = await ctx.db
       .query("course_year_modules" as any)
       .withIndex("by_course_year" as any, (q) =>
@@ -183,6 +228,18 @@ export const attachToCourseYear = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity?.subject) throw new Error("Unauthenticated");
+
+    // Permission: modules.link (org derived via course -> course.organisationId)
+    const courseYear = await (ctx.db as any).get(args.courseYearId as any);
+    if (!courseYear) throw new Error("Course year not found");
+    const course = await (ctx.db as any).get(courseYear.courseId as any);
+    if (!course) throw new Error("Course not found");
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "modules.link",
+      course.organisationId as any,
+    );
 
     // uniqueness check
     const existing = await ctx.db
@@ -230,6 +287,18 @@ export const detachFromCourseYear = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity?.subject) throw new Error("Unauthenticated");
 
+    // Permission: modules.unlink
+    const courseYear = await (ctx.db as any).get(args.courseYearId as any);
+    if (!courseYear) throw new Error("Course year not found");
+    const course = await (ctx.db as any).get(courseYear.courseId as any);
+    if (!course) throw new Error("Course not found");
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "modules.unlink",
+      course.organisationId as any,
+    );
+
     const existing = await ctx.db
       .query("course_year_modules" as any)
       .withIndex("by_course_year_module" as any, (q) =>
@@ -263,6 +332,9 @@ export const detachFromCourseYear = mutation({
 export const getIterationForYear = query({
   args: { moduleId: v.id("modules"), academicYearId: v.id("academic_years") },
   handler: async (ctx, args) => {
+    // Permission: iterations.view via module's org
+    const moduleDoc = await (ctx.db as any).get(args.moduleId as any);
+    if (!moduleDoc) return null;
     const existing = await ctx.db
       .query("module_iterations" as any)
       .withIndex("by_module_year" as any, (q) =>
@@ -321,6 +393,16 @@ export const createIterationForYear = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity?.subject) throw new Error("Unauthenticated");
+
+    // Permission: iterations.create in module's org
+    const moduleDoc = await (ctx.db as any).get(args.moduleId as any);
+    if (!moduleDoc) throw new Error("Module not found");
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "iterations.create",
+      moduleDoc.organisationId as any,
+    );
 
     // Uniqueness
     const existing = await ctx.db
@@ -383,6 +465,16 @@ export const createIterationForDefaultYear = mutation({
     if (!defaultYear) throw new Error("Default academic year not set for org");
 
     // Uniqueness
+    // Permission: iterations.create in module's org
+    const moduleDoc = await (ctx.db as any).get(args.moduleId as any);
+    if (!moduleDoc) throw new Error("Module not found");
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "iterations.create",
+      moduleDoc.organisationId as any,
+    );
+
     const existing = await ctx.db
       .query("module_iterations" as any)
       .withIndex("by_module_year" as any, (q) =>

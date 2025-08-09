@@ -42,11 +42,11 @@ export const create = mutation({
           actor.systemRoles.some((r: string) =>
             ["admin", "sysadmin", "developer"].includes(r),
           );
-        // Always derive organisation from the actor when not a system role
-        if (!isSystem)
-          derivedOrganisationId = actor.organisationId as Id<"organisations">;
-        // For system actors, allow explicit organisationId if passed; otherwise default to their org
-        if (isSystem && !derivedOrganisationId) {
+        // If explicit organisationId provided, allow assigning user to a different org
+        if (args.organisationId) {
+          derivedOrganisationId = args.organisationId as Id<"organisations">;
+        } else {
+          // Otherwise default to actor's org
           derivedOrganisationId = actor.organisationId as Id<"organisations">;
         }
       }

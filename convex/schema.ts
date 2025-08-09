@@ -111,6 +111,26 @@ export default defineSchema({
     updatedAt: v.float64(),
   }).index("by_user_org", ["userId", "organisationId"]),
 
+  // 📘 Courses
+  courses: defineTable({
+    code: v.string(),
+    name: v.string(),
+    organisationId: v.id("organisations"),
+    leaderProfileId: v.optional(v.id("lecturer_profiles")),
+    studentCount: v.optional(v.float64()),
+    campuses: v.optional(v.array(v.string())),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_organisation", ["organisationId"]),
+
+  // 📘 Course Years (Y1/Y2/... for a course)
+  course_years: defineTable({
+    courseId: v.id("courses"),
+    yearNumber: v.float64(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_course", ["courseId"]),
+
   // 📚 Module Definitions
   modules: defineTable({
     code: v.string(),
@@ -146,6 +166,18 @@ export default defineSchema({
     .index("by_year", ["academicYearId"]) // list iterations for a year
     .index("by_module_year", ["moduleId", "academicYearId"]), // enforce uniqueness in code
 
+  // 👥 Module Groups (under a specific module iteration)
+  module_groups: defineTable({
+    moduleIterationId: v.id("module_iterations"),
+    name: v.string(),
+    sizePlanned: v.optional(v.float64()),
+    campusId: v.optional(v.string()),
+    dayOfWeek: v.optional(v.string()),
+    weekPattern: v.optional(v.string()),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_iteration", ["moduleIterationId"]),
+
   // 👨‍🏫 Lecturer Profiles
   lecturer_profiles: defineTable({
     fullName: v.string(),
@@ -154,6 +186,11 @@ export default defineSchema({
     fte: v.float64(),
     maxTeachingHours: v.float64(),
     totalContract: v.float64(),
+    role: v.optional(v.string()),
+    teamName: v.optional(v.string()),
+    prefWorkingLocation: v.optional(v.string()),
+    prefSpecialism: v.optional(v.string()),
+    prefNotes: v.optional(v.string()),
     organisationId: v.id("organisations"),
     isActive: v.boolean(),
     createdAt: v.float64(),
@@ -169,6 +206,23 @@ export default defineSchema({
     createdAt: v.float64(),
     updatedAt: v.float64(),
   }),
+
+  // 👥 Group Allocations (lecturer ↔ group for AY)
+  group_allocations: defineTable({
+    groupId: v.id("module_groups"),
+    lecturerId: v.id("lecturer_profiles"),
+    academicYearId: v.id("academic_years"),
+    organisationId: v.id("organisations"),
+    type: v.union(v.literal("teaching"), v.literal("admin")),
+    hoursComputed: v.float64(),
+    hoursOverride: v.optional(v.float64()),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_group", ["groupId"]) // list allocations for a group
+    .index("by_lecturer", ["lecturerId"]) // list allocations for a lecturer
+    .index("by_year", ["academicYearId"]) // list allocations for a year
+    .index("by_org_year", ["organisationId", "academicYearId"]),
 
   // 🧮 Module Allocations
   module_allocations: defineTable({

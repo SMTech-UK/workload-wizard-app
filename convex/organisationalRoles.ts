@@ -273,9 +273,16 @@ export const assignMultipleToUser = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
+    if (!Array.isArray(args.roleIds) || args.roleIds.length === 0) {
+      throw new Error("No roles provided");
+    }
+
     // Validate roles and derive organisation; ensure all roles belong to same org
     const roles = await Promise.all(args.roleIds.map((rid) => ctx.db.get(rid)));
-    if (roles.some((r) => !r || !r.isActive)) {
+    if (roles.some((r) => !r)) {
+      throw new Error("One or more roles not found");
+    }
+    if (roles.some((r) => !r!.isActive)) {
       throw new Error("One or more roles invalid or inactive");
     }
     const orgId = roles[0]!.organisationId;
