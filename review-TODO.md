@@ -11,6 +11,120 @@ You are a senior full-stack engineer working in **WorkloadWizard**.
 
 Make the codebase “MVP-ready and safe to build on” by implementing a **lean** set of foundations. Keep changes minimal, incremental, and in scope.
 
+## Remaining scope only (completed items removed)
+
+This section tracks only what’s left to harden the foundations. Completed items (CI, analytics proxy, flags page, registry wiring, tests, error/loading pages, docs consolidation) are intentionally omitted below.
+
+### PR 1 — Project hygiene deltas (hooks)
+
+- Update Husky pre-commit to run full guards (keep lint-staged for speed if desired):
+
+```bash
+# .husky/pre-commit
+pnpm lint-staged && pnpm typecheck && pnpm prettier --check .
+```
+
+Acceptance
+
+- Pre-commit fails on type errors or formatting drift.
+
+### PR 3/8 — AuthZ discipline in Convex (derive org, avoid trusting client)
+
+Tasks
+
+- For Convex mutations we own that currently accept `organisationId`, derive organisation from the actor/user context and/or ID lookups instead of trusting client input.
+- Ensure security-sensitive Convex paths emit audit entries consistently.
+
+Acceptance
+
+- Grep shows no client-provided `organisationId` usage in touched Convex mutations.
+- Audit entries produced on sensitive changes.
+
+### PR 4 — Permissions registry seeding (idempotent)
+
+Tasks
+
+- Implement `seedDefaultOrgRoles(organisationId)` to upsert org roles and default permission assignments using `DEFAULT_ROLES`.
+- Call from org-create flow or a seed script.
+
+Acceptance
+
+- Running the seed twice is idempotent; new orgs get default roles and assignments.
+
+### PR 5 — Audit centralisation (optional but recommended)
+
+Tasks
+
+- Introduce a small server-side helper for audit inserts (normalise action/entity/severity and enrich optional fields uniformly) and reuse across Convex mutations instead of open-coded `ctx.db.insert("audit_logs", ...)`.
+
+Acceptance
+
+- New/modified audit writes go through the helper; fields are normalised consistently.
+
+### PR 8 — Next.js API input validation
+
+Tasks
+
+- Add Zod body schemas to the following routes and return 400 on invalid payload:
+  - `src/app/api/update-user/route.ts`
+  - `src/app/api/update-user-email/route.ts`
+  - `src/app/api/update-user-username/route.ts`
+  - `src/app/api/reset-password/route.ts`
+
+Acceptance
+
+- Invalid requests rejected with clear 400; happy paths unchanged.
+
+### PR 10 — Security refinements (rate limit coverage)
+
+Tasks
+
+- Extend the middleware rate-limit list if needed (e.g., invites or other sensitive admin endpoints) so it includes at minimum:
+  - `/api/admin/flags/toggle`
+  - `/api/analytics/track`
+  - `/api/reset-password`
+  - `/api/admin/reset-password`
+  - any invites/role-change endpoints exposed over Next API
+
+Acceptance
+
+- Requests that exceed per-IP token bucket on those routes return 429.
+
+### PR 11a — Vitest UI (proper implementation)
+
+Scripts (package.json)
+
+```json
+{
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui --open"
+  },
+  "dependencies": {
+    "@vitest/ui": "^3"
+  }
+}
+```
+
+Usage
+
+- Run `pnpm test:ui` and open the Vitest UI (auto-opens with `--open`).
+- Or run `pnpm test:watch` for terminal watch mode.
+
+Acceptance
+
+- Vitest UI loads, lists tests, and executes them; CI remains green with `pnpm test`.
+
+## Definition of Done (remaining)
+
+- Pre-commit runs typecheck + formatting checks and blocks on failure.
+- Touched Convex mutations derive organisation context server-side.
+- Permission seeding implemented and idempotent.
+- Audit writes use a shared normalisation (new/changed paths).
+- Selected Next API routes validate input with Zod and reject invalid payloads.
+- Sensitive endpoints are rate-limited via middleware.
+
 ## Guardrails
 
 - Work in **small PRs** (5–10 files, <400 lines diff where possible).
