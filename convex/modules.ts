@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { writeAudit } from "./audit";
+// no-op
 
 // List modules for an organisation (derived from actor)
 export const listByOrganisation = query({
@@ -253,5 +254,166 @@ export const detachFromCourseYear = mutation({
     } catch {}
 
     return existing._id;
+  },
+});
+
+// ===== Module Iterations (per Academic Year) =====
+
+// Get iteration for a module in a specific academic year
+export const getIterationForYear = query({
+  args: { moduleId: v.id("modules"), academicYearId: v.id("academic_years") },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("module_iterations" as any)
+      .withIndex("by_module_year" as any, (q) =>
+        (q as any)
+          .eq("moduleId", args.moduleId as any)
+          .eq("academicYearId", args.academicYearId as any),
+      )
+      .first();
+    return existing ?? null;
+  },
+});
+
+// Get iteration for the organisation's default academic year
+export const getIterationForDefaultYear = query({
+  args: { moduleId: v.id("modules") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return null;
+    const actor = await ctx.db
+      .query("users" as any)
+      .withIndex("by_subject" as any, (q) =>
+        (q as any).eq("subject", identity.subject),
+      )
+      .first();
+    if (!actor) return null;
+
+    const defaultYear = await ctx.db
+      .query("academic_years" as any)
+      .withIndex("by_organisation" as any, (q) =>
+        (q as any).eq("organisationId", actor.organisationId as any),
+      )
+      .filter((q) => (q as any).eq((q as any).field("isDefaultForOrg"), true))
+      .first();
+    if (!defaultYear) return null;
+
+    const existing = await ctx.db
+      .query("module_iterations" as any)
+      .withIndex("by_module_year" as any, (q) =>
+        (q as any)
+          .eq("moduleId", args.moduleId as any)
+          .eq("academicYearId", defaultYear._id as any),
+      )
+      .first();
+    return existing ?? null;
+  },
+});
+
+// Create iteration for a module in a specific academic year
+export const createIterationForYear = mutation({
+  args: {
+    moduleId: v.id("modules"),
+    academicYearId: v.id("academic_years"),
+    totalHours: v.optional(v.number()),
+    weeks: v.optional(v.array(v.number())),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Unauthenticated");
+
+    // Uniqueness
+    const existing = await ctx.db
+      .query("module_iterations" as any)
+      .withIndex("by_module_year" as any, (q) =>
+        (q as any)
+          .eq("moduleId", args.moduleId as any)
+          .eq("academicYearId", args.academicYearId as any),
+      )
+      .first();
+    if (existing) return existing._id;
+
+    const now = Date.now();
+    const id = await (ctx.db as any).insert("module_iterations", {
+      moduleId: args.moduleId,
+      academicYearId: args.academicYearId,
+      totalHours: typeof args.totalHours === "number" ? args.totalHours : 0,
+      weeks: Array.isArray(args.weeks) ? args.weeks : [],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    try {
+      await writeAudit(ctx, {
+        action: "create",
+        entityType: "module_iteration",
+        entityId: String(id),
+        performedBy: identity.subject,
+        details: `Created iteration for module ${String(args.moduleId)} in AY ${String(args.academicYearId)}`,
+        severity: "info",
+      });
+    } catch {}
+
+    return id;
+  },
+});
+
+// Convenience: create iteration for the organisation's default academic year
+export const createIterationForDefaultYear = mutation({
+  args: { moduleId: v.id("modules"), totalHours: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Unauthenticated");
+    const actor = await ctx.db
+      .query("users" as any)
+      .withIndex("by_subject" as any, (q) =>
+        (q as any).eq("subject", identity.subject),
+      )
+      .first();
+    if (!actor) throw new Error("User not found");
+
+    const defaultYear = await ctx.db
+      .query("academic_years" as any)
+      .withIndex("by_organisation" as any, (q) =>
+        (q as any).eq("organisationId", actor.organisationId as any),
+      )
+      .filter((q) => (q as any).eq((q as any).field("isDefaultForOrg"), true))
+      .first();
+
+    if (!defaultYear) throw new Error("Default academic year not set for org");
+
+    // Uniqueness
+    const existing = await ctx.db
+      .query("module_iterations" as any)
+      .withIndex("by_module_year" as any, (q) =>
+        (q as any)
+          .eq("moduleId", args.moduleId as any)
+          .eq("academicYearId", defaultYear._id as any),
+      )
+      .first();
+    if (existing) return existing._id;
+
+    const now = Date.now();
+    const id = await (ctx.db as any).insert("module_iterations", {
+      moduleId: args.moduleId,
+      academicYearId: defaultYear._id,
+      totalHours: typeof args.totalHours === "number" ? args.totalHours : 0,
+      weeks: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    try {
+      await writeAudit(ctx, {
+        action: "create",
+        entityType: "module_iteration",
+        entityId: String(id),
+        performedBy: identity.subject,
+        details: `Created iteration for module ${String(args.moduleId)} in default AY ${String(defaultYear._id)}`,
+        severity: "info",
+      });
+    } catch {}
+
+    return id;
   },
 });
