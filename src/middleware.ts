@@ -80,6 +80,9 @@ export default clerkMiddleware(async (auth, req) => {
       "/api/analytics/track",
       "/api/reset-password",
       "/api/admin/reset-password",
+      "/api/update-user",
+      "/api/update-user-email",
+      "/api/update-user-username",
     ].some((p) => path.startsWith(p));
     if (isSensitive && shouldRateLimit(ip)) {
       return NextResponse.json(
