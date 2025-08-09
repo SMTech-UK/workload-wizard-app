@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireOrgPermission } from "./permissions";
+import { writeAudit } from "./audit";
 
 // Get all roles for an organisation
 export const listByOrganisation = query({
@@ -75,7 +76,7 @@ export const create = mutation({
     });
 
     // Audit create
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "role.created",
       entityType: "role",
       entityId: String(roleId),
@@ -87,7 +88,6 @@ export const create = mutation({
         permissions: args.permissions,
         isDefault: !!args.isDefault,
       }),
-      timestamp: now,
       severity: "info",
     });
 

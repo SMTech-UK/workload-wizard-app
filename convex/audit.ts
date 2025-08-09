@@ -1,4 +1,9 @@
-import { mutation, query } from "./_generated/server";
+import {
+  mutation,
+  query,
+  type QueryCtx,
+  type MutationCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 
@@ -16,6 +21,51 @@ export interface AuditLogEntry {
   ipAddress?: string;
   userAgent?: string;
   severity?: "info" | "warning" | "error" | "critical";
+}
+
+// Small helper to normalize and insert audit entries across mutations
+export async function writeAudit(ctx: MutationCtx, args: AuditLogEntry) {
+  // Normalize action and entityType to consistent format
+  const normalize = (s: string) =>
+    s
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]+/g, ".")
+      .replace(/\.{2,}/g, ".");
+  const normalizeEntity = (s: string) =>
+    s
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+
+  const base = {
+    action: normalize(args.action),
+    entityType: normalizeEntity(args.entityType),
+    entityId: args.entityId,
+    performedBy: args.performedBy,
+    timestamp: Date.now(),
+    severity: ((): NonNullable<AuditLogEntry["severity"]> => {
+      const value = args.severity ?? "info";
+      return value === "info" ||
+        value === "warning" ||
+        value === "error" ||
+        value === "critical"
+        ? value
+        : "info";
+    })(),
+  } as const;
+
+  const optional = {
+    ...(args.entityName ? { entityName: args.entityName } : {}),
+    ...(args.performedByName ? { performedByName: args.performedByName } : {}),
+    ...(args.organisationId ? { organisationId: args.organisationId } : {}),
+    ...(args.details ? { details: args.details } : {}),
+    ...(args.metadata ? { metadata: args.metadata } : {}),
+    ...(args.ipAddress ? { ipAddress: args.ipAddress } : {}),
+    ...(args.userAgent ? { userAgent: args.userAgent } : {}),
+  };
+
+  return await ctx.db.insert("audit_logs", { ...base, ...optional });
 }
 
 // Mutation to create an audit log entry
