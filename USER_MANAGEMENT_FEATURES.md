@@ -1,19 +1,22 @@
 # User Management Features
 
 ## Overview
+
 This document describes the new user management features implemented for organisation admins and system administrators.
 
 ## Features Implemented
 
 ### 1. View Inactive Users
+
 - **Feature**: Organisation admins can now view deactivated users in addition to active users
-- **Implementation**: 
+- **Implementation**:
   - Toggle button in organisation users page to show/hide inactive users
   - New Convex query `listAllByOrganisation` to fetch all users (including inactive)
   - Updated user actions to support fetching all users vs active users only
 - **Usage**: Click "Show Inactive" button on the organisation users page
 
 ### 2. Deactivation Confirmation Dialog
+
 - **Feature**: Confirmation dialog when deactivating users to prevent accidental deactivation
 - **Implementation**:
   - New `DeactivateConfirmationModal` component with detailed user information
@@ -22,6 +25,7 @@ This document describes the new user management features implemented for organis
 - **Usage**: Click "Deactivate" button on any user → confirmation dialog appears
 
 ### 3. User Reactivation
+
 - **Feature**: Organisation admins can reactivate previously deactivated users
 - **Implementation**:
   - New `reactivateUser` function in user actions
@@ -30,6 +34,7 @@ This document describes the new user management features implemented for organis
 - **Usage**: When viewing inactive users, click "Reactivate" button
 
 ### 4. Edit Organisation Functionality
+
 - **Feature**: System admins can edit organisation details from the admin panel
 - **Implementation**:
   - New `EditOrganisationForm` component with modal interface
@@ -45,11 +50,13 @@ No additional environment variables are required for the current features.
 ## Security Considerations
 
 ### Organisation Management
+
 - Only available to users with `sysadmin` or `developer` roles
 - All actions are logged in audit trail
 - Soft delete approach preserves all organisation data
 
 ### User Deactivation/Reactivation
+
 - Only orgadmin, sysadmin, and developer roles can perform these actions
 - Cannot deactivate orgadmin or sysadmin users
 - All actions are logged in audit trail
@@ -73,6 +80,7 @@ No additional API endpoints were added for the current features. All functionali
 ## Audit Logging
 
 All user and organisation management actions are logged:
+
 - User deactivation
 - User reactivation
 - Organisation updates
@@ -93,4 +101,4 @@ All user and organisation management actions are logged:
 
 ---
 
-*Last updated: January 2025* 
+_Last updated: January 2025_

@@ -7,7 +7,11 @@ export type SessionUser = {
 };
 
 function extractFromUnknown<T>(value: unknown, key: string): T | undefined {
-  if (value && typeof value === "object" && key in (value as Record<string, unknown>)) {
+  if (
+    value &&
+    typeof value === "object" &&
+    key in (value as Record<string, unknown>)
+  ) {
     return (value as Record<string, unknown>)[key] as T;
   }
   return undefined;
@@ -19,8 +23,14 @@ export async function getSessionUser(): Promise<SessionUser> {
   const user = await currentUser();
 
   const organisationId =
-    extractFromUnknown<string>(session.sessionClaims as unknown, "organisationId") ||
-    extractFromUnknown<string>(user?.publicMetadata as unknown, "organisationId");
+    extractFromUnknown<string>(
+      session.sessionClaims as unknown,
+      "organisationId",
+    ) ||
+    extractFromUnknown<string>(
+      user?.publicMetadata as unknown,
+      "organisationId",
+    );
 
   const role =
     extractFromUnknown<string>(session.sessionClaims as unknown, "role") ||
@@ -46,8 +56,12 @@ export async function requireSystemPermission(_perm: string) {
 export async function requireOrgPermission(_perm: string) {
   // Replace with real RBAC once permissions.ts is wired in
   const { role } = await getSessionUser();
-  if (role === "systemadmin" || role === "sysadmin" || role === "admin" || role === "orgadmin") return true as const;
+  if (
+    role === "systemadmin" ||
+    role === "sysadmin" ||
+    role === "admin" ||
+    role === "orgadmin"
+  )
+    return true as const;
   throw new Error("Forbidden");
 }
-
-

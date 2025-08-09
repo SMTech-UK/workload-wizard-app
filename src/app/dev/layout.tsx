@@ -1,9 +1,5 @@
-import { AuthenticatedLayout } from '@/components/layout/AuthenticatedLayout';
+import { AuthenticatedLayout } from "@/components/layout/AuthenticatedLayout";
 
-export default function DevLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DevLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

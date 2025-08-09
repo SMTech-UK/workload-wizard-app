@@ -30,9 +30,18 @@ export const create = mutation({
         .withIndex("by_subject", (q) => q.eq("subject", args.userId as string))
         .first();
       if (actor) {
-        const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
-        if (!isSystem && String(actor.organisationId) !== String(args.organisationId)) {
-          throw new Error("Unauthorized: Cannot create users outside your organisation");
+        const isSystem =
+          Array.isArray(actor.systemRoles) &&
+          actor.systemRoles.some((r: string) =>
+            ["admin", "sysadmin", "developer"].includes(r),
+          );
+        if (
+          !isSystem &&
+          String(actor.organisationId) !== String(args.organisationId)
+        ) {
+          throw new Error(
+            "Unauthorized: Cannot create users outside your organisation",
+          );
         }
       }
     }
@@ -56,7 +65,9 @@ export const create = mutation({
     } = {
       ...(args.username ? { username: args.username } : {}),
       ...(args.pictureUrl ? { pictureUrl: args.pictureUrl } : {}),
-      ...(args.tokenIdentifier ? { tokenIdentifier: args.tokenIdentifier } : {}),
+      ...(args.tokenIdentifier
+        ? { tokenIdentifier: args.tokenIdentifier }
+        : {}),
     };
     const userId = await ctx.db.insert("users", { ...base, ...optional });
 
@@ -64,16 +75,19 @@ export const create = mutation({
     if (args.userId) {
       try {
         await ctx.db.insert("audit_logs", {
-          action: 'user.invited',
-          entityType: 'user',
+          action: "user.invited",
+          entityType: "user",
           entityId: String(userId),
           entityName: base.email,
           performedBy: args.userId,
           organisationId: base.organisationId,
           details: `User invited: ${base.email}`,
-          metadata: JSON.stringify({ username: optional.username, systemRoles: base.systemRoles }),
+          metadata: JSON.stringify({
+            username: optional.username,
+            systemRoles: base.systemRoles,
+          }),
           timestamp: Date.now(),
-          severity: 'info',
+          severity: "info",
         });
       } catch {}
     }
@@ -107,8 +121,13 @@ export const update = mutation({
       throw new Error("User not found");
     }
 
-    const actorIsOrgAdmin = !!actor && Array.isArray(actor.systemRoles) && actor.systemRoles.includes('orgadmin');
-    const sameOrganisation = !!actor && String(actor.organisationId) === String(targetUser.organisationId);
+    const actorIsOrgAdmin =
+      !!actor &&
+      Array.isArray(actor.systemRoles) &&
+      actor.systemRoles.includes("orgadmin");
+    const sameOrganisation =
+      !!actor &&
+      String(actor.organisationId) === String(targetUser.organisationId);
 
     if (!(actorIsOrgAdmin && sameOrganisation)) {
       await requirePermission(ctx, args.currentUserId, "users.edit");
@@ -118,15 +137,29 @@ export const update = mutation({
 
     // Guardrails: Only system admins (sysadmin/developer/admin) may modify systemRoles
     if (updates.systemRoles) {
-      const isSystemActor = !!actor && Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
+      const isSystemActor =
+        !!actor &&
+        Array.isArray(actor.systemRoles) &&
+        actor.systemRoles.some((r: string) =>
+          ["admin", "sysadmin", "developer"].includes(r),
+        );
       if (!isSystemActor) {
-        throw new Error("Unauthorized: Only system administrators may change system roles");
+        throw new Error(
+          "Unauthorized: Only system administrators may change system roles",
+        );
       }
       // Prevent assigning protected roles unless actor is sysadmin
-      const assigningProtected = updates.systemRoles.some((r: string) => r === "sysadmin" || r === "developer");
-      const actorIsSysadmin = !!actor && Array.isArray(actor.systemRoles) && actor.systemRoles.includes("sysadmin");
+      const assigningProtected = updates.systemRoles.some(
+        (r: string) => r === "sysadmin" || r === "developer",
+      );
+      const actorIsSysadmin =
+        !!actor &&
+        Array.isArray(actor.systemRoles) &&
+        actor.systemRoles.includes("sysadmin");
       if (assigningProtected && !actorIsSysadmin) {
-        throw new Error("Unauthorized: Only sysadmin may assign developer/sysadmin roles");
+        throw new Error(
+          "Unauthorized: Only sysadmin may assign developer/sysadmin roles",
+        );
       }
     }
 
@@ -158,14 +191,14 @@ export const update = mutation({
     // Audit update
     try {
       await ctx.db.insert("audit_logs", {
-        action: 'update',
-        entityType: 'user',
+        action: "update",
+        entityType: "user",
         entityId: String(id),
         performedBy: args.currentUserId,
-        details: 'User updated',
+        details: "User updated",
         metadata: JSON.stringify(updates),
         timestamp: Date.now(),
-        severity: 'info',
+        severity: "info",
       });
     } catch {}
   },
@@ -183,7 +216,7 @@ export const updateEmail = mutation({
     if (!currentUser) {
       throw new Error("Current user not found");
     }
-    
+
     await requirePermission(ctx, currentUser.subject, "users.edit");
 
     // Check if the new email is already in use by another user
@@ -205,14 +238,14 @@ export const updateEmail = mutation({
     // Audit email change
     try {
       await ctx.db.insert("audit_logs", {
-        action: 'update',
-        entityType: 'user',
+        action: "update",
+        entityType: "user",
         entityId: String(args.userId),
         performedBy: currentUser.subject,
-        details: 'User email updated',
+        details: "User email updated",
         metadata: JSON.stringify({ newEmail: args.newEmail }),
         timestamp: Date.now(),
-        severity: 'info',
+        severity: "info",
       });
     } catch {}
   },
@@ -227,7 +260,7 @@ export const list = query({
 
     if (args.organisationId) {
       usersQuery = usersQuery.filter((q) =>
-        q.eq(q.field("organisationId"), args.organisationId)
+        q.eq(q.field("organisationId"), args.organisationId),
       );
     }
 
@@ -241,15 +274,27 @@ export const list = query({
         // Get all current organisational role assignments for this user in their org (support multiple)
         const assignments = await ctx.db
           .query("user_role_assignments")
-          .withIndex("by_user_org", (q) => q.eq("userId", user.subject).eq("organisationId", user.organisationId))
+          .withIndex("by_user_org", (q) =>
+            q
+              .eq("userId", user.subject)
+              .eq("organisationId", user.organisationId),
+          )
           .filter((q) => q.eq(q.field("isActive"), true))
           .collect();
 
-        const organisationalRoles: Array<{ id: Id<"user_roles">; name: string; description: string } | null> = [];
+        const organisationalRoles: Array<{
+          id: Id<"user_roles">;
+          name: string;
+          description: string;
+        } | null> = [];
         for (const a of assignments) {
           const role = await ctx.db.get(a.roleId);
           if (role && role.isActive) {
-            organisationalRoles.push({ id: role._id, name: role.name, description: role.description });
+            organisationalRoles.push({
+              id: role._id,
+              name: role.name,
+              description: role.description,
+            });
           }
         }
 
@@ -268,7 +313,7 @@ export const list = query({
           organisationalRoles,
           organisationalRole,
         };
-      })
+      }),
     );
 
     return usersWithOrganisations;
@@ -314,15 +359,15 @@ export const remove = mutation({
     // Audit
     try {
       await ctx.db.insert("audit_logs", {
-        action: 'deactivate',
-        entityType: 'user',
+        action: "deactivate",
+        entityType: "user",
         entityId: user.subject,
         entityName: user.fullName,
         performedBy: user.subject, // unknown actor at this boundary; UI logs richer context elsewhere
         organisationId: user.organisationId,
-        details: 'User deactivated',
+        details: "User deactivated",
         timestamp: Date.now(),
-        severity: 'warning',
+        severity: "warning",
       });
     } catch {}
 
@@ -349,15 +394,15 @@ export const hardDelete = mutation({
     // Audit
     try {
       await ctx.db.insert("audit_logs", {
-        action: 'delete',
-        entityType: 'user',
+        action: "delete",
+        entityType: "user",
         entityId: user.subject,
         entityName: user.fullName,
         performedBy: user.subject,
         organisationId: user.organisationId,
-        details: 'User hard deleted',
+        details: "User hard deleted",
         timestamp: Date.now(),
-        severity: 'critical',
+        severity: "critical",
       });
     } catch {}
 
@@ -440,22 +485,34 @@ export const updateByWebhook = mutation({
     const { userId, ...updates } = args;
 
     // Build a safe update object with correct types
-    const processedUpdates: Partial<Doc<"users">> & Record<string, unknown> = {};
+    const processedUpdates: Partial<Doc<"users">> & Record<string, unknown> =
+      {};
 
     if (updates.email !== undefined) processedUpdates.email = updates.email;
-    if (updates.username !== undefined) processedUpdates.username = updates.username;
-    if (updates.givenName !== undefined) processedUpdates.givenName = updates.givenName;
-    if (updates.familyName !== undefined) processedUpdates.familyName = updates.familyName;
-    if (updates.fullName !== undefined) processedUpdates.fullName = updates.fullName;
-    if (updates.systemRoles !== undefined) processedUpdates.systemRoles = updates.systemRoles;
-    if (updates.pictureUrl !== undefined) processedUpdates.pictureUrl = updates.pictureUrl;
+    if (updates.username !== undefined)
+      processedUpdates.username = updates.username;
+    if (updates.givenName !== undefined)
+      processedUpdates.givenName = updates.givenName;
+    if (updates.familyName !== undefined)
+      processedUpdates.familyName = updates.familyName;
+    if (updates.fullName !== undefined)
+      processedUpdates.fullName = updates.fullName;
+    if (updates.systemRoles !== undefined)
+      processedUpdates.systemRoles = updates.systemRoles;
+    if (updates.pictureUrl !== undefined)
+      processedUpdates.pictureUrl = updates.pictureUrl;
 
     // Handle organisation ID conversion
     if (updates.organisationId && updates.organisationId !== "") {
       try {
         const org = await ctx.db
           .query("organisations")
-          .filter((q) => q.eq(q.field("_id"), updates.organisationId as unknown as Id<"organisations">))
+          .filter((q) =>
+            q.eq(
+              q.field("_id"),
+              updates.organisationId as unknown as Id<"organisations">,
+            ),
+          )
           .first();
         if (org) {
           processedUpdates.organisationId = org._id;
@@ -496,7 +553,7 @@ export const completeOnboarding = mutation({
     }
 
     const data = args.onboardingData;
-    
+
     // Prepare updates object with onboarding completion
     const updates: Partial<Doc<"users">> & Record<string, unknown> = {
       onboardingCompleted: true,
@@ -509,30 +566,30 @@ export const completeOnboarding = mutation({
     if (data.firstName && data.firstName !== user.givenName) {
       updates.givenName = data.firstName;
     }
-    
+
     if (data.lastName && data.lastName !== user.familyName) {
       updates.familyName = data.lastName;
     }
-    
+
     // Update full name if first or last name changed
     if (updates.givenName || updates.familyName) {
       const firstName = updates.givenName || user.givenName;
       const lastName = updates.familyName || user.familyName;
       updates.fullName = `${firstName} ${lastName}`;
     }
-    
+
     if (data.email && data.email !== user.email) {
       updates.email = data.email;
     }
-    
+
     if (data.phone) {
       updates.phone = data.phone;
     }
-    
+
     if (data.department) {
       updates.department = data.department;
     }
-    
+
     // Handle job role (use customRole if role is "other", otherwise use role)
     if (data.role) {
       if (data.role === "other" && data.customRole) {
@@ -546,7 +603,7 @@ export const completeOnboarding = mutation({
 
     return user._id;
   },
-}); 
+});
 
 export const updateUserAvatar = mutation({
   args: {
@@ -582,14 +639,17 @@ export const updateUserAvatar = mutation({
       performedByName: user.fullName,
       organisationId: user.organisationId,
       details: "Updated profile picture",
-      metadata: JSON.stringify({ previousPictureUrl: user.pictureUrl, newPictureUrl: pictureUrl }),
+      metadata: JSON.stringify({
+        previousPictureUrl: user.pictureUrl,
+        newPictureUrl: pictureUrl,
+      }),
       timestamp: Date.now(),
       severity: "info",
     });
 
     return updatedUser;
   },
-}); 
+});
 
 export const getUserAvatar = query({
   args: {
@@ -605,4 +665,4 @@ export const getUserAvatar = query({
 
     return user?.pictureUrl || null;
   },
-}); 
+});

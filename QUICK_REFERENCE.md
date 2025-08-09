@@ -13,7 +13,7 @@
    ```typescript
    const canAccess = useQuery(api.permissions.hasPermission, {
      userId: user?.id || "",
-     permissionId: "your.permission"
+     permissionId: "your.permission",
    });
    ```
 
@@ -21,16 +21,16 @@
 
 ```typescript
 // Module permissions
-"modules.create", "modules.edit", "modules.delete", "modules.view"
+("modules.create", "modules.edit", "modules.delete", "modules.view");
 
-// User permissions  
-"users.create", "users.edit", "users.delete", "users.view"
+// User permissions
+("users.create", "users.edit", "users.delete", "users.view");
 
 // Staff permissions
-"staff.create", "staff.edit", "staff.delete", "staff.view"
+("staff.create", "staff.edit", "staff.delete", "staff.view");
 
 // Admin permissions
-"admin.users", "admin.organisations", "admin.system"
+("admin.users", "admin.organisations", "admin.system");
 ```
 
 ### System Roles Hierarchy
@@ -38,14 +38,14 @@
 ```
 developer/sysadmin -> Bypass all permission checks
 admin -> Organisation admin level
-orgadmin -> Organisation admin 
+orgadmin -> Organisation admin
 user -> Standard permissions apply
 ```
 
 ### Key Endpoints
 
 - **Admin Permissions**: `/admin/permissions`
-- **Role Management**: `/organisation/roles`  
+- **Role Management**: `/organisation/roles`
 - **User Management**: `/admin/users`
 - **Audit Logs**: [Interface needed]
 
@@ -53,7 +53,7 @@ user -> Standard permissions apply
 
 ```
 system_permissions -> Global permission definitions
-user_roles -> Organisation-specific roles  
+user_roles -> Organisation-specific roles
 user_role_assignments -> User ↔ Role mappings
 audit_logs -> All permission changes tracked
 ```
@@ -62,9 +62,12 @@ audit_logs -> All permission changes tracked
 
 ```typescript
 // Check permission
-const hasPermission = useQuery(api.permissions.hasPermission, { userId, permissionId });
+const hasPermission = useQuery(api.permissions.hasPermission, {
+  userId,
+  permissionId,
+});
 
-// Enforce permission  
+// Enforce permission
 await requirePermission(ctx, userId, permissionId);
 
 // Create role
@@ -83,4 +86,4 @@ await logAuditEvent({ action, entityType, entityId, details });
 
 ---
 
-*Last updated: January 2025*
+_Last updated: January 2025_

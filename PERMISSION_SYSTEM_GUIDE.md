@@ -31,7 +31,7 @@ The Workload Wizard app implements a comprehensive Role-Based Access Control (RB
 ```
 System Roles (Highest)
 ├── sysadmin/developer -> Bypass all checks
-├── admin -> Bypass organisation checks  
+├── admin -> Bypass organisation checks
 └── user -> Standard permission checks
 
 Organisation Roles (Detailed)
@@ -44,6 +44,7 @@ Organisation Roles (Detailed)
 ### 1. System Permission Registry (`/admin/permissions`)
 
 **Features:**
+
 - Create, edit, delete system permissions
 - Group permissions by functional area
 - Assign default roles for automatic distribution
@@ -51,6 +52,7 @@ Organisation Roles (Detailed)
 - Force delete with automatic cleanup
 
 **Permission Structure:**
+
 ```typescript
 {
   id: "users.edit",           // Unique permission identifier
@@ -62,6 +64,7 @@ Organisation Roles (Detailed)
 ```
 
 **Key Operations:**
+
 - **Create**: Add new permissions with default role assignments
 - **Edit**: Modify description, grouping, and default roles
 - **Delete**: Safe deletion with usage checks, force delete option
@@ -70,12 +73,14 @@ Organisation Roles (Detailed)
 ### 2. Organisation Role Management (`/organisation/roles`)
 
 **Features:**
+
 - Create custom roles for organisation
 - Manage role permissions (system defaults + custom overrides)
 - Visual permission matrix showing source (system vs custom)
 - Role deletion with safety checks
 
 **Role Structure:**
+
 ```typescript
 {
   name: "Department Head",
@@ -95,21 +100,21 @@ Organisation Roles (Detailed)
 function hasPermission(userId: string, permissionId: string): boolean {
   // 1. Get user details
   const user = getUserBySubject(userId);
-  
+
   // 2. System role bypass
   if (user.systemRole in ["sysadmin", "developer", "admin"]) {
     return true;
   }
-  
+
   // 3. Get user's role assignment
   const assignment = getUserRoleAssignment(userId, user.organisationId);
   const role = getRole(assignment.roleId);
-  
+
   // 4. Check permission
   if (role.permissions.includes(permissionId)) {
-    return true;  // Custom assignment
+    return true; // Custom assignment
   }
-  
+
   // 5. Check system defaults
   const systemPerm = getSystemPermission(permissionId);
   return systemPerm.defaultRoles.includes(role.name);
@@ -133,37 +138,43 @@ export const updateUser = mutation({
   handler: async (ctx, args) => {
     // Enforce permission before proceeding
     await requirePermission(ctx, args.currentUserId, "users.edit");
-    
+
     // Proceed with protected operation
     await ctx.db.patch(args.userId, updates);
-  }
+  },
 });
 ```
 
 ## 📋 Permission Assignment Process
 
 ### 1. System Permission Creation
+
 1. Admin creates system permission via `/admin/permissions`
 2. Permission stored in `system_permissions` table
 3. Default roles specified for automatic assignment
 
 ### 2. Organisation Setup
+
 1. New organisation created
 2. Default roles automatically created (`Admin`, `Manager`, `Lecturer`, `Viewer`)
 3. System permissions pushed to roles based on `defaultRoles` configuration
 
 ### 3. Custom Role Management
+
 1. Organisation admins create custom roles via `/organisation/roles`
 2. Permissions assigned manually or inherited from system defaults
 3. Visual indicators show permission source (system vs custom)
 
 ### 4. User Assignment
+
 **⚠️ Currently Missing - Implementation Needed:**
+
 - User → Role assignment interface
 - Bulk role assignment tools
 - User permission overview
 
 ### 5. Permission Checking
+
 1. User attempts protected operation
 2. `requirePermission()` called in mutation/query
 3. Permission resolution logic executed
@@ -174,16 +185,19 @@ export const updateUser = mutation({
 ### Tracked Events
 
 **Permission Events:**
+
 - `permission.assigned` - Permission granted to role
 - `permission.revoked` - Permission removed from role
 - `permission.pushed` - Bulk permission distribution
 
 **Role Events:**
+
 - `role.created` - New role creation
 - `role.updated` - Role modification
 - `role.deleted` - Role deletion
 
 **System Events:**
+
 - `create`, `update`, `delete` - Permission CRUD operations
 
 ### Audit Data Structure
@@ -269,10 +283,10 @@ export const createStaffMember = mutation({
   handler: async (ctx, args) => {
     // Enforce permission
     await requirePermission(ctx, args.userId, "staff.create");
-    
+
     // Protected operation
     const staffId = await ctx.db.insert("staff", args.staffData);
-    
+
     // Audit logging (automatic via audit system)
     return staffId;
   }
@@ -312,6 +326,7 @@ await requirePermission(ctx, args.userId, "modules.create");
 ### Adding a New Feature with Permissions
 
 1. **Define Permission**
+
    ```typescript
    // Add via admin interface or directly
    {
@@ -323,20 +338,22 @@ await requirePermission(ctx, args.userId, "modules.create");
    ```
 
 2. **Protect Backend Functions**
+
    ```typescript
    export const createModule = mutation({
      handler: async (ctx, args) => {
        await requirePermission(ctx, args.userId, "modules.create");
        // ... protected logic
-     }
+     },
    });
    ```
 
 3. **Conditional Frontend Access**
+
    ```typescript
    const canCreate = useQuery(api.permissions.hasPermission, {
      userId: user?.id || "",
-     permissionId: "modules.create"
+     permissionId: "modules.create",
    });
    ```
 
@@ -366,7 +383,7 @@ await requirePermission(ctx, args.userId, "modules.create");
 
 ```
 developer/sysadmin -> Full system access, bypasses all checks
-admin -> Organisation admin, bypasses org-level checks  
+admin -> Organisation admin, bypasses org-level checks
 orgadmin -> Organisation admin role
 user -> Standard user, subject to all permission checks
 ```
@@ -387,7 +404,7 @@ user -> Standard user, subject to all permission checks
 ### ⚠️ Missing Implementation
 
 - ❌ User → Role assignment interface
-- ❌ Bulk role assignment tools  
+- ❌ Bulk role assignment tools
 - ❌ User permission overview page
 - ❌ Permission history/audit UI
 - ❌ Role template system
@@ -421,12 +438,14 @@ user -> Standard user, subject to all permission checks
 ### For Developers
 
 1. **Add new permission**:
+
    ```bash
    # Via admin interface at /admin/permissions
    # Or directly in database/migrations
    ```
 
 2. **Protect a function**:
+
    ```typescript
    await requirePermission(ctx, userId, "your.permission");
    ```
@@ -435,7 +454,7 @@ user -> Standard user, subject to all permission checks
    ```typescript
    const hasAccess = useQuery(api.permissions.hasPermission, {
      userId: user?.id || "",
-     permissionId: "your.permission"
+     permissionId: "your.permission",
    });
    ```
 
@@ -448,5 +467,5 @@ user -> Standard user, subject to all permission checks
 
 ---
 
-*Last updated: January 2025*
-*Version: 1.0*
+_Last updated: January 2025_
+_Version: 1.0_

@@ -1,23 +1,39 @@
-"use client"
+"use client";
 
-import { StandardizedSidebarLayout, type BreadcrumbItem } from "@/components/layout/StandardizedSidebarLayout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Construction, ArrowRight, Lightbulb, Calendar, Users, BarChart3 } from "lucide-react"
-import Link from "next/link"
+import {
+  StandardizedSidebarLayout,
+  type BreadcrumbItem,
+} from "@/components/layout/StandardizedSidebarLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Construction,
+  ArrowRight,
+  Lightbulb,
+  Calendar,
+  Users,
+  BarChart3,
+} from "lucide-react";
+import Link from "next/link";
 
 interface PlaceholderPageProps {
-  breadcrumbs?: BreadcrumbItem[]
-  title?: string
-  subtitle?: string
-  description?: string
+  breadcrumbs?: BreadcrumbItem[];
+  title?: string;
+  subtitle?: string;
+  description?: string;
   suggestedActions?: {
-    label: string
-    href: string
-    icon?: React.ComponentType<{ className?: string }>
-    variant?: "default" | "outline" | "secondary"
-  }[]
-  headerActions?: React.ReactNode
+    label: string;
+    href: string;
+    icon?: React.ComponentType<{ className?: string }>;
+    variant?: "default" | "outline" | "secondary";
+  }[];
+  headerActions?: React.ReactNode;
 }
 
 export function PlaceholderPage({
@@ -26,7 +42,7 @@ export function PlaceholderPage({
   subtitle,
   description,
   suggestedActions = [],
-  headerActions
+  headerActions,
 }: PlaceholderPageProps) {
   return (
     <StandardizedSidebarLayout
@@ -40,13 +56,14 @@ export function PlaceholderPage({
           <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
             <Construction className="h-8 w-8 text-muted-foreground" />
           </div>
-          
+
           <h2 className="text-2xl font-semibold text-muted-foreground">
             Coming Soon
           </h2>
-          
+
           <p className="text-muted-foreground leading-relaxed">
-            {description || `The ${title} section is currently under development. We're working hard to bring you powerful features for managing your workload and academic resources.`}
+            {description ||
+              `The ${title} section is currently under development. We're working hard to bring you powerful features for managing your workload and academic resources.`}
           </p>
         </div>
 
@@ -58,13 +75,14 @@ export function PlaceholderPage({
                 Suggested Actions
               </CardTitle>
               <CardDescription>
-                While we&apos;re building this feature, here are some related actions you can take:
+                While we&apos;re building this feature, here are some related
+                actions you can take:
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2">
                 {suggestedActions.map((action, index) => {
-                  const Icon = action.icon || ArrowRight
+                  const Icon = action.icon || ArrowRight;
                   return (
                     <Button
                       key={index}
@@ -77,7 +95,7 @@ export function PlaceholderPage({
                         <span>{action.label}</span>
                       </Link>
                     </Button>
-                  )
+                  );
                 })}
               </div>
             </CardContent>
@@ -89,44 +107,39 @@ export function PlaceholderPage({
         </div>
       </div>
     </StandardizedSidebarLayout>
-  )
+  );
 }
-
-
 
 // Pre-configured placeholder for common pages
 export function DashboardPlaceholder() {
-  const breadcrumbs = [
-    { label: "Home", href: "/" },
-    { label: "Dashboard" }
-  ]
+  const breadcrumbs = [{ label: "Home", href: "/" }, { label: "Dashboard" }];
 
   const suggestedActions = [
     {
       label: "Manage Users",
       href: "/admin/users",
       icon: Users,
-      variant: "default" as const
+      variant: "default" as const,
     },
     {
       label: "View Organisation",
       href: "/organisation",
       icon: Users,
-      variant: "outline" as const
+      variant: "outline" as const,
     },
     {
       label: "Audit Logs",
       href: "/admin/audit-logs",
       icon: BarChart3,
-      variant: "outline" as const
+      variant: "outline" as const,
     },
     {
       label: "UI Components",
       href: "/ui",
       icon: Calendar,
-      variant: "outline" as const
-    }
-  ]
+      variant: "outline" as const,
+    },
+  ];
 
   return (
     <PlaceholderPage
@@ -134,41 +147,39 @@ export function DashboardPlaceholder() {
       description="The dashboard will provide an overview of your workload assignments, upcoming deadlines, and key metrics. You'll be able to view your teaching schedule, research commitments, and administrative tasks all in one place."
       suggestedActions={suggestedActions}
     />
-  )
+  );
 }
 
 // Pre-configured placeholder for common pages
 export function HomePlaceholder() {
-  const breadcrumbs = [
-    { label: "Home", href: "/" }
-  ]
+  const breadcrumbs = [{ label: "Home", href: "/" }];
 
   const suggestedActions = [
     {
       label: "Manage Users",
       href: "/admin/users",
       icon: Users,
-      variant: "default" as const
+      variant: "default" as const,
     },
     {
       label: "View Organisation",
       href: "/organisation",
       icon: Users,
-      variant: "outline" as const
+      variant: "outline" as const,
     },
     {
       label: "Audit Logs",
       href: "/admin/audit-logs",
       icon: BarChart3,
-      variant: "outline" as const
+      variant: "outline" as const,
     },
     {
       label: "UI Components",
       href: "/ui",
       icon: Calendar,
-      variant: "outline" as const
-    }
-  ]
+      variant: "outline" as const,
+    },
+  ];
 
   return (
     <PlaceholderPage
@@ -176,5 +187,5 @@ export function HomePlaceholder() {
       description="The home page will provide an overview of your workload assignments, upcoming deadlines, and key metrics. You'll be able to view your teaching schedule, research commitments, and administrative tasks all in one place."
       suggestedActions={suggestedActions}
     />
-  )
+  );
 }

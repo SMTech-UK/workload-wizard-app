@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { usePinkMode } from '@/hooks/usePinkMode';
+import { usePinkMode } from "@/hooks/usePinkMode";
 
 interface PinkModeProviderProps {
   children: React.ReactNode;

@@ -1,14 +1,26 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useMutation } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
-import { X } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { X } from "lucide-react";
 
 interface Organisation {
   _id: string;
@@ -28,10 +40,17 @@ interface EditOrganisationFormProps {
   onUpdate: () => void;
 }
 
-export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOrganisationFormProps) {
+export function EditOrganisationForm({
+  organisation,
+  onClose,
+  onUpdate,
+}: EditOrganisationFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
   const updateOrganisation = useMutation(api.organisations.update);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -42,27 +61,47 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
     const formData = new FormData(event.currentTarget);
     const dataBase = {
       id: organisation._id,
-      name: formData.get('name') as string,
-      code: formData.get('code') as string,
-      status: formData.get('status') as string,
+      name: formData.get("name") as string,
+      code: formData.get("code") as string,
+      status: formData.get("status") as string,
     };
     const optional = {
-      ...((formData.get('contactEmail') as string) ? { contactEmail: formData.get('contactEmail') as string } : {}),
-      ...((formData.get('contactPhone') as string) ? { contactPhone: formData.get('contactPhone') as string } : {}),
-      ...((formData.get('domain') as string) ? { domain: formData.get('domain') as string } : {}),
-      ...((formData.get('website') as string) ? { website: formData.get('website') as string } : {}),
+      ...((formData.get("contactEmail") as string)
+        ? { contactEmail: formData.get("contactEmail") as string }
+        : {}),
+      ...((formData.get("contactPhone") as string)
+        ? { contactPhone: formData.get("contactPhone") as string }
+        : {}),
+      ...((formData.get("domain") as string)
+        ? { domain: formData.get("domain") as string }
+        : {}),
+      ...((formData.get("website") as string)
+        ? { website: formData.get("website") as string }
+        : {}),
     };
-    const data: Parameters<typeof updateOrganisation>[0] = { ...dataBase, ...optional } as Parameters<typeof updateOrganisation>[0];
+    const data: Parameters<typeof updateOrganisation>[0] = {
+      ...dataBase,
+      ...optional,
+    } as Parameters<typeof updateOrganisation>[0];
 
     try {
       await updateOrganisation(data);
-      setMessage({ type: 'success', text: 'Organisation updated successfully!' });
+      setMessage({
+        type: "success",
+        text: "Organisation updated successfully!",
+      });
       onUpdate();
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update organisation' });
+      setMessage({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Failed to update organisation",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +156,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
                 id="contactEmail"
                 name="contactEmail"
                 type="email"
-                defaultValue={organisation.contactEmail || ''}
+                defaultValue={organisation.contactEmail || ""}
                 placeholder="admin@university.ac.uk"
               />
             </div>
@@ -127,7 +166,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
               <Input
                 id="contactPhone"
                 name="contactPhone"
-                defaultValue={organisation.contactPhone || ''}
+                defaultValue={organisation.contactPhone || ""}
                 placeholder="+44 1223 763 000"
               />
             </div>
@@ -137,7 +176,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
               <Input
                 id="domain"
                 name="domain"
-                defaultValue={organisation.domain || ''}
+                defaultValue={organisation.domain || ""}
                 placeholder="university.ac.uk"
               />
             </div>
@@ -147,7 +186,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
               <Input
                 id="website"
                 name="website"
-                defaultValue={organisation.website || ''}
+                defaultValue={organisation.website || ""}
                 placeholder="https://university.ac.uk"
               />
             </div>
@@ -167,11 +206,13 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
             </div>
 
             {message && (
-              <div className={`p-3 rounded-md text-sm ${
-                message.type === 'success' 
-                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  message.type === "success"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}
+              >
                 {message.text}
               </div>
             )}
@@ -187,7 +228,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? 'Updating...' : 'Update Organisation'}
+                {isLoading ? "Updating..." : "Update Organisation"}
               </Button>
             </div>
           </form>
@@ -195,4 +236,4 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
       </Card>
     </div>
   );
-} 
+}

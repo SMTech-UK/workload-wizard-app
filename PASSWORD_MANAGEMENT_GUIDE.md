@@ -7,12 +7,14 @@ When creating users as an admin, you have several options for handling passwords
 ## 🎯 Current Implementation
 
 ### **Option 1: Email Invitation (Recommended)**
+
 - ✅ **Default behavior**: Email invitation sent automatically
 - ✅ **User experience**: User receives email with sign-in link
 - ✅ **Security**: User sets their own password
 - ✅ **Clerk integration**: Uses Clerk's built-in email templates
 
 ### **Option 2: Temporary Password**
+
 - ✅ **Fallback**: Generated temporary password
 - ✅ **Admin control**: You can see the generated password
 - ✅ **User experience**: User must change password on first login
@@ -21,6 +23,7 @@ When creating users as an admin, you have several options for handling passwords
 ## 🔧 How It Works
 
 ### **1. Email Invitation Flow**
+
 ```typescript
 // When sendEmailInvitation = true (default)
 const data: CreateUserData = {
@@ -35,6 +38,7 @@ const data: CreateUserData = {
 ```
 
 **What happens:**
+
 1. User is created in Clerk with a generated temporary password
 2. Clerk automatically sends an email invitation
 3. User clicks the link in their email
@@ -42,6 +46,7 @@ const data: CreateUserData = {
 5. User can immediately access the system
 
 ### **2. Temporary Password Flow**
+
 ```typescript
 // When sendEmailInvitation = false
 const data: CreateUserData = {
@@ -56,6 +61,7 @@ const data: CreateUserData = {
 ```
 
 **What happens:**
+
 1. User is created in Clerk with a generated temporary password
 2. No email is sent
 3. Admin needs to communicate the password to the user
@@ -65,45 +71,51 @@ const data: CreateUserData = {
 ## 🎨 UI Implementation
 
 ### **Form Options**
+
 ```tsx
 <div className="flex items-center space-x-2">
   <Checkbox
     id="sendEmailInvitation"
     checked={sendEmailInvitation}
-    onCheckedChange={(checked: boolean | 'indeterminate') => 
+    onCheckedChange={(checked: boolean | "indeterminate") =>
       setSendEmailInvitation(checked === true)
     }
   />
   <Label htmlFor="sendEmailInvitation" className="text-sm">
     Send email invitation to user
   </Label>
-</div>
+</div>;
 
-{!sendEmailInvitation && (
-  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-    <p className="text-sm text-yellow-800">
-      <strong>Note:</strong> A temporary password will be generated. 
-      The user will need to change it on first login.
-    </p>
-  </div>
-)}
+{
+  !sendEmailInvitation && (
+    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+      <p className="text-sm text-yellow-800">
+        <strong>Note:</strong> A temporary password will be generated. The user
+        will need to change it on first login.
+      </p>
+    </div>
+  );
+}
 ```
 
 ## 🔒 Security Best Practices
 
 ### **1. Email Invitation (Recommended)**
+
 - ✅ **Most secure**: User sets their own password
 - ✅ **No password sharing**: No need to communicate passwords
 - ✅ **Audit trail**: Email delivery is tracked
 - ✅ **User control**: User chooses their own secure password
 
 ### **2. Temporary Password**
+
 - ✅ **Immediate access**: User can sign in right away
 - ✅ **Admin control**: You control the initial password
 - ⚠️ **Security risk**: Password needs to be communicated securely
 - ⚠️ **User responsibility**: User must change password
 
 ### **3. Password Requirements**
+
 - ✅ **Minimum length**: 8 characters
 - ✅ **Complexity**: Includes letters, numbers, and special characters
 - ✅ **Clerk validation**: Clerk enforces password policies
@@ -112,6 +124,7 @@ const data: CreateUserData = {
 ## 📧 Email Configuration
 
 ### **Clerk Email Templates**
+
 You can customize email templates in the Clerk Dashboard:
 
 1. **Go to Clerk Dashboard**
@@ -120,18 +133,23 @@ You can customize email templates in the Clerk Dashboard:
 4. **Add your branding and messaging**
 
 ### **Example Email Template**
+
 ```html
 <h2>Welcome to Workload Wizard!</h2>
 <p>Hello {{user.first_name}},</p>
-<p>Your account has been created. Click the button below to set up your password and sign in:</p>
+<p>
+  Your account has been created. Click the button below to set up your password
+  and sign in:
+</p>
 <a href="{{sign_in_url}}" class="button">Set Up Account</a>
 <p>If you have any questions, please contact your administrator.</p>
-<p>Best regards,<br>The Workload Wizard Team</p>
+<p>Best regards,<br />The Workload Wizard Team</p>
 ```
 
 ## 🚀 Implementation Examples
 
 ### **1. Standard User Creation (Email Invitation)**
+
 ```typescript
 // This is the default behavior
 const result = await createUser({
@@ -146,6 +164,7 @@ const result = await createUser({
 ```
 
 ### **2. User Creation with Temporary Password**
+
 ```typescript
 const result = await createUser({
   email: "newuser@company.com",
@@ -160,6 +179,7 @@ const result = await createUser({
 ```
 
 ### **3. Bulk User Creation**
+
 ```typescript
 const users = [
   { email: "user1@company.com", firstName: "John", lastName: "Doe" },
@@ -169,7 +189,7 @@ const users = [
 for (const user of users) {
   await createUser({
     ...user,
-    username: user.email.split('@')[0],
+    username: user.email.split("@")[0],
     role: "staff",
     sendEmailInvitation: true, // Send emails to all users
   });
@@ -198,18 +218,21 @@ All user creation events are automatically logged:
 ## 🛠️ Troubleshooting
 
 ### **Email Not Sent**
+
 - Check Clerk email configuration
 - Verify email templates are set up
 - Check spam/junk folders
 - Review Clerk dashboard for email delivery status
 
 ### **User Can't Sign In**
+
 - Verify user was created successfully
 - Check if email invitation was sent
 - Ensure user is using correct email
 - Check if user account is active
 
 ### **Password Issues**
+
 - Temporary passwords are generated securely
 - Users should change passwords on first login
 - Clerk enforces password policies
@@ -218,18 +241,21 @@ All user creation events are automatically logged:
 ## 📋 Checklist for Admin User Creation
 
 ### **Before Creating User**
+
 - [ ] Verify user email is correct
 - [ ] Choose appropriate role
 - [ ] Decide on email invitation vs temporary password
 - [ ] Ensure user has been informed about account creation
 
 ### **After Creating User**
+
 - [ ] Confirm user creation success
 - [ ] Check audit logs for creation event
 - [ ] If using temporary password, communicate it securely
 - [ ] Monitor for user's first sign-in
 
 ### **Follow-up**
+
 - [ ] Verify user can access the system
 - [ ] Check if user changed temporary password (if applicable)
 - [ ] Provide user with system orientation
@@ -238,6 +264,7 @@ All user creation events are automatically logged:
 ## 🔄 Future Enhancements
 
 ### **Potential Improvements**
+
 1. **Password Display**: Show generated password in admin interface
 2. **Bulk Operations**: Create multiple users at once
 3. **Custom Email Templates**: More branded email invitations
@@ -245,7 +272,8 @@ All user creation events are automatically logged:
 5. **User Onboarding**: Automated welcome workflows
 
 ### **Integration Ideas**
+
 1. **Slack/Teams Notifications**: Notify admins of new user creation
 2. **User Onboarding**: Automated welcome sequences
 3. **Password Expiry**: Force password changes after set time
-4. **Multi-factor Authentication**: Require MFA setup on first login 
+4. **Multi-factor Authentication**: Require MFA setup on first login

@@ -15,7 +15,7 @@ export interface AuditLogEntry {
   metadata?: string;
   ipAddress?: string;
   userAgent?: string;
-  severity?: 'info' | 'warning' | 'error' | 'critical';
+  severity?: "info" | "warning" | "error" | "critical";
 }
 
 // Mutation to create an audit log entry
@@ -36,27 +36,50 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     // Normalize here as a safety net in case callers bypass helpers
-    const normalize = (s: string) => s.trim().toLowerCase().replace(/[\s_-]+/g, '.').replace(/\.{2,}/g, '.');
-    const normalizeEntity = (s: string) => s.trim().toLowerCase().replace(/[\s-]+/g, '_');
+    const normalize = (s: string) =>
+      s
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, ".")
+        .replace(/\.{2,}/g, ".");
+    const normalizeEntity = (s: string) =>
+      s
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, "_");
     const normalizedAction = normalize(args.action);
     const normalizedEntityType = normalizeEntity(args.entityType);
-    const base: Omit<AuditLogEntry, "entityName" | "performedByName" | "organisationId" | "details" | "metadata" | "ipAddress" | "userAgent"> & { timestamp: number } = {
+    const base: Omit<
+      AuditLogEntry,
+      | "entityName"
+      | "performedByName"
+      | "organisationId"
+      | "details"
+      | "metadata"
+      | "ipAddress"
+      | "userAgent"
+    > & { timestamp: number } = {
       action: normalizedAction,
       entityType: normalizedEntityType,
       entityId: args.entityId,
       performedBy: args.performedBy,
       timestamp: Date.now(),
       severity: ((): NonNullable<AuditLogEntry["severity"]> => {
-        const value = args.severity ?? 'info';
-        return value === 'info' || value === 'warning' || value === 'error' || value === 'critical'
+        const value = args.severity ?? "info";
+        return value === "info" ||
+          value === "warning" ||
+          value === "error" ||
+          value === "critical"
           ? value
-          : 'info';
+          : "info";
       })(),
     } as const;
 
     const optional = {
       ...(args.entityName ? { entityName: args.entityName } : {}),
-      ...(args.performedByName ? { performedByName: args.performedByName } : {}),
+      ...(args.performedByName
+        ? { performedByName: args.performedByName }
+        : {}),
       ...(args.organisationId ? { organisationId: args.organisationId } : {}),
       ...(args.details ? { details: args.details } : {}),
       ...(args.metadata ? { metadata: args.metadata } : {}),
@@ -97,10 +120,14 @@ export const list = query({
       query = query.filter((q) => q.eq(q.field("entityId"), args.entityId));
     }
     if (args.performedBy) {
-      query = query.filter((q) => q.eq(q.field("performedBy"), args.performedBy));
+      query = query.filter((q) =>
+        q.eq(q.field("performedBy"), args.performedBy),
+      );
     }
     if (args.organisationId) {
-      query = query.filter((q) => q.eq(q.field("organisationId"), args.organisationId));
+      query = query.filter((q) =>
+        q.eq(q.field("organisationId"), args.organisationId),
+      );
     }
     if (args.action) {
       query = query.filter((q) => q.eq(q.field("action"), args.action));
@@ -118,7 +145,7 @@ export const list = query({
     // Apply cursor-based pagination
     const limit = args.limit || 100;
     let logs;
-    
+
     if (args.cursor) {
       // Get the cursor document to find the timestamp
       const cursorDoc = await ctx.db.get(args.cursor);
@@ -141,20 +168,24 @@ export const list = query({
     let filteredLogs = sortedLogs;
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      filteredLogs = sortedLogs.filter(log => 
-        log.action.toLowerCase().includes(searchLower) ||
-        log.entityType.toLowerCase().includes(searchLower) ||
-        log.entityName?.toLowerCase().includes(searchLower) ||
-        log.performedByName?.toLowerCase().includes(searchLower) ||
-        log.details?.toLowerCase().includes(searchLower) ||
-        log.ipAddress?.toLowerCase().includes(searchLower)
+      filteredLogs = sortedLogs.filter(
+        (log) =>
+          log.action.toLowerCase().includes(searchLower) ||
+          log.entityType.toLowerCase().includes(searchLower) ||
+          log.entityName?.toLowerCase().includes(searchLower) ||
+          log.performedByName?.toLowerCase().includes(searchLower) ||
+          log.details?.toLowerCase().includes(searchLower) ||
+          log.ipAddress?.toLowerCase().includes(searchLower),
       );
     }
 
     return {
       logs: filteredLogs,
       hasMore: filteredLogs.length === limit,
-      nextCursor: filteredLogs.length === limit ? (filteredLogs.at(-1)?._id ?? null) : null,
+      nextCursor:
+        filteredLogs.length === limit
+          ? (filteredLogs.at(-1)?._id ?? null)
+          : null,
     };
   },
 });
@@ -179,7 +210,8 @@ export const getEntityLogs = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 50),
-      nextCursor: logs.length === (args.limit || 50) ? (logs.at(-1)?._id ?? null) : null,
+      nextCursor:
+        logs.length === (args.limit || 50) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -202,7 +234,8 @@ export const getUserActivity = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 50),
-      nextCursor: logs.length === (args.limit || 50) ? (logs.at(-1)?._id ?? null) : null,
+      nextCursor:
+        logs.length === (args.limit || 50) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -217,7 +250,9 @@ export const getRecentLogs = query({
     let query = ctx.db.query("audit_logs");
 
     if (args.organisationId) {
-      query = query.filter((q) => q.eq(q.field("organisationId"), args.organisationId));
+      query = query.filter((q) =>
+        q.eq(q.field("organisationId"), args.organisationId),
+      );
     }
 
     const logs = await query.take(args.limit || 20);
@@ -237,7 +272,9 @@ export const getStats = query({
     let query = ctx.db.query("audit_logs");
 
     if (args.organisationId) {
-      query = query.filter((q) => q.eq(q.field("organisationId"), args.organisationId));
+      query = query.filter((q) =>
+        q.eq(q.field("organisationId"), args.organisationId),
+      );
     }
     if (args.startDate) {
       query = query.filter((q) => q.gte(q.field("timestamp"), args.startDate!));
@@ -258,16 +295,18 @@ export const getStats = query({
     logs.forEach((log) => {
       // Action counts
       actionCounts[log.action] = (actionCounts[log.action] || 0) + 1;
-      
+
       // Entity type counts
-      entityTypeCounts[log.entityType] = (entityTypeCounts[log.entityType] || 0) + 1;
-      
+      entityTypeCounts[log.entityType] =
+        (entityTypeCounts[log.entityType] || 0) + 1;
+
       // Severity counts
-      severityCounts[log.severity || 'info'] = (severityCounts[log.severity || 'info'] || 0) + 1;
-      
+      severityCounts[log.severity || "info"] =
+        (severityCounts[log.severity || "info"] || 0) + 1;
+
       // User counts
       userCounts[log.performedBy] = (userCounts[log.performedBy] || 0) + 1;
-      
+
       // Hourly activity (for last 24 hours)
       const logDate = new Date(log.timestamp);
       const hour = logDate.getHours();
@@ -278,15 +317,15 @@ export const getStats = query({
 
     // Get top actions and entities
     const topActions = Object.entries(actionCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
 
     const topEntities = Object.entries(entityTypeCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
 
     const topUsers = Object.entries(userCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
 
     return {
@@ -302,11 +341,12 @@ export const getStats = query({
       hourlyActivity,
       // Additional metrics
       averageLogsPerHour: logs.length / 24, // Assuming 24 hour period
-      mostActiveHour: Object.entries(hourlyActivity)
-        .sort(([,a], [,b]) => b - a)[0]?.[0] || null,
-      criticalLogs: severityCounts['critical'] || 0,
-      errorLogs: severityCounts['error'] || 0,
-      warningLogs: severityCounts['warning'] || 0,
+      mostActiveHour:
+        Object.entries(hourlyActivity).sort(([, a], [, b]) => b - a)[0]?.[0] ||
+        null,
+      criticalLogs: severityCounts["critical"] || 0,
+      errorLogs: severityCounts["error"] || 0,
+      warningLogs: severityCounts["warning"] || 0,
     };
   },
 });
@@ -331,7 +371,8 @@ export const getLogsByDateRange = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 100),
-      nextCursor: logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
+      nextCursor:
+        logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -354,7 +395,8 @@ export const getLogsBySeverity = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 100),
-      nextCursor: logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
+      nextCursor:
+        logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
 });
@@ -377,7 +419,8 @@ export const getLogsByAction = query({
     return {
       logs: sortedLogs,
       hasMore: logs.length === (args.limit || 100),
-      nextCursor: logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
+      nextCursor:
+        logs.length === (args.limit || 100) ? (logs.at(-1)?._id ?? null) : null,
     };
   },
-}); 
+});

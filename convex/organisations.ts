@@ -39,7 +39,7 @@ export const create = mutation({
     const now = Date.now();
     const identity = await ctx.auth.getUserIdentity();
     const subject = identity?.subject;
-    
+
     const organisationId = await ctx.db.insert("organisations", {
       name: args.name,
       code: args.code,
@@ -58,20 +58,24 @@ export const create = mutation({
       await ensureDefaultsForOrg(ctx, organisationId);
     } catch (err) {
       // Do not block org creation if seeding fails; it can be re-run
-      console.warn("Failed to seed default roles for organisation", organisationId, err);
+      console.warn(
+        "Failed to seed default roles for organisation",
+        organisationId,
+        err,
+      );
     }
 
     // Audit create
     try {
       await ctx.db.insert("audit_logs", {
-        action: 'create',
-        entityType: 'organisation',
+        action: "create",
+        entityType: "organisation",
         entityId: String(organisationId),
         entityName: args.name,
-        ...(subject ? { performedBy: subject } : { performedBy: 'system' }),
+        ...(subject ? { performedBy: subject } : { performedBy: "system" }),
         details: `Organisation created (${args.code})`,
         timestamp: now,
-        severity: 'info',
+        severity: "info",
       });
     } catch {}
 
@@ -95,7 +99,7 @@ export const update = mutation({
     const { id, ...updates } = args;
     const now = Date.now();
     const identity = await ctx.auth.getUserIdentity();
-    const subject = identity?.subject ?? 'system';
+    const subject = identity?.subject ?? "system";
 
     await ctx.db.patch(id, {
       ...updates,
@@ -105,14 +109,14 @@ export const update = mutation({
     // Audit update
     try {
       await ctx.db.insert("audit_logs", {
-        action: 'update',
-        entityType: 'organisation',
+        action: "update",
+        entityType: "organisation",
         entityId: String(id),
         performedBy: subject,
-        details: 'Organisation updated',
+        details: "Organisation updated",
         metadata: JSON.stringify(updates),
         timestamp: now,
-        severity: 'info',
+        severity: "info",
       });
     } catch {}
 
@@ -134,15 +138,15 @@ export const remove = mutation({
     // Audit delete
     try {
       const identity = await ctx.auth.getUserIdentity();
-      const subject = identity?.subject ?? 'system';
+      const subject = identity?.subject ?? "system";
       await ctx.db.insert("audit_logs", {
-        action: 'delete',
-        entityType: 'organisation',
+        action: "delete",
+        entityType: "organisation",
         entityId: String(args.id),
         performedBy: subject,
-        details: 'Organisation deactivated',
+        details: "Organisation deactivated",
         timestamp: now,
-        severity: 'warning',
+        severity: "warning",
       });
     } catch {}
 
@@ -162,7 +166,7 @@ export const getByCode = query({
 
     return organisation;
   },
-}); 
+});
 
 // Get a single organisation by ID
 export const get = query({
@@ -170,4 +174,4 @@ export const get = query({
   handler: async (ctx, args) => {
     return await ctx.db.get(args.organisationId);
   },
-}); 
+});

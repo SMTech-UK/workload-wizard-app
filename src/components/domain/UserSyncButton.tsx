@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { syncUsersFromClerk, getSyncStatus } from '@/lib/actions/syncUsers';
-import { RefreshCw, CheckCircle, AlertCircle, Users } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { syncUsersFromClerk, getSyncStatus } from "@/lib/actions/syncUsers";
+import { RefreshCw, CheckCircle, AlertCircle, Users } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface SyncStatus {
   clerkUserCount: number;
@@ -33,8 +39,11 @@ export function UserSyncButton() {
       setLastSyncResult(result);
       await checkSyncStatus();
     } catch (error) {
-      console.error('Sync failed:', error);
-      toast.error('Sync failed', error instanceof Error ? error.message : undefined);
+      console.error("Sync failed:", error);
+      toast.error(
+        "Sync failed",
+        error instanceof Error ? error.message : undefined,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +54,7 @@ export function UserSyncButton() {
       const status = await getSyncStatus();
       setSyncStatus(status);
     } catch (error) {
-      console.error('Failed to get sync status:', error);
+      console.error("Failed to get sync status:", error);
     }
   };
 
@@ -72,19 +81,27 @@ export function UserSyncButton() {
           {syncStatus && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{syncStatus.clerkUserCount}</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {syncStatus.clerkUserCount}
+                </div>
                 <div className="text-sm text-gray-600">Clerk Users</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{syncStatus.convexUserCount}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {syncStatus.convexUserCount}
+                </div>
                 <div className="text-sm text-gray-600">Convex Users</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{syncStatus.missingInConvex}</div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {syncStatus.missingInConvex}
+                </div>
                 <div className="text-sm text-gray-600">Missing in Convex</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{syncStatus.extraInConvex}</div>
+                <div className="text-2xl font-bold text-red-600">
+                  {syncStatus.extraInConvex}
+                </div>
                 <div className="text-sm text-gray-600">Extra in Convex</div>
               </div>
             </div>
@@ -96,7 +113,9 @@ export function UserSyncButton() {
               {syncStatus.isSynced ? (
                 <div className="flex items-center text-green-600">
                   <CheckCircle className="h-5 w-5 mr-2" />
-                  <span className="font-medium">Databases are synchronized</span>
+                  <span className="font-medium">
+                    Databases are synchronized
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center text-orange-600">
@@ -133,15 +152,38 @@ export function UserSyncButton() {
           {/* Last Sync Result */}
           {lastSyncResult && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">Last Sync Result</h4>
+              <h4 className="font-medium text-blue-900 mb-2">
+                Last Sync Result
+              </h4>
               <div className="text-sm text-blue-800">
                 <p>Total users processed: {lastSyncResult.totalUsers}</p>
                 <p>Message: {lastSyncResult.message}</p>
                 {lastSyncResult.results && (
                   <div className="mt-2">
-                    <p>Created: {lastSyncResult.results.filter((r) => r.status === 'created').length}</p>
-                    <p>Skipped: {lastSyncResult.results.filter((r) => r.status === 'skipped').length}</p>
-                    <p>Failed: {lastSyncResult.results.filter((r) => r.status === 'failed').length}</p>
+                    <p>
+                      Created:{" "}
+                      {
+                        lastSyncResult.results.filter(
+                          (r) => r.status === "created",
+                        ).length
+                      }
+                    </p>
+                    <p>
+                      Skipped:{" "}
+                      {
+                        lastSyncResult.results.filter(
+                          (r) => r.status === "skipped",
+                        ).length
+                      }
+                    </p>
+                    <p>
+                      Failed:{" "}
+                      {
+                        lastSyncResult.results.filter(
+                          (r) => r.status === "failed",
+                        ).length
+                      }
+                    </p>
                   </div>
                 )}
               </div>
@@ -151,4 +193,4 @@ export function UserSyncButton() {
       </CardContent>
     </Card>
   );
-} 
+}

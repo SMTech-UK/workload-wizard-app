@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
+import * as React from "react";
+import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,25 +9,25 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 export interface BreadcrumbItem {
-  label: string
-  href?: string
+  label: string;
+  href?: string;
 }
 
 interface StandardizedSidebarLayoutProps {
-  breadcrumbs?: BreadcrumbItem[]
-  children: React.ReactNode
-  title?: string
-  subtitle?: string
-  headerActions?: React.ReactNode
+  breadcrumbs?: BreadcrumbItem[];
+  children: React.ReactNode;
+  title?: string;
+  subtitle?: string;
+  headerActions?: React.ReactNode;
 }
 
 export function StandardizedSidebarLayout({
@@ -53,7 +53,9 @@ export function StandardizedSidebarLayout({
                 <BreadcrumbList>
                   {breadcrumbs.map((crumb, index) => (
                     <React.Fragment key={index}>
-                      <BreadcrumbItem className={index === 0 ? "hidden md:block" : ""}>
+                      <BreadcrumbItem
+                        className={index === 0 ? "hidden md:block" : ""}
+                      >
                         {crumb.href && index < breadcrumbs.length - 1 ? (
                           <BreadcrumbLink href={crumb.href}>
                             {crumb.label}
@@ -63,7 +65,9 @@ export function StandardizedSidebarLayout({
                         )}
                       </BreadcrumbItem>
                       {index < breadcrumbs.length - 1 && (
-                        <BreadcrumbSeparator className={index === 0 ? "hidden md:block" : ""} />
+                        <BreadcrumbSeparator
+                          className={index === 0 ? "hidden md:block" : ""}
+                        />
                       )}
                     </React.Fragment>
                   ))}
@@ -71,27 +75,29 @@ export function StandardizedSidebarLayout({
               </Breadcrumb>
             )}
           </div>
-          
+
           <div className="flex-1"></div>
-          
+
           {headerActions && (
             <div className="flex items-center gap-2 px-4 justify-end">
               {headerActions}
             </div>
           )}
         </header>
-        
+
         {(title || subtitle) && (
           <div className="flex flex-col gap-1 px-4 py-2 border-b">
-            {title && <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>}
-            {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+            {title && (
+              <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+            )}
+            {subtitle && (
+              <p className="text-sm text-muted-foreground">{subtitle}</p>
+            )}
           </div>
         )}
-        
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-4">
-          {children}
-        </div>
+
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

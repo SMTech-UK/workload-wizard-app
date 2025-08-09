@@ -29,9 +29,10 @@ This document lists all PostHog events that have been automatically added to you
 - **main-nav-item-clicked**: Fired when a user clicks on a primary navigation item in the sidebar. Captures the item's title, URL, whether it has sub-items, and the current state of the sidebar (collapsed/expanded).
 - **sub-nav-item-clicked**: Fired when a user clicks on a secondary (sub) navigation item in the sidebar. Captures the sub-item's title, URL, and the title of its parent item.
 
-
 ## Events still awaiting implementation
+
 - (human: you can fill these in)
+
 ---
 
 ## Next Steps

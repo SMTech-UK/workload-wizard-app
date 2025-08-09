@@ -48,27 +48,33 @@ NEXT_PUBLIC_CONVEX_URL=your_convex_url
 ## Features
 
 ### User Management
+
 - **List Users**: View all users with their roles, organisations, and status
 - **Invite Users**: Send invitations with specific roles and organisation assignment
 - **Delete Users**: Soft delete users (sets `isActive` to false)
 - **User Status**: Visual indicators for active/inactive users
 
 ### Data Structure
+
 Users are stored in both Clerk and Convex:
 
 **Clerk (Authentication)**:
+
 - User authentication
 - Email addresses
 - Public metadata (role, organisationId)
 
 **Convex (Application Data)**:
+
 - User profiles
 - Organisation relationships
 - Role assignments
 - Activity tracking
 
 ### Webhook Integration
+
 The system automatically syncs user changes:
+
 - New users created in Clerk → Created in Convex
 - User updates in Clerk → Updated in Convex
 - User deletions in Clerk → Soft deleted in Convex
@@ -76,12 +82,14 @@ The system automatically syncs user changes:
 ## API Endpoints
 
 ### Server Actions (`src/lib/actions/`)
+
 - `inviteUser()`: Create and invite new users
 - `listUsers()`: Get all users from Convex
 - `deleteUser()`: Delete user from both Clerk and Convex
 - `updateUser()`: Update user in both systems
 
 ### Convex Functions (`convex/users.ts`)
+
 - `list`: Query all users with organisation details
 - `get`: Get single user by ID
 - `create`: Create new user
@@ -90,6 +98,7 @@ The system automatically syncs user changes:
 - `listByOrganisation`: Get users by organisation
 
 ### Webhook Handler (`src/app/api/webhooks/clerk/route.ts`)
+
 - Handles Clerk webhook events
 - Syncs user changes to Convex
 - Verifies webhook signatures
@@ -106,6 +115,7 @@ The system automatically syncs user changes:
 ### For Developers
 
 The system provides:
+
 - Type-safe user management
 - Real-time data with Convex
 - Proper error handling
@@ -147,10 +157,11 @@ npx convex logs
 ## Next Steps
 
 With this foundation, you can now:
+
 1. Add lecturer-specific profiles and workload management
 2. Implement advanced role permissions
 3. Add user activity tracking
 4. Create organisation-specific dashboards
 5. Add bulk user operations
 
-The system is production-ready and provides a solid foundation for your workload management application. 
+The system is production-ready and provides a solid foundation for your workload management application.

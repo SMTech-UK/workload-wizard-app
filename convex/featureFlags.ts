@@ -1,5 +1,5 @@
-import { query, mutation } from './_generated/server';
-import { v } from 'convex/values';
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
 
 // Schema for feature flag overrides
 export const featureFlagOverrides = {
@@ -17,8 +17,8 @@ export const getOverrides = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
     const overrides = await ctx.db
-      .query('featureFlagOverrides')
-      .filter((q) => q.eq(q.field('userId'), args.userId))
+      .query("featureFlagOverrides")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .collect();
 
     // Convert to record format
@@ -45,25 +45,34 @@ export const setOverride = mutation({
 
     // identify actor
     const identity = await ctx.auth.getUserIdentity();
-    const subject = identity?.subject ?? 'system';
-    const actor = subject !== 'system'
-      ? await ctx.db.query('users').withIndex('by_subject', (q) => q.eq('subject', subject)).first()
-      : null;
-    const isSystem = !!actor && Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ['admin','sysadmin','developer'].includes(r));
+    const subject = identity?.subject ?? "system";
+    const actor =
+      subject !== "system"
+        ? await ctx.db
+            .query("users")
+            .withIndex("by_subject", (q) => q.eq("subject", subject))
+            .first()
+        : null;
+    const isSystem =
+      !!actor &&
+      Array.isArray(actor.systemRoles) &&
+      actor.systemRoles.some((r: string) =>
+        ["admin", "sysadmin", "developer"].includes(r),
+      );
 
     // allow self override or admin
     if (actor && !isSystem && actor.subject !== args.userId) {
-      throw new Error('Forbidden');
+      throw new Error("Forbidden");
     }
 
     // Check if override already exists
     const existing = await ctx.db
-      .query('featureFlagOverrides')
-      .filter((q) => 
+      .query("featureFlagOverrides")
+      .filter((q) =>
         q.and(
-          q.eq(q.field('userId'), args.userId),
-          q.eq(q.field('flagName'), args.flagName)
-        )
+          q.eq(q.field("userId"), args.userId),
+          q.eq(q.field("flagName"), args.flagName),
+        ),
       )
       .first();
 
@@ -75,7 +84,7 @@ export const setOverride = mutation({
       });
     } else {
       // Create new override
-      await ctx.db.insert('featureFlagOverrides', {
+      await ctx.db.insert("featureFlagOverrides", {
         userId: args.userId,
         flagName: args.flagName,
         enabled: args.enabled,
@@ -85,15 +94,19 @@ export const setOverride = mutation({
     }
 
     // Audit
-    await ctx.db.insert('audit_logs', {
-      action: 'flags.updated',
-      entityType: 'flag',
+    await ctx.db.insert("audit_logs", {
+      action: "flags.updated",
+      entityType: "flag",
       entityId: args.flagName,
       performedBy: subject,
-      details: `Override ${args.enabled ? 'enabled' : 'disabled'} for user ${args.userId}`,
-      metadata: JSON.stringify({ userId: args.userId, flagName: args.flagName, enabled: args.enabled }),
+      details: `Override ${args.enabled ? "enabled" : "disabled"} for user ${args.userId}`,
+      metadata: JSON.stringify({
+        userId: args.userId,
+        flagName: args.flagName,
+        enabled: args.enabled,
+      }),
       timestamp: now,
-      severity: 'info',
+      severity: "info",
     });
 
     return true;
@@ -110,12 +123,12 @@ export const removeOverride = mutation({
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query('featureFlagOverrides')
-      .filter((q) => 
+      .query("featureFlagOverrides")
+      .filter((q) =>
         q.and(
-          q.eq(q.field('userId'), args.userId),
-          q.eq(q.field('flagName'), args.flagName)
-        )
+          q.eq(q.field("userId"), args.userId),
+          q.eq(q.field("flagName"), args.flagName),
+        ),
       )
       .first();
 
@@ -123,16 +136,19 @@ export const removeOverride = mutation({
       await ctx.db.delete(existing._id);
       // Audit
       const identity = await ctx.auth.getUserIdentity();
-      const subject = identity?.subject ?? 'system';
-      await ctx.db.insert('audit_logs', {
-        action: 'flags.updated',
-        entityType: 'flag',
+      const subject = identity?.subject ?? "system";
+      await ctx.db.insert("audit_logs", {
+        action: "flags.updated",
+        entityType: "flag",
         entityId: args.flagName,
         performedBy: subject,
         details: `Override removed for user ${args.userId}`,
-        metadata: JSON.stringify({ userId: args.userId, flagName: args.flagName }),
+        metadata: JSON.stringify({
+          userId: args.userId,
+          flagName: args.flagName,
+        }),
         timestamp: Date.now(),
-        severity: 'warning',
+        severity: "warning",
       });
       return true;
     }
@@ -155,7 +171,7 @@ export const logUsage = mutation({
   handler: async (ctx, args) => {
     // You can create a separate table for logging feature flag usage
     // For now, we'll just log to console
-    console.log('Feature flag usage logged:', {
+    console.log("Feature flag usage logged:", {
       userId: args.userId,
       flagName: args.flagName,
       enabled: args.enabled,
@@ -174,9 +190,7 @@ export const logUsage = mutation({
 export const getAllOverrides = query({
   args: {},
   handler: async (ctx) => {
-    const overrides = await ctx.db
-      .query('featureFlagOverrides')
-      .collect();
+    const overrides = await ctx.db.query("featureFlagOverrides").collect();
 
     return overrides;
   },

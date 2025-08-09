@@ -1,4 +1,4 @@
-import { FeatureFlags, FeatureFlagConfig } from './types';
+import { FeatureFlags, FeatureFlagConfig } from "./types";
 
 // Feature flag configurations
 // Add new flags here with proper descriptions and default values
@@ -12,19 +12,24 @@ export const FEATURE_FLAG_CONFIGS: Record<FeatureFlags, FeatureFlagConfig> = {
   // },
   [FeatureFlags.PINK_MODE]: {
     name: FeatureFlags.PINK_MODE,
-    description: 'Enables pink mode theme for early access users',
+    description: "Enables pink mode theme for early access users",
     defaultValue: false,
     rolloutPercentage: 0, // Start with 0% rollout, users must opt-in
   },
 };
 
 // Helper function to get flag config
-export function getFeatureFlagConfig(flagName: FeatureFlags): FeatureFlagConfig {
+export function getFeatureFlagConfig(
+  flagName: FeatureFlags,
+): FeatureFlagConfig {
   return FEATURE_FLAG_CONFIGS[flagName];
 }
 
 // Helper function to get all flag configs
-export function getAllFeatureFlagConfigs(): Record<FeatureFlags, FeatureFlagConfig> {
+export function getAllFeatureFlagConfigs(): Record<
+  FeatureFlags,
+  FeatureFlagConfig
+> {
   return FEATURE_FLAG_CONFIGS;
 }
 

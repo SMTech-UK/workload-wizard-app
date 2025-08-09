@@ -5,6 +5,7 @@ This project implements a comprehensive avatar upload system that synchronizes p
 ## 🎯 Overview
 
 The avatar system works as follows:
+
 1. **User uploads image** → Frontend validation
 2. **Upload to Clerk** → Using `user.setProfileImage()`
 3. **Sync to Convex** → Update `pictureUrl` field in users table
@@ -15,36 +16,37 @@ The avatar system works as follows:
 ### Frontend Components
 
 #### Profile Page (`src/app/profile/[[...rest]]/page.tsx`)
+
 ```typescript
 // Avatar upload handling
 const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0]
+  const file = event.target.files?.[0];
   if (file) {
-    setAvatarFile(file)
-    const reader = new FileReader()
+    setAvatarFile(file);
+    const reader = new FileReader();
     reader.onload = (e) => {
-      setAvatarPreview(e.target?.result as string)
-    }
-    reader.readAsDataURL(file)
+      setAvatarPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   }
-}
+};
 
 // Avatar upload to Clerk and sync to Convex
 if (avatarFile) {
   try {
     // Upload to Clerk first
-    await user.setProfileImage({ file: avatarFile })
-    
+    await user.setProfileImage({ file: avatarFile });
+
     // Wait for Clerk to process
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // Get updated URL and sync to Convex
-    const updatedImageUrl = user.imageUrl
+    const updatedImageUrl = user.imageUrl;
     if (updatedImageUrl && updatedImageUrl !== avatarUrl) {
       await updateUserAvatar({
         subject: user.id,
         pictureUrl: updatedImageUrl,
-      })
+      });
     }
   } catch (error) {
     // Error handling with toast notifications
@@ -55,6 +57,7 @@ if (avatarFile) {
 ### Backend Functions
 
 #### Convex Mutation (`convex/users.ts`)
+
 ```typescript
 export const updateUserAvatar = mutation({
   args: {
@@ -90,9 +93,9 @@ export const updateUserAvatar = mutation({
       performedByName: user.fullName,
       organisationId: user.organisationId,
       details: "Updated profile picture",
-      metadata: JSON.stringify({ 
-        previousPictureUrl: user.pictureUrl, 
-        newPictureUrl: pictureUrl 
+      metadata: JSON.stringify({
+        previousPictureUrl: user.pictureUrl,
+        newPictureUrl: pictureUrl,
       }),
       timestamp: Date.now(),
       severity: "info",
@@ -104,6 +107,7 @@ export const updateUserAvatar = mutation({
 ```
 
 #### Convex Query (`convex/users.ts`)
+
 ```typescript
 export const getUserAvatar = query({
   args: {
@@ -125,6 +129,7 @@ export const getUserAvatar = query({
 ## 📊 Database Schema
 
 ### Users Table (`convex/schema.ts`)
+
 ```typescript
 users: defineTable({
   // ... other fields
@@ -135,6 +140,7 @@ users: defineTable({
 ```
 
 ### Audit Logs Table
+
 ```typescript
 audit_logs: defineTable({
   action: v.string(), // 'update'
@@ -154,17 +160,20 @@ audit_logs: defineTable({
 ## 🎨 User Interface Features
 
 ### Avatar Display
+
 - **Priority**: Convex avatar → Clerk avatar → Fallback initials
 - **Preview**: Real-time preview when selecting new image
 - **Responsive**: Different sizes for different contexts
 
 ### Upload Controls
+
 - **File validation**: JPG, PNG, GIF up to 5MB
 - **Change photo**: Upload new image
 - **Remove photo**: Clear current avatar
 - **Loading states**: Visual feedback during upload
 
 ### Toast Notifications
+
 - **Success**: "Avatar updated successfully"
 - **Error**: "Failed to update avatar"
 - **Info**: "Avatar uploaded, may take a moment to appear"
@@ -172,13 +181,15 @@ audit_logs: defineTable({
 ## 🔄 Sync Process
 
 ### 1. Upload Flow
+
 ```
-User selects file → Frontend validation → Upload to Clerk → 
-Wait for processing → Get new URL → Update Convex → 
+User selects file → Frontend validation → Upload to Clerk →
+Wait for processing → Get new URL → Update Convex →
 Audit log → Success notification
 ```
 
 ### 2. Display Priority
+
 ```
 1. Convex pictureUrl (if available)
 2. Clerk imageUrl (fallback)
@@ -186,6 +197,7 @@ Audit log → Success notification
 ```
 
 ### 3. Error Handling
+
 - **Clerk upload fails**: Show error, don't update Convex
 - **Convex sync fails**: Show warning, avatar still in Clerk
 - **Network issues**: Retry with exponential backoff
@@ -193,21 +205,23 @@ Audit log → Success notification
 ## 🛡️ Security & Validation
 
 ### File Validation
+
 ```typescript
 // File type validation
-const allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
+const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
 if (!allowedTypes.includes(file.type)) {
-  throw new Error('Invalid file type')
+  throw new Error("Invalid file type");
 }
 
 // File size validation (5MB limit)
-const maxSize = 5 * 1024 * 1024 // 5MB
+const maxSize = 5 * 1024 * 1024; // 5MB
 if (file.size > maxSize) {
-  throw new Error('File too large')
+  throw new Error("File too large");
 }
 ```
 
 ### Access Control
+
 - **User can only update their own avatar**
 - **Audit logging for all changes**
 - **Rate limiting on uploads**
@@ -215,29 +229,31 @@ if (file.size > maxSize) {
 ## 📱 Usage Examples
 
 ### Basic Upload
+
 ```typescript
 const handleAvatarUpload = async (file: File) => {
   try {
-    await user.setProfileImage({ file })
+    await user.setProfileImage({ file });
     await updateUserAvatar({
       subject: user.id,
       pictureUrl: user.imageUrl,
-    })
-    toast.success('Avatar updated!')
+    });
+    toast.success("Avatar updated!");
   } catch (error) {
-    toast.error('Upload failed', error.message)
+    toast.error("Upload failed", error.message);
   }
-}
+};
 ```
 
 ### Avatar Display
+
 ```typescript
 const AvatarComponent = ({ userId }) => {
   const convexAvatar = useQuery(api.users.getUserAvatar, { subject: userId })
   const { user } = useUser()
-  
+
   const avatarUrl = convexAvatar || user?.imageUrl || null
-  
+
   return (
     <Avatar>
       <AvatarImage src={avatarUrl} />
@@ -250,11 +266,13 @@ const AvatarComponent = ({ userId }) => {
 ## 🔧 Configuration
 
 ### Clerk Configuration
+
 - **Image optimization**: Enabled by default
 - **CDN delivery**: Automatic via Clerk's infrastructure
 - **File size limits**: 5MB maximum
 
 ### Convex Configuration
+
 - **Audit logging**: All avatar changes logged
 - **Indexing**: `by_subject` index for fast lookups
 - **Reactivity**: Real-time updates across the app
@@ -262,16 +280,19 @@ const AvatarComponent = ({ userId }) => {
 ## 🚀 Best Practices
 
 ### Performance
+
 - **Lazy loading**: Load avatars on demand
 - **Caching**: Clerk CDN handles caching
 - **Optimization**: Use appropriate image sizes
 
 ### User Experience
+
 - **Preview**: Show image before upload
 - **Progress**: Loading states during upload
 - **Feedback**: Clear success/error messages
 
 ### Data Integrity
+
 - **Sync verification**: Check both systems
 - **Fallback handling**: Graceful degradation
 - **Audit trails**: Complete change history
@@ -281,18 +302,21 @@ const AvatarComponent = ({ userId }) => {
 ### Common Issues
 
 #### Avatar not appearing
+
 1. Check Clerk upload success
 2. Verify Convex sync completed
 3. Check network connectivity
 4. Review browser console for errors
 
 #### Sync failures
+
 1. Verify user exists in Convex
 2. Check Clerk user ID matches
 3. Review audit logs for details
 4. Retry with fresh session
 
 #### Performance issues
+
 1. Optimize image size before upload
 2. Check network conditions
 3. Verify CDN delivery
@@ -301,16 +325,18 @@ const AvatarComponent = ({ userId }) => {
 ## 📈 Monitoring
 
 ### Metrics to Track
+
 - **Upload success rate**
 - **Sync completion rate**
 - **Average upload time**
 - **Error frequency by type**
 
 ### Audit Log Analysis
+
 ```sql
 -- Recent avatar changes
-SELECT * FROM audit_logs 
-WHERE entityType = 'user' 
+SELECT * FROM audit_logs
+WHERE entityType = 'user'
 AND details = 'Updated profile picture'
 ORDER BY timestamp DESC
 LIMIT 10;
@@ -319,12 +345,14 @@ LIMIT 10;
 ## 🔮 Future Enhancements
 
 ### Planned Features
+
 - **Image cropping**: Client-side image editing
 - **Multiple sizes**: Generate different resolutions
 - **Background removal**: AI-powered image processing
 - **Avatar templates**: Pre-designed options
 
 ### Integration Opportunities
+
 - **Gravatar**: Fallback to Gravatar service
 - **Social media**: Import from social profiles
-- **AI generation**: Generate avatars from text descriptions 
+- **AI generation**: Generate avatars from text descriptions

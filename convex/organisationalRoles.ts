@@ -46,11 +46,16 @@ export const create = mutation({
     const now = Date.now();
     const identity = await ctx.auth.getUserIdentity();
     const subject = identity?.subject;
-    if (!subject) throw new Error('Unauthenticated');
+    if (!subject) throw new Error("Unauthenticated");
 
     // Authorise actor within org
-    await requireOrgPermission(ctx, subject, 'permissions.manage', String(args.organisationId));
-    
+    await requireOrgPermission(
+      ctx,
+      subject,
+      "permissions.manage",
+      String(args.organisationId),
+    );
+
     const roleId = await ctx.db.insert("user_roles", {
       name: args.name,
       description: args.description,
@@ -65,16 +70,19 @@ export const create = mutation({
 
     // Audit create
     await ctx.db.insert("audit_logs", {
-      action: 'role.created',
-      entityType: 'role',
+      action: "role.created",
+      entityType: "role",
       entityId: String(roleId),
       entityName: args.name,
       performedBy: subject,
       organisationId: args.organisationId,
-      details: `Created role "${args.name}" with ${args.permissions.length} permission(s)` ,
-      metadata: JSON.stringify({ permissions: args.permissions, isDefault: !!args.isDefault }),
+      details: `Created role "${args.name}" with ${args.permissions.length} permission(s)`,
+      metadata: JSON.stringify({
+        permissions: args.permissions,
+        isDefault: !!args.isDefault,
+      }),
       timestamp: now,
-      severity: 'info',
+      severity: "info",
     });
 
     return roleId;
@@ -96,11 +104,16 @@ export const update = mutation({
 
     const identity = await ctx.auth.getUserIdentity();
     const subject = identity?.subject;
-    if (!subject) throw new Error('Unauthenticated');
+    if (!subject) throw new Error("Unauthenticated");
 
     const existing = await ctx.db.get(roleId);
-    if (!existing) throw new Error('Role not found');
-    await requireOrgPermission(ctx, subject, 'permissions.manage', String(existing.organisationId));
+    if (!existing) throw new Error("Role not found");
+    await requireOrgPermission(
+      ctx,
+      subject,
+      "permissions.manage",
+      String(existing.organisationId),
+    );
 
     await ctx.db.patch(roleId, {
       ...updates,
@@ -109,16 +122,16 @@ export const update = mutation({
 
     // Audit update
     await ctx.db.insert("audit_logs", {
-      action: 'role.updated',
-      entityType: 'role',
+      action: "role.updated",
+      entityType: "role",
       entityId: String(roleId),
       entityName: updates.name ?? existing.name,
       performedBy: subject,
       organisationId: existing.organisationId,
-      details: 'Updated role',
+      details: "Updated role",
       metadata: JSON.stringify(updates),
       timestamp: now,
-      severity: 'info',
+      severity: "info",
     });
 
     return roleId;
@@ -132,11 +145,16 @@ export const remove = mutation({
     const now = Date.now();
     const identity = await ctx.auth.getUserIdentity();
     const subject = identity?.subject;
-    if (!subject) throw new Error('Unauthenticated');
+    if (!subject) throw new Error("Unauthenticated");
 
     const existing = await ctx.db.get(args.roleId);
-    if (!existing) throw new Error('Role not found');
-    await requireOrgPermission(ctx, subject, 'permissions.manage', String(existing.organisationId));
+    if (!existing) throw new Error("Role not found");
+    await requireOrgPermission(
+      ctx,
+      subject,
+      "permissions.manage",
+      String(existing.organisationId),
+    );
 
     await ctx.db.patch(args.roleId, {
       isActive: false,
@@ -144,15 +162,15 @@ export const remove = mutation({
     });
 
     await ctx.db.insert("audit_logs", {
-      action: 'role.deleted',
-      entityType: 'role',
+      action: "role.deleted",
+      entityType: "role",
       entityId: String(args.roleId),
       entityName: existing.name,
       performedBy: subject,
       organisationId: existing.organisationId,
       details: `Deleted role "${existing.name}"`,
       timestamp: now,
-      severity: 'warning',
+      severity: "warning",
     });
 
     return args.roleId;
@@ -168,19 +186,24 @@ export const assignToUser = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    
+
     // Validate role and derive organisation from it
     const role = await ctx.db.get(args.roleId);
     if (!role || !role.isActive) {
-      throw new Error('Role not found or inactive');
+      throw new Error("Role not found or inactive");
     }
     const organisation = await ctx.db.get(role.organisationId);
     if (!organisation || !organisation.isActive) {
-      throw new Error('Organisation not found or inactive');
+      throw new Error("Organisation not found or inactive");
     }
 
     // Authorisation within derived org
-    await requireOrgPermission(ctx, args.assignedBy, "permissions.manage", String(role.organisationId));
+    await requireOrgPermission(
+      ctx,
+      args.assignedBy,
+      "permissions.manage",
+      String(role.organisationId),
+    );
 
     // Validate that the user exists in the organisation
     const user = await ctx.db
@@ -188,11 +211,11 @@ export const assignToUser = mutation({
       .filter((q) => q.eq(q.field("subject"), args.userId))
       .filter((q) => q.eq(q.field("organisationId"), role.organisationId))
       .first();
-    
+
     if (!user) {
-      throw new Error('User not found in the specified organisation');
+      throw new Error("User not found in the specified organisation");
     }
-    
+
     // First, deactivate any existing role assignments for this user in this organisation
     const existingAssignments = await ctx.db
       .query("user_role_assignments")
@@ -250,27 +273,32 @@ export const assignMultipleToUser = mutation({
     // Validate roles and derive organisation; ensure all roles belong to same org
     const roles = await Promise.all(args.roleIds.map((rid) => ctx.db.get(rid)));
     if (roles.some((r) => !r || !r.isActive)) {
-      throw new Error('One or more roles invalid or inactive');
+      throw new Error("One or more roles invalid or inactive");
     }
     const orgId = roles[0]!.organisationId;
     if (roles.some((r) => String(r!.organisationId) !== String(orgId))) {
-      throw new Error('Roles must belong to the same organisation');
+      throw new Error("Roles must belong to the same organisation");
     }
 
     const organisation = await ctx.db.get(orgId);
     if (!organisation || !organisation.isActive) {
-      throw new Error('Organisation not found or inactive');
+      throw new Error("Organisation not found or inactive");
     }
 
     // Authorisation within derived org
-    await requireOrgPermission(ctx, args.assignedBy, "permissions.manage", String(orgId));
+    await requireOrgPermission(
+      ctx,
+      args.assignedBy,
+      "permissions.manage",
+      String(orgId),
+    );
 
     const user = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("subject"), args.userId))
       .filter((q) => q.eq(q.field("organisationId"), orgId))
       .first();
-    if (!user) throw new Error('User not found in the specified organisation');
+    if (!user) throw new Error("User not found in the specified organisation");
 
     // Deactivate all existing assignments first
     const existingAssignments = await ctx.db
@@ -304,7 +332,7 @@ export const assignMultipleToUser = mutation({
       entityName: user.fullName ?? user.email ?? args.userId,
       performedBy: args.assignedBy,
       organisationId: orgId,
-      details: `Assigned ${args.roleIds.length} role(s)` ,
+      details: `Assigned ${args.roleIds.length} role(s)`,
       metadata: JSON.stringify({ roleIds: args.roleIds }),
       timestamp: now,
       severity: "info",
@@ -316,7 +344,7 @@ export const assignMultipleToUser = mutation({
 
 // Get user's organisational role
 export const getUserRole = query({
-  args: { 
+  args: {
     userId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -365,9 +393,9 @@ export const getUserRoles = query({
           role,
           organisation,
         };
-      })
+      }),
     );
 
     return roles;
   },
-}); 
+});

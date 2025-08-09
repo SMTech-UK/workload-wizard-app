@@ -1,9 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserX, AlertTriangle } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { UserX, AlertTriangle } from "lucide-react";
 
 interface User {
   id: string;
@@ -69,13 +75,19 @@ export function DeactivateConfirmationModal({
                 </div>
               </div>
             </div>
-            
+
             <div className="p-4 bg-gray-50 rounded-lg">
               <h4 className="font-medium text-gray-900 mb-2">User Details:</h4>
               <div className="space-y-1 text-sm text-gray-600">
-                <p><strong>Name:</strong> {user.firstName} {user.lastName}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Role:</strong> {user.role}</p>
+                <p>
+                  <strong>Name:</strong> {user.firstName} {user.lastName}
+                </p>
+                <p>
+                  <strong>Email:</strong> {user.email}
+                </p>
+                <p>
+                  <strong>Role:</strong> {user.role}
+                </p>
               </div>
             </div>
 
@@ -112,4 +124,4 @@ export function DeactivateConfirmationModal({
       </Card>
     </div>
   );
-} 
+}

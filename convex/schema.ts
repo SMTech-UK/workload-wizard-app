@@ -2,7 +2,6 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-
   // 🧠 Academic Year
   academic_years: defineTable({
     name: v.string(),
@@ -230,5 +229,4 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_flag", ["userId", "flagName"]),
-
 });

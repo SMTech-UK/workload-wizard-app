@@ -1,9 +1,11 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const EnvSchema = z.object({
   NEXT_PUBLIC_CONVEX_URL: z.string().url(),
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
 });
 
 type Env = z.infer<typeof EnvSchema>;
@@ -24,5 +26,3 @@ export function getEnv(): Env {
 // Parse eagerly at import time to fail fast in production builds
 // Safe in dev/test too
 void getEnv();
-
-
