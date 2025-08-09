@@ -7,11 +7,14 @@ export default defineSchema({
     name: v.string(),
     startDate: v.string(),
     endDate: v.string(),
+    organisationId: v.id("organisations"),
     isActive: v.boolean(),
     staging: v.boolean(),
+    status: v.optional(v.string()), // 'draft' | 'published' | 'archived'
+    isDefaultForOrg: v.optional(v.boolean()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  }).index("by_organisation", ["organisationId"]),
 
   // 🏛️ Organisation
   organisations: defineTable({
