@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { requirePermission } from "./permissions";
+import { writeAudit } from "./audit";
 import type { Id, Doc } from "./_generated/dataModel";
 
 export const create = mutation({
@@ -74,7 +75,7 @@ export const create = mutation({
     // Audit invite/create when initiated by an authenticated actor
     if (args.userId) {
       try {
-        await ctx.db.insert("audit_logs", {
+        await writeAudit(ctx, {
           action: "user.invited",
           entityType: "user",
           entityId: String(userId),
@@ -86,7 +87,6 @@ export const create = mutation({
             username: optional.username,
             systemRoles: base.systemRoles,
           }),
-          timestamp: Date.now(),
           severity: "info",
         });
       } catch {}
@@ -190,14 +190,13 @@ export const update = mutation({
 
     // Audit update
     try {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx, {
         action: "update",
         entityType: "user",
         entityId: String(id),
         performedBy: args.currentUserId,
         details: "User updated",
         metadata: JSON.stringify(updates),
-        timestamp: Date.now(),
         severity: "info",
       });
     } catch {}
@@ -237,14 +236,13 @@ export const updateEmail = mutation({
 
     // Audit email change
     try {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx, {
         action: "update",
         entityType: "user",
         entityId: String(args.userId),
         performedBy: currentUser.subject,
         details: "User email updated",
         metadata: JSON.stringify({ newEmail: args.newEmail }),
-        timestamp: Date.now(),
         severity: "info",
       });
     } catch {}
@@ -358,15 +356,14 @@ export const remove = mutation({
 
     // Audit
     try {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx, {
         action: "deactivate",
         entityType: "user",
         entityId: user.subject,
         entityName: user.fullName,
-        performedBy: user.subject, // unknown actor at this boundary; UI logs richer context elsewhere
+        performedBy: user.subject,
         organisationId: user.organisationId,
         details: "User deactivated",
-        timestamp: Date.now(),
         severity: "warning",
       });
     } catch {}
@@ -393,7 +390,7 @@ export const hardDelete = mutation({
 
     // Audit
     try {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx, {
         action: "delete",
         entityType: "user",
         entityId: user.subject,
@@ -401,7 +398,6 @@ export const hardDelete = mutation({
         performedBy: user.subject,
         organisationId: user.organisationId,
         details: "User hard deleted",
-        timestamp: Date.now(),
         severity: "critical",
       });
     } catch {}
@@ -630,10 +626,10 @@ export const updateUserAvatar = mutation({
     });
 
     // Log the avatar update
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "update",
       entityType: "user",
-      entityId: user._id,
+      entityId: String(user._id),
       entityName: user.fullName,
       performedBy: subject,
       performedByName: user.fullName,
@@ -643,7 +639,6 @@ export const updateUserAvatar = mutation({
         previousPictureUrl: user.pictureUrl,
         newPictureUrl: pictureUrl,
       }),
-      timestamp: Date.now(),
       severity: "info",
     });
 
