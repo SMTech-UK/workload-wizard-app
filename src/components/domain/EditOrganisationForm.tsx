@@ -40,16 +40,19 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
     setMessage(null);
 
     const formData = new FormData(event.currentTarget);
-    const data = {
+    const dataBase = {
       id: organisation._id as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       name: formData.get('name') as string,
       code: formData.get('code') as string,
-      contactEmail: formData.get('contactEmail') as string || undefined,
-      contactPhone: formData.get('contactPhone') as string || undefined,
-      domain: formData.get('domain') as string || undefined,
-      website: formData.get('website') as string || undefined,
       status: formData.get('status') as string,
     };
+    const optional = {
+      ...((formData.get('contactEmail') as string) ? { contactEmail: formData.get('contactEmail') as string } : {}),
+      ...((formData.get('contactPhone') as string) ? { contactPhone: formData.get('contactPhone') as string } : {}),
+      ...((formData.get('domain') as string) ? { domain: formData.get('domain') as string } : {}),
+      ...((formData.get('website') as string) ? { website: formData.get('website') as string } : {}),
+    };
+    const data = { ...dataBase, ...optional } as any;
 
     try {
       await updateOrganisation(data);

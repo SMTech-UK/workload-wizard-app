@@ -96,7 +96,9 @@ export default function AdminPermissionsPage() {
   const [deletingTemplate, setDeletingTemplate] = useState<SystemRoleTemplate | null>(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
 
-  const hasByClerk = hasAnyRole(user, ['sysadmin', 'developer']) || (user?.publicMetadata as any)?.devLoginSession === true;
+  const hasByClerk =
+    hasAnyRole(user, ['sysadmin', 'developer']) ||
+    (user?.publicMetadata as Record<string, unknown> | undefined)?.['devLoginSession'] === true;
   const hasByConvex = !!convexUser && Array.isArray(convexUser.systemRoles) && convexUser.systemRoles.some((r: string) => r === 'sysadmin' || r === 'developer');
 
   useEffect(() => {
@@ -116,12 +118,22 @@ export default function AdminPermissionsPage() {
     group: string;
     description: string;
     defaultRoles: string[];
+  } | {
+    group: string;
+    description: string;
+    defaultRoles: string[];
   }) => {
+    if (!('id' in data)) return;
     try {
       await createPermission({
-        ...data,
-        performedBy: user?.id,
-        performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
+        id: data.id,
+        group: data.group,
+        description: data.description,
+        defaultRoles: data.defaultRoles,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.firstName || user?.lastName || user?.emailAddresses?.[0]?.emailAddress)
+            ? { performedByName: (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || (user?.emailAddresses?.[0]?.emailAddress as string)) }
+            : {}),
       });
       setShowCreateForm(false);
       setSuccessModal({
@@ -151,8 +163,10 @@ export default function AdminPermissionsPage() {
       await updatePermission({
         permissionId: editingPermission._id,
         ...data,
-        performedBy: user?.id,
-        performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.firstName || user?.lastName || user?.emailAddresses?.[0]?.emailAddress)
+            ? { performedByName: (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || (user?.emailAddresses?.[0]?.emailAddress as string)) }
+            : {}),
       });
       setEditingPermission(null);
       setSuccessModal({
@@ -180,9 +194,11 @@ export default function AdminPermissionsPage() {
     
     const result = await deletePermission({
       permissionId: deletingPermission._id,
-      forceDelete: forceDelete,
-      performedBy: user?.id,
-      performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
+      ...(forceDelete ? { forceDelete } : {}),
+      ...(user?.id ? { performedBy: user.id } : {}),
+      ...((user?.firstName || user?.lastName || user?.emailAddresses?.[0]?.emailAddress)
+          ? { performedByName: (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || (user?.emailAddresses?.[0]?.emailAddress as string)) }
+          : {}),
     });
     
     setDeletingPermission(null);
@@ -209,8 +225,10 @@ export default function AdminPermissionsPage() {
     try {
       const result = await pushToOrgs({ 
         permissionId,
-        performedBy: user?.id,
-        performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.firstName || user?.lastName || user?.emailAddresses?.[0]?.emailAddress)
+            ? { performedByName: (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || (user?.emailAddresses?.[0]?.emailAddress as string)) }
+            : {}),
       });
       setSuccessModal({
         title: 'Permissions Pushed Successfully',
@@ -310,7 +328,7 @@ export default function AdminPermissionsPage() {
             .split(',')
             .map(s => s.trim())
             .filter(Boolean);
-          const result = await ensureDefaultsAcrossOrgs({ performedBy: user?.id, performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress, ...(roleNames.length ? { roleNames } : {}) });
+          const result = await ensureDefaultsAcrossOrgs({ ...(user?.id ? { performedBy: user.id } : {}), ...((user?.firstName || user?.lastName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}), ...(roleNames.length ? { roleNames } : {}) });
           setSuccessModal({
             title: 'Default Roles Ensured',
             message: `Ensured default roles exist across all active organisations`,
@@ -605,7 +623,7 @@ export default function AdminPermissionsPage() {
           onClose={() => setSuccessModal(null)}
           title={successModal.title}
           message={successModal.message}
-          details={successModal.details}
+          {...(successModal.details ? { details: successModal.details } : {})}
         />
       )}
 
@@ -635,13 +653,13 @@ export default function AdminPermissionsPage() {
                 try {
                   const raw = JSON.parse(importText);
                   if (!Array.isArray(raw)) throw new Error('JSON must be an array');
-                  const items = raw.map((x: any) => ({
-                    id: x['Permission ID'] ?? x.id,
-                    group: x['Group'] ?? x.group,
-                    description: x['Description'] ?? x.description,
-                    defaultRoles: x['Default Roles'] ?? x.defaultRoles ?? [],
+                  const items = raw.map((x: Record<string, unknown>) => ({
+                    id: (x['Permission ID'] as string | undefined) ?? (x.id as string),
+                    group: (x['Group'] as string | undefined) ?? (x.group as string),
+                    description: (x['Description'] as string | undefined) ?? (x.description as string),
+                    defaultRoles: (x['Default Roles'] as string[] | undefined) ?? (x.defaultRoles as string[] | undefined) ?? [],
                   }));
-                  const res = await importPermissions({ items, upsert: importUpsert, performedBy: user?.id, performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress });
+          const res = await importPermissions({ items, ...(importUpsert ? { upsert: importUpsert } : {}), ...(user?.id ? { performedBy: user.id } : {}), ...((user?.firstName || user?.lastName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}) });
                   setShowImport(false);
                   setImportText('');
                   setSuccessModal({
@@ -686,9 +704,9 @@ export default function AdminPermissionsPage() {
                   await upsertTemplate({
                     ...(editingTemplate ? { id: editingTemplate._id } : {}),
                     name: templateName.trim(),
-                    description: templateDesc,
-                    performedBy: user?.id,
-                    performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
+                    ...(templateDesc ? { description: templateDesc } : {}),
+                    ...(user?.id ? { performedBy: user.id } : {}),
+                    ...((user?.firstName || user?.lastName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
                   });
                   setShowTemplateForm(false);
                   setEditingTemplate(null);
@@ -712,8 +730,8 @@ export default function AdminPermissionsPage() {
             try {
               await deleteTemplate({
                 id: deletingTemplate._id,
-                performedBy: user?.id,
-                performedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.emailAddresses[0]?.emailAddress,
+                ...(user?.id ? { performedBy: user.id } : {}),
+                ...((user?.firstName || user?.lastName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
               });
               setDeletingTemplate(null);
             } catch (e) {

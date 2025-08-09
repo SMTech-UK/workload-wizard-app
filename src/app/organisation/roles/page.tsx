@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useMutation, useQuery } from 'convex/react';
+import type { Id } from '../../../../convex/_generated/dataModel';
 import { api } from '../../../../convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 
@@ -91,21 +92,19 @@ export default function OrganisationRolesPage() {
   const [roleDescription, setRoleDescription] = useState('');
 
   // Get current user's organisation
-  const currentUser = useQuery(api.users.getBySubject, { 
-    subject: user?.id || '' 
-  });
+  const currentUser = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
 
   // Get organisation roles (skip until orgId is available)
   const organisationRoles = useQuery(
     api.permissions.getOrganisationRoles,
-    currentUser?.organisationId ? { organisationId: currentUser.organisationId as any } : 'skip'
+    currentUser?.organisationId ? { organisationId: currentUser.organisationId as unknown as Id<'organisations'> } : 'skip'
   );
 
   // Get system permissions
   const systemPermissions = useQuery(api.permissions.getSystemPermissions);
   const stagedForRole = useQuery(
     api.permissions.getOrganisationPermissions,
-    editingRole?._id ? { roleId: editingRole._id as any } : 'skip'
+    editingRole?._id ? { roleId: editingRole._id as unknown as Id<'user_roles'> } : 'skip'
   );
 
   // Mutations
@@ -120,11 +119,11 @@ export default function OrganisationRolesPage() {
     try {
       await createRole({
         name: roleName.trim(),
-        description: roleDescription.trim() || undefined,
+        ...(roleDescription.trim() ? { description: roleDescription.trim() } : {}),
         organisationId: currentUser.organisationId,
         permissions: selectedPermissions,
-        performedBy: user?.id,
-        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
       });
 
       setRoleName('');
@@ -149,12 +148,12 @@ export default function OrganisationRolesPage() {
 
     try {
       await updateRole({
-        roleId: editingRole._id,
+        roleId: editingRole._id as unknown as Id<'user_roles'>,
         name: roleName.trim(),
-        description: roleDescription.trim() || undefined,
+        ...(roleDescription.trim() ? { description: roleDescription.trim() } : {}),
         permissions: selectedPermissions,
-        performedBy: user?.id,
-        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
       });
 
       setEditingRole(null);
@@ -170,9 +169,9 @@ export default function OrganisationRolesPage() {
   const handleDeleteRole = async (roleId: string) => {
     try {
       await deleteRole({ 
-        roleId,
-        performedBy: user?.id,
-        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+        roleId: roleId as unknown as Id<'user_roles'>,
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
       });
     } catch (error) {
       console.error('Error deleting role:', error);
@@ -182,12 +181,12 @@ export default function OrganisationRolesPage() {
   const handlePermissionToggle = async (roleId: string, permissionId: string, isGranted: boolean, acceptStaged?: boolean) => {
     try {
       await updateRolePermissions({
-        roleId,
+        roleId: roleId as unknown as Id<'user_roles'>,
         permissionId,
         isGranted,
-        acceptStaged: !!acceptStaged,
-        performedBy: user?.id,
-        performedByName: user?.fullName || user?.emailAddresses?.[0]?.emailAddress,
+        ...(acceptStaged ? { acceptStaged: !!acceptStaged } : {}),
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
       });
     } catch (error) {
       console.error('Error updating permission:', error);
@@ -206,7 +205,7 @@ export default function OrganisationRolesPage() {
   const getPermissionDetails = (role: Role): RoleWithPermissions => {
     const permissionDetails = systemPermissions?.map(perm => {
       const isGranted = role.permissions.includes(perm.id);
-      const source = getPermissionSource(role.name, perm.id);
+      const source: 'system_default' | 'custom' = getPermissionSource(role.name, perm.id) === 'system_default' ? 'system_default' : 'custom';
       const isOverride = source === 'custom' && isGranted;
       
       return {
@@ -428,7 +427,7 @@ export default function OrganisationRolesPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Role</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete the role "{role.name}"? 
+                              Are you sure you want to delete the role &quot;{role.name}&quot;? 
                               This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -548,9 +547,9 @@ export default function OrganisationRolesPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Apply default permission?</DialogTitle>
-              <DialogDescription>
-                This will apply the staged system default permission to this role.
-              </DialogDescription>
+            <DialogDescription>
+              This will apply the staged system default permission to this role.
+            </DialogDescription>
             </DialogHeader>
             <div className="space-y-2 text-sm">
               <div><span className="font-semibold">Permission:</span> <code className="bg-muted px-1 py-0.5 rounded">{confirmApply.details.id}</code></div>

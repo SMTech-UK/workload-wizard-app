@@ -1,5 +1,6 @@
 import posthog from 'posthog-js';
 import type { UserResource } from '@clerk/types';
+import type { FeatureFlagContext } from './types';
 
 // Track if user has been identified to prevent duplicates
 let identifiedUserId: string | null = null;
@@ -82,12 +83,9 @@ export function identifyUserForFeatureFlags(user: UserResource | null) {
 /**
  * Get user context for feature flag evaluation
  */
-export function getUserFeatureFlagContext(user: UserResource | null) {
+export function getUserFeatureFlagContext(user: UserResource | null): FeatureFlagContext {
   if (!user) {
     return {
-      distinctId: undefined,
-      userId: undefined,
-      userEmail: undefined,
       userProperties: {},
       groups: {},
     };
@@ -105,14 +103,13 @@ export function getUserFeatureFlagContext(user: UserResource | null) {
   return {
     distinctId: user.id,
     userId: user.id,
-    userEmail: user.emailAddresses[0]?.emailAddress,
+    ...(user.emailAddresses[0]?.emailAddress ? { userEmail: user.emailAddresses[0]?.emailAddress } : {}),
     userProperties: {
-      email: user.emailAddresses[0]?.emailAddress,
+      ...(user.emailAddresses[0]?.emailAddress ? { email: user.emailAddresses[0]?.emailAddress } : {}),
       firstName: user.firstName,
       lastName: user.lastName,
-      organisationId: user.publicMetadata?.organisationId as string,
-      role: user.publicMetadata?.role as string,
-      userType: user.publicMetadata?.role as string,
+      ...(user.publicMetadata?.organisationId ? { organisationId: user.publicMetadata?.organisationId as string } : {}),
+      ...(user.publicMetadata?.role ? { role: user.publicMetadata?.role as string, userType: user.publicMetadata?.role as string } : {}),
       hasOrganisation: !!user.publicMetadata?.organisationId,
     },
     groups,

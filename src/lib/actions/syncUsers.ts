@@ -33,10 +33,10 @@ export async function syncUsersFromClerk() {
 
     // Get the first organisation from Convex (we'll use this as default)
     const organisations = await convex.query(api.organisations.list);
-    if (organisations.length === 0) {
+    if ((organisations?.length || 0) === 0) {
       throw new Error('No organisations found in Convex. Please create an organisation first.');
     }
-    const defaultOrganisationId = organisations[0]._id;
+    const defaultOrganisationId = organisations[0]!._id;
 
     const results = [];
 

@@ -25,22 +25,24 @@ export const create = mutation({
       await requirePermission(ctx, args.userId, "users.invite");
     }
 
-    const userId = await ctx.db.insert("users", {
+    const base = {
       email: args.email,
-      username: args.username,
       givenName: args.givenName,
       familyName: args.familyName,
       fullName: args.fullName || `${args.givenName} ${args.familyName}`,
       systemRoles: args.systemRoles,
       organisationId: args.organisationId,
-      pictureUrl: args.pictureUrl,
-      subject: args.subject || "", // Will be updated by Clerk webhook if not provided
-      tokenIdentifier: args.tokenIdentifier,
+      subject: args.subject || "",
       isActive: true,
-      lastSignInAt: undefined,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    });
+    } as const;
+    const optional: any = {
+      ...(args.username ? { username: args.username } : {}),
+      ...(args.pictureUrl ? { pictureUrl: args.pictureUrl } : {}),
+      ...(args.tokenIdentifier ? { tokenIdentifier: args.tokenIdentifier } : {}),
+    };
+    const userId = await ctx.db.insert("users", { ...base, ...optional });
 
     return userId;
   },

@@ -105,7 +105,7 @@ export function LoginForm({
         const error = clerkError.errors[0]
         
         // Handle specific error codes
-        switch (error.code) {
+        switch (error?.code) {
           case 'form_password_incorrect':
           case 'form_identifier_not_found':
             errorMessage = "Invalid email/username or password. Please try again."
@@ -117,7 +117,7 @@ export function LoginForm({
             errorMessage = "Too many failed attempts. Please try again later."
             break
           default:
-            errorMessage = error.message || error.longMessage || "Sign in failed. Please try again."
+            errorMessage = error?.message || error?.longMessage || "Sign in failed. Please try again."
         }
       } else if (clerkError.message) {
         errorMessage = clerkError.message
@@ -180,7 +180,7 @@ export function LoginForm({
         const error = clerkError.errors[0]
         
         // Handle specific error codes
-        switch (error.code) {
+        switch (error?.code) {
           case 'form_identifier_not_found':
             errorMessage = "No account found with this email address."
             break
@@ -191,7 +191,7 @@ export function LoginForm({
             errorMessage = "Too many requests. Please try again later."
             break
           default:
-            errorMessage = error.message || error.longMessage || "Failed to send reset email. Please try again."
+            errorMessage = error?.message || error?.longMessage || "Failed to send reset email. Please try again."
         }
       } else if (clerkError.message) {
         // Filter out generic "is invalid" messages for better UX
@@ -243,7 +243,7 @@ export function LoginForm({
       let errorMessage = "Something went wrong. Please try again."
       if (clerkError.errors && clerkError.errors.length > 0) {
         const error = clerkError.errors[0]
-        errorMessage = error.message || error.longMessage || "Something went wrong. Please try again."
+        errorMessage = error?.message || error?.longMessage || "Something went wrong. Please try again."
       } else if (clerkError.message) {
         errorMessage = clerkError.message
       }
@@ -358,7 +358,7 @@ export function LoginForm({
       if (clerkError.errors && clerkError.errors.length > 0) {
         const error = clerkError.errors[0]
         
-        switch (error.code) {
+        switch (error?.code) {
           case 'form_password_pwned':
             errorMessage = "This password has been found in a data breach. Please use a different password."
             break
@@ -383,7 +383,7 @@ export function LoginForm({
           setShowResetForm(true)
             break
           default:
-            errorMessage = error.message || error.longMessage || "Failed to reset password. Please try again."
+            errorMessage = error?.message || error?.longMessage || "Failed to reset password. Please try again."
         }
       } else if (clerkError.message) {
         // Handle specific error messages

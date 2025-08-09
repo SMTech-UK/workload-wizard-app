@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         emailAddress: [newEmail],
       });
 
-      if (existingUser.data.length > 0 && existingUser.data[0].id !== userId) {
+      if ((existingUser.data?.length || 0) > 0 && existingUser.data![0] && existingUser.data![0].id !== userId) {
         return NextResponse.json(
           { error: 'Email address is already in use by another user' },
           { status: 409 }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       if (existingEmail.id !== newEmailAddress.id) {
         try {
           await clerk.emailAddresses.deleteEmailAddress(existingEmail.id);
-        } catch (error: any) {
+        } catch (error) {
           // 404 or other errors are fine - old email might already be removed
           // This is not critical to the main functionality
         }

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Also update Clerk user record for name changes to keep in sync
     const clerk = await clerkClient()
-    const clerkUpdates: any = {}
+    const clerkUpdates: Record<string, unknown> = {}
     
     if (onboardingData.firstName && onboardingData.firstName !== user.firstName) {
       clerkUpdates.firstName = onboardingData.firstName

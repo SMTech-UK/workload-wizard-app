@@ -3,6 +3,7 @@ import { clerkClient, currentUser } from '@clerk/nextjs/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../convex/_generated/api';
 import { logRoleAssignedToUser, logRoleRevokedFromUser } from '@/lib/actions/auditActions';
+import type { Id } from '../../../../convex/_generated/dataModel';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -76,8 +77,9 @@ export async function POST(request: NextRequest) {
     let existingClerkUser;
     try {
       existingClerkUser = await clerk.users.getUser(userId);
-    } catch (error: any) {
-      if (error.status === 404) {
+    } catch (error) {
+      const httpStatus = (error as { status?: number } | undefined)?.status
+      if (httpStatus === 404) {
         console.warn(`User ${userId} not found in Clerk, skipping Clerk update`);
         existingClerkUser = null;
       } else {
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Only update Clerk if user exists and values have changed
     if (existingClerkUser) {
-      const clerkUpdates: any = {};
+      const clerkUpdates: Record<string, unknown> = {};
       
       // Only update if values are different
       if (firstName && firstName !== existingClerkUser.firstName) {
@@ -106,17 +108,16 @@ export async function POST(request: NextRequest) {
         (organisationId && organisationId !== existingClerkUser.publicMetadata?.organisationId);
         
       if (needsMetadataUpdate) {
-        clerkUpdates.publicMetadata = {
-          ...existingClerkUser.publicMetadata,
+        const nextMeta: Record<string, unknown> = {
+          ...(existingClerkUser.publicMetadata as Record<string, unknown>),
         };
-        
         if (systemRoles) {
-          clerkUpdates.publicMetadata.roles = systemRoles;
+          nextMeta.roles = systemRoles;
         }
-        
         if (organisationId) {
-          clerkUpdates.publicMetadata.organisationId = organisationId;
+          nextMeta.organisationId = organisationId;
         }
+        clerkUpdates.publicMetadata = nextMeta;
       }
 
       // Only make API call if there are actual changes
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
         } else {
           // Prepare Convex updates
           const previousSystemRoles: string[] = Array.isArray(convexUser.systemRoles) ? convexUser.systemRoles : [];
-          const convexUpdates: any = {};
+          const convexUpdates: Record<string, unknown> = {};
           if (firstName) convexUpdates.givenName = firstName;
           if (lastName) convexUpdates.familyName = lastName;
           if (username) convexUpdates.username = username;
@@ -199,8 +200,8 @@ export async function POST(request: NextRequest) {
           // Assign multiple roles, merging RBAC
           await convex.mutation(api.organisationalRoles.assignMultipleToUser, {
             userId,
-            roleIds: organisationalRoleIds as any,
-            organisationId: targetOrganisationId as any,
+            roleIds: organisationalRoleIds as unknown as Id<'user_roles'>[],
+            organisationId: targetOrganisationId as unknown as Id<'organisations'>,
             assignedBy: currentUserData.id,
           });
         }
@@ -220,13 +221,13 @@ export async function POST(request: NextRequest) {
           }
           const existingAssignment = await convex.query(api.organisationalRoles.getUserRole, {
             userId,
-            organisationId: targetOrganisationId as any,
+            organisationId: targetOrganisationId as unknown as Id<'organisations'>,
           });
 
           await convex.mutation(api.organisationalRoles.assignToUser, {
             userId,
-            roleId: organisationalRoleId as any,
-            organisationId: targetOrganisationId as any,
+            roleId: organisationalRoleId as unknown as Id<'user_roles'>,
+            organisationId: targetOrganisationId as unknown as Id<'organisations'>,
             assignedBy: currentUserData.id,
           });
 
@@ -240,7 +241,7 @@ export async function POST(request: NextRequest) {
             });
           }
           try {
-            const newRole = await convex.query(api.organisationalRoles.getById, { roleId: organisationalRoleId as any });
+            const newRole = await convex.query(api.organisationalRoles.getById, { roleId: organisationalRoleId as unknown as Id<'user_roles'> });
             if (newRole?.name) {
               await logRoleAssignedToUser(userId, userLabel, newRole.name, 'organisation', {
                 organisationId: targetOrganisationId,

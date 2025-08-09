@@ -7,19 +7,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { listUsers, deleteUser } from '@/lib/actions/userActions';
 import { useMutation, useQuery } from 'convex/react';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { api } from '../../../convex/_generated/api';
 import { Trash2, RefreshCw, UserCheck, UserX, Edit, Filter, Building2, Plus, GitCompareArrows, Eye, ChevronUp, ChevronDown, Search, MoreHorizontal, LogIn, UserCog } from 'lucide-react';
 import { EditUserForm } from './EditUserForm';
 import { CreateUserForm } from './CreateUserForm';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { UserSyncButton } from './UserSyncButton';
-import { DevLoginButton } from './DevLoginButton';
+// DevLoginButton removed (no longer used)
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAuth } from '@clerk/nextjs';
+// import { useAuth } from '@clerk/nextjs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface User {
@@ -74,7 +75,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
   const organisations = useQuery(api.organisations.list);
   const orgRolesForAssign = useQuery(
     api.organisationalRoles.listByOrganisation,
-    assigningUser && assigningUser.organisationId ? { organisationId: assigningUser.organisationId as any } : 'skip'
+    assigningUser && assigningUser.organisationId ? { organisationId: assigningUser.organisationId as unknown as Id<'organisations'> } : 'skip'
   );
   
   // Filter states
@@ -94,7 +95,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
       setIsLoading(true);
       setError(null);
       const userList = await listUsers();
-      setUsers(userList);
+      setUsers(userList as User[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch users');
     } finally {
@@ -504,11 +505,11 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
 
   const getRolesDisplay = (roles: string[]) => {
     if (!roles || roles.length === 0) return 'No roles';
-    if (roles.length === 1) return getRoleLabel(roles[0]);
+    if (roles.length === 1 && roles[0]) return getRoleLabel(roles[0]);
     
     // For multiple roles, show the highest priority role first
     const priorityOrder = ['sysadmin', 'developer', 'orgadmin', 'user', 'trial'];
-    const sortedRoles = roles.sort((a, b) => {
+    const sortedRoles = [...roles].sort((a, b) => {
       const aIndex = priorityOrder.indexOf(a);
       const bIndex = priorityOrder.indexOf(b);
       return aIndex - bIndex;
@@ -522,13 +523,13 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
     
     // Get the highest priority role for badge styling
     const priorityOrder = ['sysadmin', 'developer', 'orgadmin', 'user', 'trial'];
-    const sortedRoles = roles.sort((a, b) => {
+    const sortedRoles = [...roles].sort((a, b) => {
       const aIndex = priorityOrder.indexOf(a);
       const bIndex = priorityOrder.indexOf(b);
       return aIndex - bIndex;
     });
     
-    return getRoleBadgeClass(sortedRoles[0]);
+    return getRoleBadgeClass(sortedRoles[0] || 'user');
   };
 
   if (isLoading) {
@@ -673,7 +674,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
               {/* Right side - Organisation Selector and User Sync */}
               <div className="flex items-center gap-2 shrink-0">
                 {selectedUserIds.size > 0 && (
-                  <Button size="sm" onClick={() => { setIsBulkAssign(true); setAssigningUser({} as any); setSelectedOrgRoleId(null); }}>
+                  <Button size="sm" onClick={() => { setIsBulkAssign(true); setAssigningUser({} as unknown as User); setSelectedOrgRoleId(null); }}>
                     <UserCog className="h-4 w-4 mr-2" />
                     Bulk Assign ({selectedUserIds.size})
                   </Button>
@@ -1049,7 +1050,7 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(orgRolesForAssign || []).map((r:any)=> (
+                    {(orgRolesForAssign || []).map((r: { _id: string; name: string })=> (
                       <SelectItem key={r._id} value={r._id}>{r.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1066,3 +1067,4 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
     </TooltipProvider>
   );
 });
+UsersList.displayName = 'UsersList'

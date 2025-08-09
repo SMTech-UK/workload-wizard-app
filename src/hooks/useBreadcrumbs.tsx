@@ -42,10 +42,11 @@ export function BreadcrumbProvider({ children }: { children: ReactNode }) {
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ')
         
-        autoBreadcrumbs.push({
-          label,
-          href: isLast ? undefined : currentPath
-        })
+        autoBreadcrumbs.push(
+          isLast
+            ? { label }
+            : { label, href: currentPath }
+        )
       })
     }
 

@@ -47,7 +47,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (userId) {
     try {
       // Prefer Clerk session claims (publicMetadata) for the flag
-      const claimsAny = sessionClaims as any
+      const claimsAny = sessionClaims as unknown as { publicMetadata?: Record<string, unknown>; metadata?: { publicMetadata?: Record<string, unknown> } }
       const hasCompletedInClaims = Boolean(
         claimsAny?.publicMetadata?.onboardingCompleted ??
         claimsAny?.metadata?.publicMetadata?.onboardingCompleted

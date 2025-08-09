@@ -26,7 +26,13 @@ export async function syncUsernamesFromClerk() {
   try {
     // Get all users from Clerk
     const clerk = await clerkClient();
-    let allClerkUsers: any[] = [];
+    let allClerkUsers: Array<{
+      id: string;
+      username?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      emailAddresses: Array<{ emailAddress: string }>;
+    }> = [];
     let hasNextPage = true;
     let lastUserId: string | undefined = undefined;
 
@@ -40,8 +46,8 @@ export async function syncUsernamesFromClerk() {
       allClerkUsers = allClerkUsers.concat(clerkUsersResponse.data);
       hasNextPage = clerkUsersResponse.totalCount > allClerkUsers.length;
       
-      if (clerkUsersResponse.data.length > 0) {
-        lastUserId = clerkUsersResponse.data[clerkUsersResponse.data.length - 1].id;
+      if ((clerkUsersResponse.data?.length || 0) > 0) {
+        lastUserId = clerkUsersResponse.data![clerkUsersResponse.data!.length - 1]!.id;
       } else {
         hasNextPage = false;
       }

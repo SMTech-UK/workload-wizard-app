@@ -23,10 +23,10 @@ export function useAuditLog(options: UseAuditLogOptions) {
         action,
         entityType,
         entityId,
-        entityName,
-        details,
-        metadata,
-        severity,
+        ...(entityName ? { entityName } : {}),
+        ...(details ? { details } : {}),
+        ...(metadata ? { metadata } : {}),
+        ...(severity ? { severity } : {}),
       });
     } catch (error) {
       console.error('Failed to log audit event:', error);

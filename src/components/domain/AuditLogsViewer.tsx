@@ -167,11 +167,16 @@ export function AuditLogsViewer() {
     setIsLoading(true);
     setError(null);
     try {
-      const auditLogs = await getAuditLogs({
-        ...filters,
-        startDate: filters.timeRange > 0 ? Date.now() - (filters.timeRange * 60 * 60 * 1000) : undefined,
-        cursor: cursor || undefined,
-      });
+      const args = {
+        ...(filters.entityType ? { entityType: filters.entityType } : {}),
+        ...(filters.action ? { action: filters.action } : {}),
+        ...(filters.severity ? { severity: filters.severity } : {}),
+        ...(filters.search ? { search: filters.search } : {}),
+        ...(filters.timeRange > 0 ? { startDate: Date.now() - (filters.timeRange * 60 * 60 * 1000) } : {}),
+        ...(cursor ? { cursor } : {}),
+        ...(filters.limit ? { limit: filters.limit } : {}),
+      } as const;
+      const auditLogs = await getAuditLogs(args as any);
       
       // Handle both array and object response formats
       if (Array.isArray(auditLogs)) {
@@ -202,8 +207,8 @@ export function AuditLogsViewer() {
       } else {
         setLogs(prev => [...prev, ...(logsArray as AuditLog[])]);
       }
-      setHasMore(response?.hasMore || false);
-      setNextCursor(response?.nextCursor || null);
+        setHasMore(!!response?.hasMore);
+        setNextCursor(response?.nextCursor ?? null);
         // For cursor-based pagination, we accumulate the loaded logs
         if (page === 1) {
           setTotalLogs(logsArray.length);
@@ -224,7 +229,7 @@ export function AuditLogsViewer() {
   const loadStats = useCallback(async () => {
     try {
       const auditStats = await getAuditStats({
-        startDate: filters.timeRange > 0 ? Date.now() - (filters.timeRange * 60 * 60 * 1000) : undefined,
+        ...(filters.timeRange > 0 ? { startDate: Date.now() - (filters.timeRange * 60 * 60 * 1000) } : {}),
       });
       setStats(auditStats as AuditStats);
       // Update the total filtered logs count from stats
