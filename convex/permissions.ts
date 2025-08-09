@@ -222,16 +222,22 @@ export const seedDefaultOrgRolesAndPermissions = mutation({
  * Get all roles for an organisation
  */
 export const getOrganisationRoles = query({
-  args: {
-    organisationId: v.id("organisations"),
-  },
-  handler: async (ctx, { organisationId }) => {
-    // Use user_roles as the single source of truth for organisation-scoped roles
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Unauthenticated");
+
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", identity.subject))
+      .first();
+    if (!actor) throw new Error("User not found");
+
     return await ctx.db
       .query("user_roles")
       .filter((q) =>
         q.and(
-          q.eq(q.field("organisationId"), organisationId),
+          q.eq(q.field("organisationId"), actor.organisationId),
           q.eq(q.field("isActive"), true)
         )
       )
@@ -1373,7 +1379,6 @@ export const createOrganisationRole = mutation({
   args: {
     name: v.string(),
     description: v.optional(v.string()),
-    organisationId: v.id("organisations"),
     permissions: v.array(v.string()),
     performedBy: v.optional(v.string()),
     performedByName: v.optional(v.string()),
@@ -1381,21 +1386,15 @@ export const createOrganisationRole = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Authorization: only system admins or members of the same organisation can create
-    if (args.performedBy) {
-      const performedBy = args.performedBy as string;
-      const actor = await ctx.db
-        .query("users")
-        .withIndex("by_subject", (q) => q.eq("subject", performedBy))
-        .first();
-
-      if (actor) {
-        const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
-        if (!isSystem && String(actor.organisationId) !== String(args.organisationId)) {
-          throw new Error("Unauthorized: Cannot create roles outside your organisation");
-        }
-      }
-    }
+    // Determine organisation from actor (performedBy or authenticated identity)
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = args.performedBy ?? identity?.subject;
+    if (!subject) throw new Error("Unauthenticated");
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", subject))
+      .first();
+    if (!actor) throw new Error("User not found");
     
     const roleId = await ctx.db.insert("user_roles", {
       name: args.name,
@@ -1403,27 +1402,27 @@ export const createOrganisationRole = mutation({
       isDefault: false,
       isSystem: false,
       permissions: args.permissions,
-      organisationId: args.organisationId,
+      organisationId: actor.organisationId,
       isActive: true,
       createdAt: now,
       updatedAt: now,
     });
 
     // Log audit event
-    if (args.performedBy) {
+    if (subject) {
       await ctx.db.insert("audit_logs", {
         action: 'role.created',
         entityType: 'role',
         entityId: roleId,
         entityName: args.name,
-        performedBy: args.performedBy,
+        performedBy: subject,
         ...(args.performedByName ? { performedByName: args.performedByName } : {}),
-        organisationId: args.organisationId,
+        organisationId: actor.organisationId,
         details: `Role "${args.name}" created with ${args.permissions.length} permission(s)`,
         metadata: JSON.stringify({
           description: args.description,
           permissions: args.permissions,
-          organisationId: args.organisationId,
+          organisationId: actor.organisationId,
         }),
         timestamp: now,
         severity: 'info',

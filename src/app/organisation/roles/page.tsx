@@ -94,10 +94,10 @@ export default function OrganisationRolesPage() {
   // Get current user's organisation
   const currentUser = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
 
-  // Get organisation roles (skip until orgId is available)
+  // Get organisation roles (server derives org from actor)
   const organisationRoles = useQuery(
     api.permissions.getOrganisationRoles,
-    currentUser?.organisationId ? { organisationId: currentUser.organisationId as unknown as Id<'organisations'> } : 'skip'
+    currentUser?.organisationId ? {} : 'skip'
   );
 
   // Get system permissions
@@ -120,7 +120,6 @@ export default function OrganisationRolesPage() {
       await createRole({
         name: roleName.trim(),
         ...(roleDescription.trim() ? { description: roleDescription.trim() } : {}),
-        organisationId: currentUser.organisationId,
         permissions: selectedPermissions,
         ...(user?.id ? { performedBy: user.id } : {}),
         ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
