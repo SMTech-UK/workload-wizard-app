@@ -193,10 +193,11 @@ function CourseYearModules({ yearId }: { yearId: string }) {
           <ul className="flex gap-2 flex-wrap">
             {attached.map((a: any) => (
               <li key={a.link._id}>
-                <span
-                  className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm`}
-                >
-                  {a.module?.code} {a.link.isCore ? "(Core)" : "(Optional)"}
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm">
+                  <span>
+                    {a.module?.code} {a.link.isCore ? "(Core)" : "(Optional)"}
+                  </span>
+                  <ModuleIterationControl moduleId={String(a.module?._id)} />
                   <button
                     className="ml-1 text-destructive"
                     onClick={async () => {
@@ -208,7 +209,7 @@ function CourseYearModules({ yearId }: { yearId: string }) {
                   >
                     ×
                   </button>
-                </span>
+                </div>
               </li>
             ))}
           </ul>
@@ -219,5 +220,35 @@ function CourseYearModules({ yearId }: { yearId: string }) {
         )}
       </div>
     </div>
+  );
+}
+
+function ModuleIterationControl({ moduleId }: { moduleId: string }) {
+  const iteration = useQuery(api.modules.getIterationForDefaultYear, {
+    moduleId: moduleId as any,
+  } as any);
+  const create = useMutation(api.modules.createIterationForDefaultYear);
+
+  const [isCreating, setIsCreating] = useState(false);
+  const hasIteration = Boolean(iteration?._id);
+
+  return hasIteration ? (
+    <span className="text-emerald-700">AY iteration created</span>
+  ) : (
+    <Button
+      size="sm"
+      variant="secondary"
+      disabled={isCreating}
+      onClick={async () => {
+        try {
+          setIsCreating(true);
+          await create({ moduleId: moduleId as any } as any);
+        } finally {
+          setIsCreating(false);
+        }
+      }}
+    >
+      {isCreating ? "Creating…" : "Create iteration (current AY)"}
+    </Button>
   );
 }
