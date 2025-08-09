@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireOrgPermission } from "./permissions";
+import { writeAudit } from "./audit";
 
 // Get all roles for an organisation
 export const listByOrganisation = query({
@@ -38,7 +39,6 @@ export const create = mutation({
   args: {
     name: v.string(),
     description: v.string(),
-    organisationId: v.id("organisations"),
     permissions: v.array(v.string()),
     isDefault: v.optional(v.boolean()),
   },
@@ -48,18 +48,25 @@ export const create = mutation({
     const subject = identity?.subject;
     if (!subject) throw new Error("Unauthenticated");
 
-    // Authorise actor within org
+    // Derive organisation from actor
+    const actorUser = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", subject))
+      .first();
+    if (!actorUser) throw new Error("User not found");
+
+    // Authorise actor within derived org
     await requireOrgPermission(
       ctx,
       subject,
       "permissions.manage",
-      String(args.organisationId),
+      String(actorUser.organisationId),
     );
 
     const roleId = await ctx.db.insert("user_roles", {
       name: args.name,
       description: args.description,
-      organisationId: args.organisationId,
+      organisationId: actorUser.organisationId,
       permissions: args.permissions,
       isDefault: args.isDefault || false,
       isSystem: false, // Organisational roles are never system roles
@@ -69,19 +76,18 @@ export const create = mutation({
     });
 
     // Audit create
-    await ctx.db.insert("audit_logs", {
+    await writeAudit(ctx, {
       action: "role.created",
       entityType: "role",
       entityId: String(roleId),
       entityName: args.name,
       performedBy: subject,
-      organisationId: args.organisationId,
+      organisationId: actorUser.organisationId,
       details: `Created role "${args.name}" with ${args.permissions.length} permission(s)`,
       metadata: JSON.stringify({
         permissions: args.permissions,
         isDefault: !!args.isDefault,
       }),
-      timestamp: now,
       severity: "info",
     });
 
