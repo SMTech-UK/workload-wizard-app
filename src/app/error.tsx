@@ -1,6 +1,10 @@
 "use client";
 
-export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
+export default function GlobalError({
+  error,
+}: {
+  error: Error & { digest?: string };
+}) {
   return (
     <html>
       <body className="p-6">
@@ -10,5 +14,3 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
     </html>
   );
 }
-
-

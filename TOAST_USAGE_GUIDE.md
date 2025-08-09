@@ -5,15 +5,17 @@ This project uses a standardized toast notification system built with **Sonner**
 ## 🚀 Quick Start
 
 ### Import the toast hook:
+
 ```typescript
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from "@/hooks/use-toast";
 ```
 
 ### Use in your component:
+
 ```typescript
 export function MyComponent() {
   const { toast } = useToast()
-  
+
   const handleSuccess = () => {
     toast({
       title: "Success!",
@@ -21,7 +23,7 @@ export function MyComponent() {
       variant: "success",
     })
   }
-  
+
   const handleError = () => {
     toast({
       title: "Error",
@@ -29,7 +31,7 @@ export function MyComponent() {
       variant: "destructive",
     })
   }
-  
+
   return (
     // Your component JSX
   )
@@ -39,87 +41,94 @@ export function MyComponent() {
 ## 📝 Available Methods
 
 ### 1. useToast Hook
+
 ```typescript
-const { toast, dismiss } = useToast()
+const { toast, dismiss } = useToast();
 
 // Show a toast
 toast({
   title: "Title",
   description: "Description",
-  variant: "default" | "destructive" | "success"
-})
+  variant: "default" | "destructive" | "success",
+});
 
 // Dismiss a specific toast
-dismiss(toastId)
+dismiss(toastId);
 ```
 
 ### 2. Direct Toast Functions
+
 ```typescript
-import { toast } from '@/hooks/use-toast'
+import { toast } from "@/hooks/use-toast";
 
 // Success toast
-toast.success("Success message", "Optional description")
+toast.success("Success message", "Optional description");
 
 // Error toast
-toast.error("Error message", "Optional description")
+toast.error("Error message", "Optional description");
 
 // Info toast
-toast.info("Info message", "Optional description")
+toast.info("Info message", "Optional description");
 
 // Warning toast
-toast.warning("Warning message", "Optional description")
+toast.warning("Warning message", "Optional description");
 
 // Dismiss toast
-toast.dismiss(toastId)
+toast.dismiss(toastId);
 ```
 
 ## 🎨 Toast Variants
 
 ### Default
+
 ```typescript
 toast({
   title: "Notification",
-  description: "This is a default notification"
-})
+  description: "This is a default notification",
+});
 ```
 
 ### Success
+
 ```typescript
 toast({
   title: "Success!",
   description: "Operation completed successfully",
-  variant: "success"
-})
+  variant: "success",
+});
 ```
 
 ### Error/Destructive
+
 ```typescript
 toast({
   title: "Error",
   description: "Something went wrong",
-  variant: "destructive"
-})
+  variant: "destructive",
+});
 ```
 
 ## 🔄 Migration from alert()
 
 ### Before (using alert):
+
 ```typescript
 try {
-  await someOperation()
-  alert('Success!')
+  await someOperation();
+  alert("Success!");
 } catch (error) {
-  alert('Error: ' + error.message)
+  alert("Error: " + error.message);
 }
 ```
 
 ### After (using toast):
+
 ```typescript
 try {
-  await someOperation()
-  toast.success('Success!')
+  await someOperation();
+  toast.success("Success!");
 } catch (error) {
-  toast.error('Error', error instanceof Error ? error.message : undefined)
+  toast.error("Error", error instanceof Error ? error.message : undefined);
 }
 ```
 
@@ -134,6 +143,7 @@ try {
 ## 🎨 Styling
 
 The toast system automatically uses your app's design tokens:
+
 - **Background**: Uses `--background` CSS variable
 - **Text**: Uses `--foreground` CSS variable
 - **Borders**: Uses `--border` CSS variable
@@ -176,40 +186,43 @@ To customize toast behavior, modify the `Toaster` component in `src/components/u
 ## 📚 Examples
 
 ### Form Submission
+
 ```typescript
 const handleSubmit = async (data: FormData) => {
   try {
-    await submitForm(data)
-    toast.success('Form submitted successfully!')
+    await submitForm(data);
+    toast.success("Form submitted successfully!");
   } catch (error) {
-    toast.error('Submission failed', error.message)
+    toast.error("Submission failed", error.message);
   }
-}
+};
 ```
 
 ### API Operations
+
 ```typescript
 const handleDelete = async (id: string) => {
   try {
-    await deleteItem(id)
-    toast.success('Item deleted successfully')
+    await deleteItem(id);
+    toast.success("Item deleted successfully");
     // Refresh data or update UI
   } catch (error) {
-    toast.error('Failed to delete item', error.message)
+    toast.error("Failed to delete item", error.message);
   }
-}
+};
 ```
 
 ### User Actions
+
 ```typescript
 const handleCopy = async () => {
   try {
-    await navigator.clipboard.writeText(text)
-    toast.success('Copied to clipboard!')
+    await navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard!");
   } catch (error) {
-    toast.error('Failed to copy', 'Please try again')
+    toast.error("Failed to copy", "Please try again");
   }
-}
+};
 ```
 
 ## 🚫 What to Avoid
@@ -228,4 +241,4 @@ const handleCopy = async () => {
 - ✅ Warning alerts
 - ✅ Operation status updates
 - ✅ Copy/paste confirmations
-- ✅ Save confirmations 
+- ✅ Save confirmations

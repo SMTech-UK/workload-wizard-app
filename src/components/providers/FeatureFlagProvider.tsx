@@ -1,8 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { useUser } from '@clerk/nextjs';
-import { identifyUserForFeatureFlags, bootstrapFeatureFlags } from '@/lib/feature-flags/auth-integration';
+import { useEffect, useRef } from "react";
+import { useUser } from "@clerk/nextjs";
+import {
+  identifyUserForFeatureFlags,
+  bootstrapFeatureFlags,
+} from "@/lib/feature-flags/auth-integration";
 
 interface FeatureFlagProviderProps {
   children: React.ReactNode;
@@ -22,11 +25,11 @@ export function FeatureFlagProvider({ children }: FeatureFlagProviderProps) {
     // Only identify user if they've changed or haven't been identified yet
     const currentUserId = user?.id || null;
     if (currentUserId !== lastUserId.current) {
-      console.log('User changed, identifying in PostHog:', { 
-        previous: lastUserId.current, 
-        current: currentUserId 
+      console.log("User changed, identifying in PostHog:", {
+        previous: lastUserId.current,
+        current: currentUserId,
       });
-      
+
       // Identify user in PostHog for feature flags
       identifyUserForFeatureFlags(user);
 
@@ -34,7 +37,7 @@ export function FeatureFlagProvider({ children }: FeatureFlagProviderProps) {
       if (user) {
         bootstrapFeatureFlags(user);
       }
-      
+
       lastUserId.current = currentUserId;
     }
   }, [user, isLoaded]);

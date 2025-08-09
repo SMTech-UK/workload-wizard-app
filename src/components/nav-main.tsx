@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { ChevronRight, type LucideIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import posthog from "posthog-js"
+import { ChevronRight, type LucideIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import posthog from "posthog-js";
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -20,80 +20,91 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 export function NavMain({
   items,
 }: {
   items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-    isActive?: boolean
+    title: string;
+    url: string;
+    icon?: LucideIcon;
+    isActive?: boolean;
     items?: {
-      title: string
-      url: string
-    }[]
-  }[]
+      title: string;
+      url: string;
+    }[];
+  }[];
 }) {
-  const { state } = useSidebar()
-  const router = useRouter()
-  const [openItems, setOpenItems] = useState<Set<string>>(new Set())
+  const { state } = useSidebar();
+  const router = useRouter();
+  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
 
   // Load saved state from localStorage on mount
   useEffect(() => {
-    const savedState = localStorage.getItem('sidebar-nav-state')
+    const savedState = localStorage.getItem("sidebar-nav-state");
     if (savedState) {
       try {
-        const parsed = JSON.parse(savedState)
-        setOpenItems(new Set(parsed))
+        const parsed = JSON.parse(savedState);
+        setOpenItems(new Set(parsed));
       } catch (error) {
-        console.warn('Failed to parse saved sidebar state:', error)
+        console.warn("Failed to parse saved sidebar state:", error);
         // Fallback to default state
-        setOpenItems(new Set(items.filter(item => item.isActive).map(item => item.title)))
+        setOpenItems(
+          new Set(
+            items.filter((item) => item.isActive).map((item) => item.title),
+          ),
+        );
       }
     } else {
       // Initialize with active items if no saved state
-      setOpenItems(new Set(items.filter(item => item.isActive).map(item => item.title)))
+      setOpenItems(
+        new Set(
+          items.filter((item) => item.isActive).map((item) => item.title),
+        ),
+      );
     }
-  }, [items])
+  }, [items]);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
-    if (openItems.size > 0 || localStorage.getItem('sidebar-nav-state')) {
-      localStorage.setItem('sidebar-nav-state', JSON.stringify(Array.from(openItems)))
+    if (openItems.size > 0 || localStorage.getItem("sidebar-nav-state")) {
+      localStorage.setItem(
+        "sidebar-nav-state",
+        JSON.stringify(Array.from(openItems)),
+      );
     }
-  }, [openItems])
+  }, [openItems]);
 
-  const handleMainItemClick = (item: typeof items[0]) => {
-    posthog.capture('main-nav-item-clicked', {
+  const handleMainItemClick = (item: (typeof items)[0]) => {
+    posthog.capture("main-nav-item-clicked", {
       item_title: item.title,
       item_url: item.url,
       has_sub_items: !!item.items && item.items.length > 0,
       sidebar_state: state,
-    })
+    });
     // If sidebar is collapsed, navigate directly to the URL
     if (state === "collapsed") {
-      router.push(item.url)
-      return
+      router.push(item.url);
+      return;
     }
 
     // If sidebar is expanded and item has children, toggle the collapsible
     if (item.items && item.items.length > 0) {
-      setOpenItems(prev => {
-        const newSet = new Set(prev)
+      setOpenItems((prev) => {
+        const newSet = new Set(prev);
         if (newSet.has(item.title)) {
-          newSet.delete(item.title)
+          newSet.delete(item.title);
         } else {
-          newSet.add(item.title)
+          newSet.add(item.title);
         }
-        return newSet
-      })
+        return newSet;
+      });
     } else {
       // If no children, navigate to the URL
-      router.push(item.url)
+      router.push(item.url);
     }
-  }
+  };
 
   return (
     <SidebarGroup>
@@ -105,26 +116,26 @@ export function NavMain({
               <Collapsible
                 open={openItems.has(item.title)}
                 onOpenChange={(open) => {
-                  setOpenItems(prev => {
-                    const newSet = new Set(prev)
+                  setOpenItems((prev) => {
+                    const newSet = new Set(prev);
                     if (open) {
-                      newSet.add(item.title)
+                      newSet.add(item.title);
                     } else {
-                      newSet.delete(item.title)
+                      newSet.delete(item.title);
                     }
-                    return newSet
-                  })
+                    return newSet;
+                  });
                 }}
                 className="group/collapsible"
               >
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     tooltip={item.title}
                     onClick={(e) => {
                       // Prevent default collapsible behavior when collapsed
                       if (state === "collapsed") {
-                        e.preventDefault()
-                        handleMainItemClick(item)
+                        e.preventDefault();
+                        handleMainItemClick(item);
                       }
                     }}
                   >
@@ -141,11 +152,11 @@ export function NavMain({
                           <a
                             href={subItem.url}
                             onClick={() => {
-                              posthog.capture('sub-nav-item-clicked', {
+                              posthog.capture("sub-nav-item-clicked", {
                                 sub_item_title: subItem.title,
                                 sub_item_url: subItem.url,
                                 parent_item_title: item.title,
-                              })
+                              });
                             }}
                           >
                             <span>{subItem.title}</span>
@@ -157,8 +168,8 @@ export function NavMain({
                 </CollapsibleContent>
               </Collapsible>
             ) : (
-              <SidebarMenuButton 
-                tooltip={item.title} 
+              <SidebarMenuButton
+                tooltip={item.title}
                 onClick={() => handleMainItemClick(item)}
               >
                 {item.icon && <item.icon />}
@@ -169,5 +180,5 @@ export function NavMain({
         ))}
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }

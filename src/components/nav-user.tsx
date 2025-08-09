@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   BadgeCheck,
@@ -8,16 +8,12 @@ import {
   User,
   Palette,
   Shield,
-} from "lucide-react"
-import { useUser, useClerk } from "@clerk/nextjs"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+} from "lucide-react";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,20 +22,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
+} from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function NavUser() {
-  const { user, isLoaded } = useUser()
-  const { signOut } = useClerk()
-  const { isMobile } = useSidebar()
-  const router = useRouter()
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
+  const { isMobile } = useSidebar();
+  const router = useRouter();
 
   if (!isLoaded) {
     return (
@@ -54,31 +50,31 @@ export function NavUser() {
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
-  const userName = user.fullName || user.firstName || "User"
-  const userEmail = user.emailAddresses[0]?.emailAddress || ""
-  const userRole = user.publicMetadata?.role as string
-  const avatarUrl = user.imageUrl
+  const userName = user.fullName || user.firstName || "User";
+  const userEmail = user.emailAddresses[0]?.emailAddress || "";
+  const userRole = user.publicMetadata?.role as string;
+  const avatarUrl = user.imageUrl;
 
   // Generate initials from name
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(part => part.charAt(0))
-      .join('')
+      .split(" ")
+      .map((part) => part.charAt(0))
+      .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   const handleLogout = async () => {
-    await signOut(() => router.push('/sign-in'))
-  }
+    await signOut(() => router.push("/sign-in"));
+  };
 
   return (
     <SidebarMenu>
@@ -91,12 +87,16 @@ export function NavUser() {
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={avatarUrl} alt={userName} />
-                <AvatarFallback className="rounded-lg">{getInitials(userName)}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {getInitials(userName)}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{userName}</span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : userEmail}
+                  {userRole
+                    ? userRole.charAt(0).toUpperCase() + userRole.slice(1)
+                    : userEmail}
                 </span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -112,11 +112,15 @@ export function NavUser() {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={avatarUrl} alt={userName} />
-                  <AvatarFallback className="rounded-lg">{getInitials(userName)}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {getInitials(userName)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{userName}</span>
-                  <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {userEmail}
+                  </span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -157,7 +161,10 @@ export function NavUser() {
               )}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-red-600 focus:text-red-600"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
@@ -165,5 +172,5 @@ export function NavUser() {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

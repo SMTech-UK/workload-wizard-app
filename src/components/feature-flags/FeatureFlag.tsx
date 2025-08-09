@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
-import { FeatureFlags } from '@/lib/feature-flags/types';
+import { ReactNode } from "react";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FeatureFlags } from "@/lib/feature-flags/types";
 
 interface FeatureFlagProps {
   flag: FeatureFlags;
@@ -16,15 +16,19 @@ interface FeatureFlagProps {
 /**
  * Component that conditionally renders children based on feature flag
  */
-export function FeatureFlag({ 
-  flag, 
-  children, 
-  fallback = null, 
+export function FeatureFlag({
+  flag,
+  children,
+  fallback = null,
   loading = null,
   error = null,
-  context 
+  context,
 }: FeatureFlagProps) {
-  const { enabled, loading: isLoading, error: flagError } = useFeatureFlag(flag, context);
+  const {
+    enabled,
+    loading: isLoading,
+    error: flagError,
+  } = useFeatureFlag(flag, context);
 
   if (isLoading) {
     return <>{loading}</>;
@@ -40,15 +44,19 @@ export function FeatureFlag({
 /**
  * Component that renders children only when feature flag is disabled
  */
-export function FeatureFlagDisabled({ 
-  flag, 
-  children, 
-  fallback = null, 
+export function FeatureFlagDisabled({
+  flag,
+  children,
+  fallback = null,
   loading = null,
   error = null,
-  context 
+  context,
 }: FeatureFlagProps) {
-  const { enabled, loading: isLoading, error: flagError } = useFeatureFlag(flag, context);
+  const {
+    enabled,
+    loading: isLoading,
+    error: flagError,
+  } = useFeatureFlag(flag, context);
 
   if (isLoading) {
     return <>{loading}</>;
@@ -73,15 +81,19 @@ interface FeatureFlagSwitchProps {
   context?: Record<string, unknown>;
 }
 
-export function FeatureFlagSwitch({ 
-  flag, 
-  enabled, 
-  disabled, 
+export function FeatureFlagSwitch({
+  flag,
+  enabled,
+  disabled,
   loading = null,
   error = null,
-  context 
+  context,
 }: FeatureFlagSwitchProps) {
-  const { enabled: isEnabled, loading: isLoading, error: flagError } = useFeatureFlag(flag, context);
+  const {
+    enabled: isEnabled,
+    loading: isLoading,
+    error: flagError,
+  } = useFeatureFlag(flag, context);
 
   if (isLoading) {
     return <>{loading}</>;

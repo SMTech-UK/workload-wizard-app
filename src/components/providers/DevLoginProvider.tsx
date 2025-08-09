@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface DevLoginProviderProps {
   children: React.ReactNode;
@@ -7,4 +7,4 @@ interface DevLoginProviderProps {
 export function DevLoginProvider({ children }: DevLoginProviderProps) {
   // For now, just render children without the hook to avoid errors
   return <>{children}</>;
-} 
+}

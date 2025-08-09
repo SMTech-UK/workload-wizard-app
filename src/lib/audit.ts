@@ -1,17 +1,17 @@
-import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../convex/_generated/api';
-import type { Id } from '../../convex/_generated/dataModel';
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 
 export type AuditAction =
-  | 'user.invited'
-  | 'user.role_changed'
-  | 'permissions.updated'
-  | 'flags.updated';
+  | "user.invited"
+  | "user.role_changed"
+  | "permissions.updated"
+  | "flags.updated";
 
 export type AuditEvent = {
   action: AuditAction;
   actorId: string;
-  organisationId?: Id<'organisations'> | string;
+  organisationId?: Id<"organisations"> | string;
   success: boolean;
   entityType?: string;
   entityId?: string;
@@ -26,18 +26,18 @@ export async function recordAudit(evt: AuditEvent): Promise<void> {
   try {
     await convex.mutation(api.audit.create, {
       action: evt.action,
-      entityType: (evt.entityType ?? 'system'),
-      entityId: (evt.entityId ?? 'system'),
+      entityType: evt.entityType ?? "system",
+      entityId: evt.entityId ?? "system",
       ...(evt.entityName ? { entityName: evt.entityName } : {}),
       performedBy: evt.actorId,
-      ...(evt.organisationId ? { organisationId: evt.organisationId as Id<'organisations'> } : {}),
-      details: evt.success ? 'success' : 'failure',
+      ...(evt.organisationId
+        ? { organisationId: evt.organisationId as Id<"organisations"> }
+        : {}),
+      details: evt.success ? "success" : "failure",
       ...(evt.meta ? { metadata: JSON.stringify(evt.meta) } : {}),
-      severity: evt.success ? 'info' : 'warning',
+      severity: evt.success ? "info" : "warning",
     });
   } catch {
     // Swallow audit failures
   }
 }
-
-

@@ -1,36 +1,48 @@
-'use client';
+"use client";
 
-import { useUser } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Users, Building2, FileText, Shield, Settings } from 'lucide-react';
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Users, Building2, FileText, Shield, Settings } from "lucide-react";
 
 export default function OrganisationAdminPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoaded && user?.publicMetadata?.role !== 'orgadmin' && user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer') {
-      router.replace('/unauthorised');
+    if (
+      isLoaded &&
+      user?.publicMetadata?.role !== "orgadmin" &&
+      user?.publicMetadata?.role !== "sysadmin" &&
+      user?.publicMetadata?.role !== "developer"
+    ) {
+      router.replace("/unauthorised");
     }
   }, [isLoaded, user, router]);
 
   if (!isLoaded) return <p>Loading...</p>;
 
-  if (user?.publicMetadata?.role !== 'orgadmin' && user?.publicMetadata?.role !== 'sysadmin' && user?.publicMetadata?.role !== 'developer') {
+  if (
+    user?.publicMetadata?.role !== "orgadmin" &&
+    user?.publicMetadata?.role !== "sysadmin" &&
+    user?.publicMetadata?.role !== "developer"
+  ) {
     return null; // Will redirect in useEffect
   }
 
   const organisationId = user.publicMetadata?.organisationId as string;
 
-  const breadcrumbs = [
-    { label: "Home", href: "/" },
-    { label: "Organisation" }
-  ];
+  const breadcrumbs = [{ label: "Home", href: "/" }, { label: "Organisation" }];
 
   return (
     <StandardizedSidebarLayout
@@ -38,7 +50,6 @@ export default function OrganisationAdminPage() {
       title="Organisation Admin Panel"
       subtitle="Manage your organisation's users, roles, and settings"
     >
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
@@ -116,9 +127,16 @@ export default function OrganisationAdminPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <p><strong>Organisation ID:</strong> {organisationId || 'Not assigned'}</p>
-              <p><strong>Your Role:</strong> Organisation Admin</p>
-              <p><strong>Email:</strong> {user.emailAddresses[0]?.emailAddress}</p>
+              <p>
+                <strong>Organisation ID:</strong>{" "}
+                {organisationId || "Not assigned"}
+              </p>
+              <p>
+                <strong>Your Role:</strong> Organisation Admin
+              </p>
+              <p>
+                <strong>Email:</strong> {user.emailAddresses[0]?.emailAddress}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -131,13 +149,20 @@ export default function OrganisationAdminPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <p><strong>Organisation ID:</strong> {organisationId || 'Not assigned'}</p>
-              <p><strong>Your Role:</strong> Organisation Admin</p>
-              <p><strong>Email:</strong> {user.emailAddresses[0]?.emailAddress}</p>
+              <p>
+                <strong>Organisation ID:</strong>{" "}
+                {organisationId || "Not assigned"}
+              </p>
+              <p>
+                <strong>Your Role:</strong> Organisation Admin
+              </p>
+              <p>
+                <strong>Email:</strong> {user.emailAddresses[0]?.emailAddress}
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
     </StandardizedSidebarLayout>
   );
-} 
+}

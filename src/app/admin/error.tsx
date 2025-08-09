@@ -1,6 +1,10 @@
 "use client";
 
-export default function AdminError({ error }: { error: Error & { digest?: string } }) {
+export default function AdminError({
+  error,
+}: {
+  error: Error & { digest?: string };
+}) {
   return (
     <div className="p-6">
       <h2 className="text-xl font-semibold mb-2">Admin area error</h2>
@@ -8,5 +12,3 @@ export default function AdminError({ error }: { error: Error & { digest?: string
     </div>
   );
 }
-
-

@@ -1,4 +1,7 @@
-export type SafeProps = Record<string, string | number | boolean | null | undefined>;
+export type SafeProps = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
 
 const BLOCK_KEYS = new Set(["email", "name", "firstName", "lastName"]);
 
@@ -20,7 +23,10 @@ export function scrubPII(props: Record<string, unknown>): SafeProps {
   return out;
 }
 
-export async function track(event: string, props: Record<string, unknown> = {}): Promise<void> {
+export async function track(
+  event: string,
+  props: Record<string, unknown> = {},
+): Promise<void> {
   const safe = scrubPII(props);
   try {
     await fetch("/api/analytics/track", {
@@ -32,5 +38,3 @@ export async function track(event: string, props: Record<string, unknown> = {}):
     // swallow
   }
 }
-
-

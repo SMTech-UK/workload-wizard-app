@@ -1,31 +1,40 @@
-'use client';
+"use client";
 
-import { useUser } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
-import { OrganisationForm } from '@/components/domain/OrganisationForm';
-import { OrganisationsList } from '@/components/domain/OrganisationsList';
-import { Button } from '@/components/ui/button';
-import { Plus, Settings } from 'lucide-react';
-import { hasAnyRole } from '@/lib/utils';
-import { useQuery } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
-
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout";
+import { OrganisationForm } from "@/components/domain/OrganisationForm";
+import { OrganisationsList } from "@/components/domain/OrganisationsList";
+import { Button } from "@/components/ui/button";
+import { Plus, Settings } from "lucide-react";
+import { hasAnyRole } from "@/lib/utils";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 
 export default function AdminOrganisationsPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
-  const convexUser = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
+  const convexUser = useQuery(
+    api.users.getBySubject,
+    user?.id ? { subject: user.id } : "skip",
+  );
 
   const hasByClerk =
-    hasAnyRole(user, ['sysadmin', 'developer']) ||
-    (user?.publicMetadata as Record<string, unknown> | undefined)?.['devLoginSession'] === true;
-  const hasByConvex = !!convexUser && Array.isArray(convexUser.systemRoles) && convexUser.systemRoles.some((r: string) => r === 'sysadmin' || r === 'developer');
+    hasAnyRole(user, ["sysadmin", "developer"]) ||
+    (user?.publicMetadata as Record<string, unknown> | undefined)?.[
+      "devLoginSession"
+    ] === true;
+  const hasByConvex =
+    !!convexUser &&
+    Array.isArray(convexUser.systemRoles) &&
+    convexUser.systemRoles.some(
+      (r: string) => r === "sysadmin" || r === "developer",
+    );
 
   useEffect(() => {
     if (isLoaded && !(hasByClerk || hasByConvex)) {
-      router.replace('/unauthorised');
+      router.replace("/unauthorised");
     }
   }, [isLoaded, hasByClerk, hasByConvex, router]);
 
@@ -38,7 +47,7 @@ export default function AdminOrganisationsPage() {
   const breadcrumbs = [
     { label: "Home", href: "/" },
     { label: "Admin", href: "/admin" },
-    { label: "Organisations" }
+    { label: "Organisations" },
   ];
 
   const headerActions = (
@@ -63,7 +72,7 @@ export default function AdminOrganisationsPage() {
         <div className="xl:col-span-1">
           <OrganisationForm />
         </div>
-        
+
         {/* Main Content - Organisations List */}
         <div className="xl:col-span-2">
           <OrganisationsList />
@@ -71,4 +80,4 @@ export default function AdminOrganisationsPage() {
       </div>
     </StandardizedSidebarLayout>
   );
-} 
+}

@@ -1,28 +1,35 @@
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
 // Initialize Resend with API key
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@workloadwizard.com';
+const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@workloadwizard.com";
 
 // Email configuration from environment variables
 const EMAIL_CONFIG = {
   // Base URL for the application
-  BASE_URL: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL?.replace('/sign-in', '') || 'https://workload-wiz.xyz',
-  
+  BASE_URL:
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL?.replace("/sign-in", "") ||
+    "https://workload-wiz.xyz",
+
   // Sign-in URL
-  SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || 'https://workload-wiz.xyz/sign-in',
-  
+  SIGN_IN_URL:
+    process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ||
+    "https://workload-wiz.xyz/sign-in",
+
   // Dashboard URL
-  DASHBOARD_URL: process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://workload-wiz.xyz/dashboard',
-  
+  DASHBOARD_URL:
+    process.env.NEXT_PUBLIC_DASHBOARD_URL ||
+    "https://workload-wiz.xyz/dashboard",
+
   // Support email
-  SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'support@workload-wiz.xyz',
-  
+  SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || "support@workload-wiz.xyz",
+
   // Company name
-  COMPANY_NAME: process.env.COMPANY_NAME || 'WorkloadWizard',
-  
+  COMPANY_NAME: process.env.COMPANY_NAME || "WorkloadWizard",
+
   // App name
-  APP_NAME: process.env.APP_NAME || 'WorkloadWizard',
+  APP_NAME: process.env.APP_NAME || "WorkloadWizard",
 };
 
 // Get the base URL for emails - should match your sending domain
@@ -32,24 +39,26 @@ const getBaseUrl = () => {
     if (process.env.NEXT_PUBLIC_APP_URL) {
       return process.env.NEXT_PUBLIC_APP_URL;
     }
-    
+
     if (process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL) {
       // Extract base URL from the sign-in URL
       const url = new URL(process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL);
       return `${url.protocol}//${url.host}`;
     }
   } catch {
-    console.warn('Invalid URL in environment variables, falling back to FROM_EMAIL domain');
+    console.warn(
+      "Invalid URL in environment variables, falling back to FROM_EMAIL domain",
+    );
   }
-  
+
   // If FROM_EMAIL is set, try to extract domain
-  if (FROM_EMAIL && FROM_EMAIL.includes('@')) {
-    const domain = FROM_EMAIL.split('@')[1];
+  if (FROM_EMAIL && FROM_EMAIL.includes("@")) {
+    const domain = FROM_EMAIL.split("@")[1];
     return `https://${domain}`;
   }
-  
+
   // Fallback to localhost for development
-  return 'http://localhost:3000';
+  return "http://localhost:3000";
 };
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
@@ -72,51 +81,53 @@ export interface EmailResult {
 }
 
 // Resend email service implementation
-export async function sendUserInvitationEmail(data: UserInvitationEmailData): Promise<EmailResult> {
+export async function sendUserInvitationEmail(
+  data: UserInvitationEmailData,
+): Promise<EmailResult> {
   if (!resend) {
-    console.warn('Resend API key not configured, skipping email send');
-    return { success: false, error: 'Resend not configured' };
+    console.warn("Resend API key not configured, skipping email send");
+    return { success: false, error: "Resend not configured" };
   }
 
   try {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: data.to,
-      subject: 'Welcome to WorkloadWizard - Your Account Details',
+      subject: "Welcome to WorkloadWizard - Your Account Details",
       html: generateInvitationEmailHTML(data),
       text: generateInvitationEmailText(data),
     });
 
     if (result.error) {
-      console.error('Resend email error:', result.error);
+      console.error("Resend email error:", result.error);
       return {
         success: false,
-        error: result.error.message || 'Failed to send email',
+        error: result.error.message || "Failed to send email",
       };
     }
 
     return {
       success: true,
-      messageId: result.data?.id || 'unknown',
+      messageId: result.data?.id || "unknown",
     };
   } catch (error) {
-    console.error('Failed to send invitation email:', error);
+    console.error("Failed to send invitation email:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
 
-
-
 // Email template generators (can be used with any email service)
-export function generateInvitationEmailHTML(data: UserInvitationEmailData): string {
+export function generateInvitationEmailHTML(
+  data: UserInvitationEmailData,
+): string {
   const baseUrl = getBaseUrl();
-  const signInUrl = data.signInUrl.startsWith('http') ? data.signInUrl : `${baseUrl}${data.signInUrl}`;
-  
+  const signInUrl = data.signInUrl.startsWith("http")
+    ? data.signInUrl
+    : `${baseUrl}${data.signInUrl}`;
 
-  
   return `
     <!DOCTYPE html>
     <html>
@@ -144,7 +155,7 @@ export function generateInvitationEmailHTML(data: UserInvitationEmailData): stri
         <div class="content">
           <h2>Hello ${data.firstName} ${data.lastName},</h2>
           
-          <p>Your account has been created by ${data.adminName || 'an administrator'}. Here are your login credentials:</p>
+          <p>Your account has been created by ${data.adminName || "an administrator"}. Here are your login credentials:</p>
           
           <div class="credentials">
             <p><strong>Username:</strong> ${data.username}</p>
@@ -181,16 +192,20 @@ export function generateInvitationEmailHTML(data: UserInvitationEmailData): stri
   `;
 }
 
-export function generateInvitationEmailText(data: UserInvitationEmailData): string {
+export function generateInvitationEmailText(
+  data: UserInvitationEmailData,
+): string {
   const baseUrl = getBaseUrl();
-  const signInUrl = data.signInUrl.startsWith('http') ? data.signInUrl : `${baseUrl}${data.signInUrl}`;
-  
+  const signInUrl = data.signInUrl.startsWith("http")
+    ? data.signInUrl
+    : `${baseUrl}${data.signInUrl}`;
+
   return `
 Welcome to ${EMAIL_CONFIG.APP_NAME}!
 
 Hello ${data.firstName} ${data.lastName},
 
-Your account has been created by ${data.adminName || 'an administrator'}. Here are your login credentials:
+Your account has been created by ${data.adminName || "an administrator"}. Here are your login credentials:
 
 Username: ${data.username}
 Temporary Password: ${data.temporaryPassword}
@@ -213,4 +228,4 @@ The ${EMAIL_CONFIG.COMPANY_NAME} Team
 This is an automated message. Please do not reply to this email.
 If you didn't expect this email, please contact your administrator or email ${EMAIL_CONFIG.SUPPORT_EMAIL}.
   `;
-} 
+}

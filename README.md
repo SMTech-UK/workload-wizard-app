@@ -2,78 +2,72 @@
 
 A comprehensive academic workload management system built with Next.js, Convex, and Clerk authentication.
 
-## 📚 Documentation
-
-- [Permission System Guide](./PERMISSION_SYSTEM_GUIDE.md) - Complete RBAC system documentation
-- [Audit Logging Guide](./AUDIT_LOGGING_GUIDE.md) - Audit system documentation
-- [User Management Setup](./USER_MANAGEMENT_SETUP.md) - User management configuration
-- [User Management Features](./USER_MANAGEMENT_FEATURES.md) - User management capabilities
-- [Password Management Guide](./PASSWORD_MANAGEMENT_GUIDE.md) - Password management system
-- [Email Service Integration](./EMAIL_SERVICE_INTEGRATION_GUIDE.md) - Email service setup
-
-## Getting Started
-
-First, run the development server:
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local # or create and fill from the Env section below
 pnpm dev
-# or
-bun dev
+# App: http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Required environment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Convex
+NEXT_PUBLIC_CONVEX_URL=your_convex_url
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_key
+CLERK_SECRET_KEY=sk_test_your_key
 
-## 🏗️ System Architecture
+# PostHog (optional)
+NEXT_PUBLIC_POSTHOG_KEY=phc_your_api_key_here
+NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 
-### Core Features
+# Email (recommended)
+RESEND_API_KEY=your_resend_api_key
+FROM_EMAIL=system@workload-wiz.xyz
 
-- **🔐 RBAC Permission System**: Granular role-based access control with audit logging
-- **👥 User Management**: Multi-tenant user and organisation management
-- **📊 Academic Workload**: Staff workload planning and management
-- **🔍 Audit Logging**: Comprehensive activity tracking and compliance
-- **📧 Email Integration**: Automated notifications and communications
+# App URLs (for emails)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=http://localhost:3000/sign-in
+```
 
-### Tech Stack
+## Role matrix (default)
 
-- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
-- **Backend**: Convex (real-time database and serverless functions)
-- **Authentication**: Clerk (user management and authentication)
-- **UI Components**: shadcn/ui component library
-- **Deployment**: Vercel platform
+Derived from `src/lib/permissions.ts`.
 
-## 🚀 Key System Components
+- systemadmin: all permissions
+- orgadmin: `users.view`, `users.create`, `users.edit`, `permissions.manage`, `flags.manage`
+- lecturer: `users.view`
 
-### Permission System
-- System-wide permission registry at `/admin/permissions`
-- Organisation-specific role management at `/organisation/roles`
-- Granular permission checking with `hasPermission()` and `requirePermission()`
-- Comprehensive audit logging for all permission changes
+See `src/lib/permissions.ts` for the canonical `PERMISSIONS` and `DEFAULT_ROLES`.
 
-### User Management  
-- Multi-tenant organisation support
-- System and organisation role hierarchy
-- User invitation and onboarding workflows
-- Integration with Clerk authentication
+## Canonical docs
 
-## Learn More
+- Permissions: `./docs/PERMISSIONS.md`
+- Audit: `./docs/AUDIT.md`
+- Email: `./docs/EMAIL.md`
+- Feature Flags: `./docs/FEATURE_FLAGS.md`
+- PostHog: `./docs/POSTHOG.md`
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```json
+{
+  "dev": "concurrently \"next dev --turbopack\" \"convex dev\" \"ngrok http 3000\"",
+  "typecheck": "tsc --noEmit",
+  "lint": "eslint .",
+  "format": "prettier --check .",
+  "test": "vitest run",
+  "build": "next build",
+  "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build"
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- AuthZ helpers live in `src/lib/authz.ts` (`getOrganisationIdFromSession()` etc.)
+- Avoid reading `organisationId` from clients in server routes; derive from session
+- Analytics must go via the proxy wrapper `src/lib/analytics.ts`
