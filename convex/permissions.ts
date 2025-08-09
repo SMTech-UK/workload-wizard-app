@@ -6,6 +6,7 @@ import {
 } from "./_generated/server";
 import { v } from "convex/values";
 import { Id, type Doc } from "./_generated/dataModel";
+import { writeAudit } from "./audit";
 
 /**
  * Check if a user has a specific permission
@@ -496,7 +497,7 @@ export const importSystemPermissions = mutation({
         });
         created++;
         if (args.performedBy) {
-          await ctx.db.insert("audit_logs", {
+          await writeAudit(ctx as MutationCtx, {
             action: "create",
             entityType: "permission",
             entityId: item.id,
@@ -507,7 +508,6 @@ export const importSystemPermissions = mutation({
               : {}),
             details: `Permission imported: ${item.id}`,
             metadata: JSON.stringify(item),
-            timestamp: now,
             severity: "info",
           });
         }
@@ -529,7 +529,7 @@ export const importSystemPermissions = mutation({
         });
         updated++;
         if (args.performedBy) {
-          await ctx.db.insert("audit_logs", {
+          await writeAudit(ctx as MutationCtx, {
             action: "update",
             entityType: "permission",
             entityId: existing.id,
@@ -540,7 +540,6 @@ export const importSystemPermissions = mutation({
               : {}),
             details: `Permission upserted via import: ${existing.id}`,
             metadata: JSON.stringify({ oldValues, newValues: item }),
-            timestamp: now,
             severity: "info",
           });
         }
@@ -607,7 +606,7 @@ export const createSystemPermission = mutation({
 
     // Log audit event
     if (args.performedBy) {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "create",
         entityType: "permission",
         entityId: args.id,
@@ -622,7 +621,6 @@ export const createSystemPermission = mutation({
           description: args.description,
           defaultRoles: args.defaultRoles,
         }),
-        timestamp: now,
         severity: "info",
       });
     }
@@ -681,7 +679,7 @@ export const updateSystemPermission = mutation({
         );
       }
 
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "update",
         entityType: "permission",
         entityId: permission.id,
@@ -699,7 +697,6 @@ export const updateSystemPermission = mutation({
             defaultRoles: args.defaultRoles,
           },
         }),
-        timestamp: now,
         severity: "info",
       });
     }
@@ -882,7 +879,7 @@ export const deleteSystemPermission = mutation({
 
     // Log audit event
     if (args.performedBy) {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "delete",
         entityType: "permission",
         entityId: permission.id,
@@ -901,7 +898,6 @@ export const deleteSystemPermission = mutation({
           group: permission.group,
           description: permission.description,
         }),
-        timestamp: now,
         severity: "warning",
       });
     }
@@ -1055,7 +1051,7 @@ export const pushPermissionsToOrganisations = mutation({
 
     // Log audit event
     if (args.performedBy) {
-      await ctx.db.insert("audit_logs", {
+      await writeAudit(ctx as MutationCtx, {
         action: "permission.pushed",
         entityType: "permission",
         entityId: permission.id,
@@ -1073,7 +1069,6 @@ export const pushPermissionsToOrganisations = mutation({
           alreadyAssigned: matchingRoles - assignmentsCreated,
           defaultRoles: permission.defaultRoles,
         }),
-        timestamp: now,
         severity: "info",
       });
 
@@ -1108,7 +1103,7 @@ export const pushPermissionsToOrganisations = mutation({
             permission.defaultRoles.includes(role.name) &&
             (isApplied || isStaged)
           ) {
-            await ctx.db.insert("audit_logs", {
+            await writeAudit(ctx as MutationCtx, {
               action: args.forceApply
                 ? "permission.assigned"
                 : "permission.staged",
@@ -1131,7 +1126,6 @@ export const pushPermissionsToOrganisations = mutation({
                 viaDefaultRoles: true,
                 staged: !args.forceApply,
               }),
-              timestamp: now,
               severity: args.forceApply ? "info" : "warning",
             });
           }
