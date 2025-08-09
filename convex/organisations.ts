@@ -37,6 +37,8 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = identity?.subject;
     
     const organisationId = await ctx.db.insert("organisations", {
       name: args.name,
@@ -59,6 +61,20 @@ export const create = mutation({
       console.warn("Failed to seed default roles for organisation", organisationId, err);
     }
 
+    // Audit create
+    try {
+      await ctx.db.insert("audit_logs", {
+        action: 'create',
+        entityType: 'organisation',
+        entityId: String(organisationId),
+        entityName: args.name,
+        ...(subject ? { performedBy: subject } : { performedBy: 'system' }),
+        details: `Organisation created (${args.code})`,
+        timestamp: now,
+        severity: 'info',
+      });
+    } catch {}
+
     return organisationId;
   },
 });
@@ -78,11 +94,27 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
     const now = Date.now();
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = identity?.subject ?? 'system';
 
     await ctx.db.patch(id, {
       ...updates,
       updatedAt: now,
     });
+
+    // Audit update
+    try {
+      await ctx.db.insert("audit_logs", {
+        action: 'update',
+        entityType: 'organisation',
+        entityId: String(id),
+        performedBy: subject,
+        details: 'Organisation updated',
+        metadata: JSON.stringify(updates),
+        timestamp: now,
+        severity: 'info',
+      });
+    } catch {}
 
     return id;
   },
@@ -92,11 +124,27 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("organisations") },
   handler: async (ctx, args) => {
+    const now = Date.now();
     await ctx.db.patch(args.id, {
       isActive: false,
       status: "inactive",
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
+
+    // Audit delete
+    try {
+      const identity = await ctx.auth.getUserIdentity();
+      const subject = identity?.subject ?? 'system';
+      await ctx.db.insert("audit_logs", {
+        action: 'delete',
+        entityType: 'organisation',
+        entityId: String(args.id),
+        performedBy: subject,
+        details: 'Organisation deactivated',
+        timestamp: now,
+        severity: 'warning',
+      });
+    } catch {}
 
     return args.id;
   },

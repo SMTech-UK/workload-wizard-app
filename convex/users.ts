@@ -24,6 +24,17 @@ export const create = mutation({
     // Check permissions if userId is provided (for webhook calls, userId is not provided)
     if (args.userId) {
       await requirePermission(ctx, args.userId, "users.invite");
+      // Enforce org scope for non-system actors
+      const actor = await ctx.db
+        .query("users")
+        .withIndex("by_subject", (q) => q.eq("subject", args.userId as string))
+        .first();
+      if (actor) {
+        const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
+        if (!isSystem && String(actor.organisationId) !== String(args.organisationId)) {
+          throw new Error("Unauthorized: Cannot create users outside your organisation");
+        }
+      }
     }
 
     const base = {
@@ -48,6 +59,24 @@ export const create = mutation({
       ...(args.tokenIdentifier ? { tokenIdentifier: args.tokenIdentifier } : {}),
     };
     const userId = await ctx.db.insert("users", { ...base, ...optional });
+
+    // Audit invite/create when initiated by an authenticated actor
+    if (args.userId) {
+      try {
+        await ctx.db.insert("audit_logs", {
+          action: 'user.invited',
+          entityType: 'user',
+          entityId: String(userId),
+          entityName: base.email,
+          performedBy: args.userId,
+          organisationId: base.organisationId,
+          details: `User invited: ${base.email}`,
+          metadata: JSON.stringify({ username: optional.username, systemRoles: base.systemRoles }),
+          timestamp: Date.now(),
+          severity: 'info',
+        });
+      } catch {}
+    }
 
     return userId;
   },
@@ -254,6 +283,21 @@ export const remove = mutation({
       updatedAt: Date.now(),
     });
 
+    // Audit
+    try {
+      await ctx.db.insert("audit_logs", {
+        action: 'deactivate',
+        entityType: 'user',
+        entityId: user.subject,
+        entityName: user.fullName,
+        performedBy: user.subject, // unknown actor at this boundary; UI logs richer context elsewhere
+        organisationId: user.organisationId,
+        details: 'User deactivated',
+        timestamp: Date.now(),
+        severity: 'warning',
+      });
+    } catch {}
+
     return user._id;
   },
 });
@@ -273,6 +317,21 @@ export const hardDelete = mutation({
 
     // Hard delete by removing the user from the database
     await ctx.db.delete(user._id);
+
+    // Audit
+    try {
+      await ctx.db.insert("audit_logs", {
+        action: 'delete',
+        entityType: 'user',
+        entityId: user.subject,
+        entityName: user.fullName,
+        performedBy: user.subject,
+        organisationId: user.organisationId,
+        details: 'User hard deleted',
+        timestamp: Date.now(),
+        severity: 'critical',
+      });
+    } catch {}
 
     return user._id;
   },
