@@ -109,6 +109,9 @@ export default function AdminPermissionsPage() {
   const ensureDefaultsAcrossOrgs = useMutation(
     api.permissions.ensureDefaultRolesAcrossOrganisations,
   );
+  const ensureDefaultsForOrg = useMutation(
+    api.permissions.ensureDefaultRolesForOrganisation,
+  );
   const importPermissions = useMutation(
     api.permissions.importSystemPermissions,
   );
@@ -450,6 +453,52 @@ export default function AdminPermissionsPage() {
       >
         <Upload className="h-4 w-4 mr-2" />
         Seed Defaults
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={async () => {
+          try {
+            if (!convexUser?.organisationId) {
+              alert("No organisation context for current user");
+              return;
+            }
+            const roleNames = customDefaultRoleNames
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            const result = await ensureDefaultsForOrg({
+              organisationId: convexUser.organisationId,
+              ...(user?.id ? { performedBy: user.id } : {}),
+              ...(user?.firstName ||
+              user?.lastName ||
+              user?.emailAddresses?.[0]?.emailAddress
+                ? {
+                    performedByName:
+                      `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+                      (user?.emailAddresses?.[0]?.emailAddress as string),
+                  }
+                : {}),
+              ...(roleNames.length ? { roleNames } : {}),
+            });
+            setSuccessModal({
+              title: "Default Roles Ensured (My Org)",
+              message: `Ensured default roles exist for your organisation`,
+              details: {
+                "Roles Created": result.created,
+              },
+            });
+          } catch (e) {
+            alert(
+              "Failed to ensure default roles for your org: " +
+                (e as Error).message,
+            );
+          }
+        }}
+        title="Ensure default roles exist for your organisation"
+      >
+        <Wand2 className="h-4 w-4 mr-2" />
+        Seed My Org
       </Button>
       <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
         <Upload className="h-4 w-4 mr-2" />
