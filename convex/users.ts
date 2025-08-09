@@ -13,7 +13,9 @@ export const create = mutation({
     familyName: v.string(),
     fullName: v.optional(v.string()),
     systemRoles: v.array(v.string()),
-    organisationId: v.id("organisations"),
+    // Do not trust client org; derive from actor when userId is present.
+    // Keep optional to allow webhook/system calls to provide it explicitly.
+    organisationId: v.optional(v.id("organisations")),
     pictureUrl: v.optional(v.string()),
     subject: v.optional(v.string()),
     tokenIdentifier: v.optional(v.string()),
@@ -22,7 +24,11 @@ export const create = mutation({
     userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Check permissions if userId is provided (for webhook calls, userId is not provided)
+    // If an authenticated actor is performing this (userId present), derive org from the actor
+    // and enforce scope. For webhook calls (no userId), fall back to provided organisationId.
+    let derivedOrganisationId: Id<"organisations"> | undefined =
+      args.organisationId;
+
     if (args.userId) {
       await requirePermission(ctx, args.userId, "users.invite");
       // Enforce org scope for non-system actors
@@ -36,15 +42,22 @@ export const create = mutation({
           actor.systemRoles.some((r: string) =>
             ["admin", "sysadmin", "developer"].includes(r),
           );
-        if (
-          !isSystem &&
-          String(actor.organisationId) !== String(args.organisationId)
-        ) {
-          throw new Error(
-            "Unauthorized: Cannot create users outside your organisation",
-          );
+        // Always derive organisation from the actor when not a system role
+        if (!isSystem)
+          derivedOrganisationId = actor.organisationId as Id<"organisations">;
+        // For system actors, allow explicit organisationId if passed; otherwise default to their org
+        if (isSystem && !derivedOrganisationId) {
+          derivedOrganisationId = actor.organisationId as Id<"organisations">;
         }
       }
+    }
+
+    // For non-actor/system contexts (e.g., webhook), require organisationId to be present
+    if (!derivedOrganisationId) {
+      if (!args.organisationId) {
+        throw new Error("organisationId is required for system/webhook calls");
+      }
+      derivedOrganisationId = args.organisationId as Id<"organisations">;
     }
 
     const base = {
@@ -53,7 +66,7 @@ export const create = mutation({
       familyName: args.familyName,
       fullName: args.fullName || `${args.givenName} ${args.familyName}`,
       systemRoles: args.systemRoles,
-      organisationId: args.organisationId,
+      organisationId: derivedOrganisationId,
       subject: args.subject || "",
       isActive: true,
       createdAt: Date.now(),

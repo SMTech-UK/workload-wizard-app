@@ -91,6 +91,7 @@ export async function syncUsersFromClerk() {
                 ? `${clerkUser.firstName} ${clerkUser.lastName}`
                 : primaryEmail,
             systemRoles: [systemRole],
+            // API accepts optional organisationId for system flows; Convex derives for actor-driven flows
             organisationId: defaultOrganisationId,
             pictureUrl: clerkUser.imageUrl || "",
             subject: clerkUser.id,
