@@ -7,6 +7,23 @@ import {
   logRoleRevokedFromUser,
 } from "@/lib/actions/auditActions";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { z } from "zod";
+
+const BodySchema = z.object({
+  userId: z.string().min(1),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  username: z
+    .string()
+    .min(3)
+    .max(50)
+    .regex(/^[A-Za-z0-9_.-]+$/)
+    .optional(),
+  systemRoles: z.array(z.string()).optional(),
+  isActive: z.boolean().optional(),
+  organisationalRoleId: z.string().optional(),
+  organisationalRoleIds: z.array(z.string()).optional(),
+});
 import { getOrganisationIdFromSession } from "@/lib/authz";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -48,16 +65,11 @@ export async function POST(request: NextRequest) {
       username,
       systemRoles,
       isActive,
-      /* organisationId (ignored) */ organisationalRoleId,
+      organisationalRoleId,
       organisationalRoleIds,
-    } = await request.json();
+    } = BodySchema.parse(await request.json());
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing required field: userId" },
-        { status: 400 },
-      );
-    }
+    // userId existence validated by schema
 
     // Guardrail: orgadmin cannot assign or revoke system-level roles for sysadmin/developer users
     if (isOrgAdmin && Array.isArray(systemRoles)) {

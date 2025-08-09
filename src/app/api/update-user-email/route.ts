@@ -3,8 +3,14 @@ import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { getOrganisationIdFromSession } from "@/lib/authz";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
+import { z } from "zod";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+const BodySchema = z.object({
+  userId: z.string().min(1),
+  newEmail: z.string().email(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,14 +24,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId, newEmail } = await request.json();
+    const { userId, newEmail } = BodySchema.parse(await request.json());
 
-    if (!userId || !newEmail) {
-      return NextResponse.json(
-        { error: "Missing required fields: userId and newEmail" },
-        { status: 400 },
-      );
-    }
+    // validated by schema
 
     // Check if user has appropriate permissions
     const userRole = currentUserData.publicMetadata?.role as string;
@@ -50,14 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newEmail)) {
-      return NextResponse.json(
-        { error: "Invalid email format" },
-        { status: 400 },
-      );
-    }
+    // format validated by schema
 
     // Initialize Clerk client
     const clerk = await clerkClient();

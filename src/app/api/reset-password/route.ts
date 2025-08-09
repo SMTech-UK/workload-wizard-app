@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { getOrganisationIdFromSession } from "@/lib/authz";
 import { createClerkClient } from "@clerk/clerk-sdk-node";
+import { z } from "zod";
+
+const BodySchema = z.object({ userId: z.string().min(1) });
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,14 +35,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId } = await request.json();
+    const { userId } = BodySchema.parse(await request.json());
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing required field: userId" },
-        { status: 400 },
-      );
-    }
+    // validated by schema
 
     // Initialize Clerk client
     const clerk = createClerkClient({
