@@ -44,6 +44,12 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = identity?.subject;
+    if (!subject) throw new Error('Unauthenticated');
+
+    // Authorise actor within org
+    await requireOrgPermission(ctx, subject, 'permissions.manage', String(args.organisationId));
     
     const roleId = await ctx.db.insert("user_roles", {
       name: args.name,
@@ -55,6 +61,20 @@ export const create = mutation({
       isActive: true,
       createdAt: now,
       updatedAt: now,
+    });
+
+    // Audit create
+    await ctx.db.insert("audit_logs", {
+      action: 'role.created',
+      entityType: 'role',
+      entityId: String(roleId),
+      entityName: args.name,
+      performedBy: subject,
+      organisationId: args.organisationId,
+      details: `Created role "${args.name}" with ${args.permissions.length} permission(s)` ,
+      metadata: JSON.stringify({ permissions: args.permissions, isDefault: !!args.isDefault }),
+      timestamp: now,
+      severity: 'info',
     });
 
     return roleId;
@@ -74,9 +94,31 @@ export const update = mutation({
     const { roleId, ...updates } = args;
     const now = Date.now();
 
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = identity?.subject;
+    if (!subject) throw new Error('Unauthenticated');
+
+    const existing = await ctx.db.get(roleId);
+    if (!existing) throw new Error('Role not found');
+    await requireOrgPermission(ctx, subject, 'permissions.manage', String(existing.organisationId));
+
     await ctx.db.patch(roleId, {
       ...updates,
       updatedAt: now,
+    });
+
+    // Audit update
+    await ctx.db.insert("audit_logs", {
+      action: 'role.updated',
+      entityType: 'role',
+      entityId: String(roleId),
+      entityName: updates.name ?? existing.name,
+      performedBy: subject,
+      organisationId: existing.organisationId,
+      details: 'Updated role',
+      metadata: JSON.stringify(updates),
+      timestamp: now,
+      severity: 'info',
     });
 
     return roleId;
@@ -87,9 +129,30 @@ export const update = mutation({
 export const remove = mutation({
   args: { roleId: v.id("user_roles") },
   handler: async (ctx, args) => {
+    const now = Date.now();
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = identity?.subject;
+    if (!subject) throw new Error('Unauthenticated');
+
+    const existing = await ctx.db.get(args.roleId);
+    if (!existing) throw new Error('Role not found');
+    await requireOrgPermission(ctx, subject, 'permissions.manage', String(existing.organisationId));
+
     await ctx.db.patch(args.roleId, {
       isActive: false,
-      updatedAt: Date.now(),
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("audit_logs", {
+      action: 'role.deleted',
+      entityType: 'role',
+      entityId: String(args.roleId),
+      entityName: existing.name,
+      performedBy: subject,
+      organisationId: existing.organisationId,
+      details: `Deleted role "${existing.name}"`,
+      timestamp: now,
+      severity: 'warning',
     });
 
     return args.roleId;
