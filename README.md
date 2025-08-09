@@ -61,6 +61,8 @@ See `src/lib/permissions.ts` for the canonical `PERMISSIONS` and `DEFAULT_ROLES`
   "lint": "eslint .",
   "format": "prettier --check .",
   "test": "vitest run",
+  "test:watch": "vitest --watch",
+  "test:ui": "vitest --ui --open",
   "build": "next build",
   "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build"
 }
