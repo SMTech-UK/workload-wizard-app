@@ -1,7 +1,13 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldX } from 'lucide-react';
-import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ShieldX } from "lucide-react";
+import Link from "next/link";
 
 export default function UnauthorisedPage() {
   return (
@@ -13,7 +19,8 @@ export default function UnauthorisedPage() {
           </div>
           <CardTitle>Access Denied</CardTitle>
           <CardDescription>
-            You don&apos;t have permission to access this page. Please contact your administrator if you believe this is an error.
+            You don&apos;t have permission to access this page. Please contact
+            your administrator if you believe this is an error.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center">
@@ -24,4 +31,4 @@ export default function UnauthorisedPage() {
       </Card>
     </div>
   );
-} 
+}

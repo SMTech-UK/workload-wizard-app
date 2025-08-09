@@ -1,16 +1,22 @@
-"use client"
+"use client";
 
-import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Settings, Plus, Download } from "lucide-react"
+import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Settings, Plus, Download } from "lucide-react";
 
 export default function UIComponentsPage() {
   const breadcrumbs = [
     { label: "Home", href: "/" },
-    { label: "UI Components" }
-  ]
+    { label: "UI Components" },
+  ];
 
   const headerActions = (
     <div className="flex items-center gap-2">
@@ -23,7 +29,7 @@ export default function UIComponentsPage() {
         Add Component
       </Button>
     </div>
-  )
+  );
 
   return (
     <StandardizedSidebarLayout
@@ -40,7 +46,8 @@ export default function UIComponentsPage() {
               <Badge variant="secondary">Active</Badge>
             </div>
             <CardDescription>
-              Standardized sidebar with dynamic breadcrumbs and collapsible navigation
+              Standardized sidebar with dynamic breadcrumbs and collapsible
+              navigation
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -186,7 +193,7 @@ export default function UIComponentsPage() {
           <CardContent>
             <div className="bg-muted/50 p-4 rounded-lg">
               <pre className="text-sm overflow-x-auto">
-{`<StandardizedSidebarLayout
+                {`<StandardizedSidebarLayout
   breadcrumbs={[
     { label: "Home", href: "/" },
     { label: "UI Components" }
@@ -203,5 +210,5 @@ export default function UIComponentsPage() {
         </Card>
       </div>
     </StandardizedSidebarLayout>
-  )
+  );
 }

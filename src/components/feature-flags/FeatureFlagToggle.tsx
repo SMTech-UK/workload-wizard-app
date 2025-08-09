@@ -1,14 +1,23 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, CheckCircle, XCircle } from 'lucide-react';
-import { updateEarlyAccessFeatureEnrollment, checkEarlyAccessFeatureEnrollment } from '@/lib/feature-flags/client';
-import { FeatureFlags } from '@/lib/feature-flags/types';
+import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { RefreshCw, CheckCircle, XCircle } from "lucide-react";
+import {
+  updateEarlyAccessFeatureEnrollment,
+  checkEarlyAccessFeatureEnrollment,
+} from "@/lib/feature-flags/client";
+import { FeatureFlags } from "@/lib/feature-flags/types";
 
 interface FeatureFlagToggleProps {
   flagKey: string;
@@ -27,7 +36,7 @@ export function FeatureFlagToggle({
   isEarlyAccess = false,
   currentStatus = false,
   onStatusChange,
-  disabled = false
+  disabled = false,
 }: FeatureFlagToggleProps) {
   const [isEnabled, setIsEnabled] = useState(currentStatus);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,21 +50,26 @@ export function FeatureFlagToggle({
       if (isEarlyAccess) {
         // For early access features, use PostHog's enrollment system
         await updateEarlyAccessFeatureEnrollment(flagKey, enabled);
-        
+
         // Give PostHog more time to process the change
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
         // Verify the change was applied, but be more lenient
-        const verificationStatus = await checkEarlyAccessFeatureEnrollment(flagKey);
-        console.log(`Verification for ${flagKey}: expected=${enabled}, actual=${verificationStatus}`);
-        
+        const verificationStatus =
+          await checkEarlyAccessFeatureEnrollment(flagKey);
+        console.log(
+          `Verification for ${flagKey}: expected=${enabled}, actual=${verificationStatus}`,
+        );
+
         // Accept the change if verification succeeds OR if it's null (PostHog unavailable)
         if (verificationStatus === enabled || verificationStatus === null) {
           setIsEnabled(enabled);
           setLastUpdated(new Date());
           onStatusChange?.(enabled);
         } else {
-          console.warn(`Verification mismatch for ${flagKey}: expected ${enabled}, got ${verificationStatus}`);
+          console.warn(
+            `Verification mismatch for ${flagKey}: expected ${enabled}, got ${verificationStatus}`,
+          );
           // Don't revert the UI state - trust that the change was applied
           // PostHog can sometimes have delays in reporting the correct status
           setIsEnabled(enabled);
@@ -70,7 +84,7 @@ export function FeatureFlagToggle({
         onStatusChange?.(enabled);
       }
     } catch (error) {
-      console.error('Failed to toggle feature flag:', error);
+      console.error("Failed to toggle feature flag:", error);
       // Don't revert the UI state on error - let the user see the change
       // The actual status will be corrected on the next refresh
       setIsEnabled(enabled);
@@ -93,8 +107,8 @@ export function FeatureFlagToggle({
   };
 
   const getStatusText = () => {
-    if (isLoading) return 'Updating...';
-    return isEnabled ? 'Active' : 'Inactive';
+    if (isLoading) return "Updating...";
+    return isEnabled ? "Active" : "Inactive";
   };
 
   return (
@@ -116,21 +130,21 @@ export function FeatureFlagToggle({
             </Badge>
           </div>
         </div>
-        {description && (
-          <CardDescription>{description}</CardDescription>
-        )}
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <Label htmlFor={`toggle-${flagKey}`} className="text-sm font-medium">
+            <Label
+              htmlFor={`toggle-${flagKey}`}
+              className="text-sm font-medium"
+            >
               Enable {flagName}
             </Label>
             <p className="text-xs text-muted-foreground">
-              {isEarlyAccess 
-                ? 'Opt into this early access feature to try it out'
-                : 'Toggle this feature on or off'
-              }
+              {isEarlyAccess
+                ? "Opt into this early access feature to try it out"
+                : "Toggle this feature on or off"}
             </p>
           </div>
           <Switch

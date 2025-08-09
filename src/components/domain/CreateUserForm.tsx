@@ -1,17 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { X } from 'lucide-react';
-import { createUser } from '@/lib/actions/userActions';
-import { useQuery } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
-import type { Id } from '../../../convex/_generated/dataModel';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { X } from "lucide-react";
+import { createUser } from "@/lib/actions/userActions";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 interface CreateUserFormProps {
   organisationId?: string; // Optional for sysadmin use
@@ -20,22 +32,35 @@ interface CreateUserFormProps {
   isSysadmin?: boolean; // Flag to indicate if this is for sysadmin use
 }
 
-export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysadmin = false }: CreateUserFormProps) {
+export function CreateUserForm({
+  organisationId,
+  onClose,
+  onUserCreated,
+  isSysadmin = false,
+}: CreateUserFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [selectedOrganisationId, setSelectedOrganisationId] = useState(organisationId || null);
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(['user']);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [selectedOrganisationId, setSelectedOrganisationId] = useState(
+    organisationId || null,
+  );
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(["user"]);
   const [selectedOrgRoleIds, setSelectedOrgRoleIds] = useState<string[]>([]);
-  
+
   // Get all organisations for sysadmin use
   const organisations = useQuery(api.organisations.list);
-  
+
   // Get organisational roles for the selected organisation
   const organisationalRoles = useQuery(
-    api.organisationalRoles.listByOrganisation, 
+    api.organisationalRoles.listByOrganisation,
     selectedOrganisationId
-      ? { organisationId: selectedOrganisationId as unknown as Id<'organisations'> }
-      : "skip"
+      ? {
+          organisationId:
+            selectedOrganisationId as unknown as Id<"organisations">,
+        }
+      : "skip",
   );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -44,20 +69,22 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
     setMessage(null);
 
     const formData = new FormData(event.currentTarget);
-    const targetOrganisationId = isSysadmin ? selectedOrganisationId : organisationId;
-    
+    const targetOrganisationId = isSysadmin
+      ? selectedOrganisationId
+      : organisationId;
+
     if (!targetOrganisationId) {
-      setMessage({ type: 'error', text: 'Please select an organisation' });
+      setMessage({ type: "error", text: "Please select an organisation" });
       setIsLoading(false);
       return;
     }
 
     const data = {
-      email: formData.get('email') as string,
-      firstName: formData.get('firstName') as string,
-      lastName: formData.get('lastName') as string,
-      username: formData.get('username') as string,
-      password: '', // Will be auto-generated
+      email: formData.get("email") as string,
+      firstName: formData.get("firstName") as string,
+      lastName: formData.get("lastName") as string,
+      username: formData.get("username") as string,
+      password: "", // Will be auto-generated
       roles: selectedRoles,
       organisationId: targetOrganisationId,
       sendEmailInvitation: true, // Always send email invitation
@@ -66,13 +93,16 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
 
     try {
       await createUser(data);
-      setMessage({ type: 'success', text: 'User created successfully!' });
+      setMessage({ type: "success", text: "User created successfully!" });
       onUserCreated();
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to create user' });
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to create user",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +116,9 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
             <div>
               <CardTitle>Add User</CardTitle>
               <CardDescription>
-                {isSysadmin ? 'Add a new user to any organisation' : 'Add a new user to your organisation'}
+                {isSysadmin
+                  ? "Add a new user to any organisation"
+                  : "Add a new user to your organisation"}
               </CardDescription>
             </div>
             <Button
@@ -113,12 +145,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
 
             <div className="space-y-2">
               <Label htmlFor="lastName">Last Name *</Label>
-              <Input
-                id="lastName"
-                name="lastName"
-                required
-                placeholder="Doe"
-              />
+              <Input id="lastName" name="lastName" required placeholder="Doe" />
             </div>
 
             <div className="space-y-2">
@@ -146,8 +173,8 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
             {isSysadmin && (
               <div className="space-y-2">
                 <Label htmlFor="organisation">Organisation *</Label>
-                <Select 
-                  value={selectedOrganisationId || ''} 
+                <Select
+                  value={selectedOrganisationId || ""}
                   onValueChange={setSelectedOrganisationId}
                   required
                 >
@@ -173,62 +200,91 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="role-user"
-                      checked={selectedRoles.includes('user')}
+                      checked={selectedRoles.includes("user")}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedRoles([...selectedRoles, 'user']);
+                          setSelectedRoles([...selectedRoles, "user"]);
                         } else {
-                          setSelectedRoles(selectedRoles.filter(role => role !== 'user'));
+                          setSelectedRoles(
+                            selectedRoles.filter((role) => role !== "user"),
+                          );
                         }
                       }}
                     />
-                    <Label htmlFor="role-user" className="text-sm font-normal">User</Label>
+                    <Label htmlFor="role-user" className="text-sm font-normal">
+                      User
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="role-orgadmin"
-                      checked={selectedRoles.includes('orgadmin')}
+                      checked={selectedRoles.includes("orgadmin")}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedRoles([...selectedRoles, 'orgadmin']);
+                          setSelectedRoles([...selectedRoles, "orgadmin"]);
                         } else {
-                          setSelectedRoles(selectedRoles.filter(role => role !== 'orgadmin'));
+                          setSelectedRoles(
+                            selectedRoles.filter((role) => role !== "orgadmin"),
+                          );
                         }
                       }}
                     />
-                    <Label htmlFor="role-orgadmin" className="text-sm font-normal">Organisation Admin</Label>
+                    <Label
+                      htmlFor="role-orgadmin"
+                      className="text-sm font-normal"
+                    >
+                      Organisation Admin
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="role-sysadmin"
-                      checked={selectedRoles.includes('sysadmin')}
+                      checked={selectedRoles.includes("sysadmin")}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedRoles([...selectedRoles, 'sysadmin']);
+                          setSelectedRoles([...selectedRoles, "sysadmin"]);
                         } else {
-                          setSelectedRoles(selectedRoles.filter(role => role !== 'sysadmin'));
+                          setSelectedRoles(
+                            selectedRoles.filter((role) => role !== "sysadmin"),
+                          );
                         }
                       }}
                     />
-                    <Label htmlFor="role-sysadmin" className="text-sm font-normal">System Admin</Label>
+                    <Label
+                      htmlFor="role-sysadmin"
+                      className="text-sm font-normal"
+                    >
+                      System Admin
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="role-developer"
-                      checked={selectedRoles.includes('developer')}
+                      checked={selectedRoles.includes("developer")}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedRoles([...selectedRoles, 'developer']);
+                          setSelectedRoles([...selectedRoles, "developer"]);
                         } else {
-                          setSelectedRoles(selectedRoles.filter(role => role !== 'developer'));
+                          setSelectedRoles(
+                            selectedRoles.filter(
+                              (role) => role !== "developer",
+                            ),
+                          );
                         }
                       }}
                     />
-                    <Label htmlFor="role-developer" className="text-sm font-normal">Developer</Label>
+                    <Label
+                      htmlFor="role-developer"
+                      className="text-sm font-normal"
+                    >
+                      Developer
+                    </Label>
                   </div>
                 </div>
                 {selectedRoles.length === 0 && (
-                  <p className="text-sm text-red-600">Please select at least one role</p>
+                  <p className="text-sm text-red-600">
+                    Please select at least one role
+                  </p>
                 )}
               </div>
             )}
@@ -244,8 +300,16 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
                       <button
                         key={role._id}
                         type="button"
-                        onClick={() => setSelectedOrgRoleIds(checked ? selectedOrgRoleIds.filter(id => id !== role._id) : [...selectedOrgRoleIds, role._id])}
-                        className={`px-2 py-1 rounded border text-xs ${checked ? 'bg-slate-900 text-white' : 'bg-white'}`}
+                        onClick={() =>
+                          setSelectedOrgRoleIds(
+                            checked
+                              ? selectedOrgRoleIds.filter(
+                                  (id) => id !== role._id,
+                                )
+                              : [...selectedOrgRoleIds, role._id],
+                          )
+                        }
+                        className={`px-2 py-1 rounded border text-xs ${checked ? "bg-slate-900 text-white" : "bg-white"}`}
                       >
                         {role.name}
                       </button>
@@ -254,20 +318,22 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
                 </div>
                 {(!organisationalRoles || organisationalRoles.length === 0) && (
                   <p className="text-sm text-muted-foreground">
-                    {isSysadmin && !selectedOrganisationId 
-                      ? 'Please select an organisation first' 
-                      : 'No organisational roles found. Please create roles first.'}
+                    {isSysadmin && !selectedOrganisationId
+                      ? "Please select an organisation first"
+                      : "No organisational roles found. Please create roles first."}
                   </p>
                 )}
               </div>
             )}
 
             {message && (
-              <div className={`p-3 rounded-md text-sm ${
-                message.type === 'success' 
-                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  message.type === "success"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}
+              >
                 {message.text}
               </div>
             )}
@@ -283,7 +349,7 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? 'Creating...' : 'Create User'}
+                {isLoading ? "Creating..." : "Create User"}
               </Button>
             </div>
           </form>
@@ -291,4 +357,4 @@ export function CreateUserForm({ organisationId, onClose, onUserCreated, isSysad
       </Card>
     </div>
   );
-} 
+}

@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useUser } from '@clerk/nextjs';
-import { getFeatureFlag } from '@/lib/feature-flags/client';
-import { FeatureFlags } from '@/lib/feature-flags/types';
+import { useEffect, useState, useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
+import { getFeatureFlag } from "@/lib/feature-flags/client";
+import { FeatureFlags } from "@/lib/feature-flags/types";
 
 // Key for local storage overrides
-const LOCAL_FLAG_OVERRIDES_KEY = 'feature-flag-overrides';
+const LOCAL_FLAG_OVERRIDES_KEY = "feature-flag-overrides";
 
 export function usePinkMode() {
   const { user, isLoaded } = useUser();
@@ -24,22 +24,22 @@ export function usePinkMode() {
       // Check if the pink-mode feature is enabled for the user
       const pinkModeResult = await getFeatureFlag(FeatureFlags.PINK_MODE);
       const enabled = pinkModeResult.enabled;
-      
+
       setIsPinkModeEnabled(enabled);
-      
+
       // Apply or remove the pink-mode class from the document
       if (enabled) {
-        document.documentElement.classList.add('pink-mode');
-        console.log('Pink mode enabled');
+        document.documentElement.classList.add("pink-mode");
+        console.log("Pink mode enabled");
       } else {
-        document.documentElement.classList.remove('pink-mode');
-        console.log('Pink mode disabled');
+        document.documentElement.classList.remove("pink-mode");
+        console.log("Pink mode disabled");
       }
     } catch (error) {
-      console.error('Failed to check pink mode status:', error);
+      console.error("Failed to check pink mode status:", error);
       // Default to disabled if there's an error
       setIsPinkModeEnabled(false);
-      document.documentElement.classList.remove('pink-mode');
+      document.documentElement.classList.remove("pink-mode");
     } finally {
       setIsLoading(false);
     }
@@ -52,22 +52,22 @@ export function usePinkMode() {
       if (overridesStr) {
         const overrides = JSON.parse(overridesStr);
         const pinkModeOverride = overrides[FeatureFlags.PINK_MODE];
-        
+
         if (pinkModeOverride !== undefined) {
           const enabled = pinkModeOverride;
           setIsPinkModeEnabled(enabled);
-          
+
           if (enabled) {
-            document.documentElement.classList.add('pink-mode');
-            console.log('Pink mode enabled (from local storage)');
+            document.documentElement.classList.add("pink-mode");
+            console.log("Pink mode enabled (from local storage)");
           } else {
-            document.documentElement.classList.remove('pink-mode');
-            console.log('Pink mode disabled (from local storage)');
+            document.documentElement.classList.remove("pink-mode");
+            console.log("Pink mode disabled (from local storage)");
           }
         }
       }
     } catch (error) {
-      console.error('Failed to check local storage for pink mode:', error);
+      console.error("Failed to check local storage for pink mode:", error);
     }
   }, []);
 
@@ -79,25 +79,28 @@ export function usePinkMode() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === LOCAL_FLAG_OVERRIDES_KEY) {
-        console.log('Local storage changed, checking pink mode...');
+        console.log("Local storage changed, checking pink mode...");
         checkLocalStorage();
       }
     };
 
     // Listen for storage events from other tabs/windows
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
 
     // Also listen for custom events (for same-tab updates)
     const handleCustomStorageChange = () => {
-      console.log('Custom storage event, checking pink mode...');
+      console.log("Custom storage event, checking pink mode...");
       checkLocalStorage();
     };
 
-    window.addEventListener('featureFlagChanged', handleCustomStorageChange);
+    window.addEventListener("featureFlagChanged", handleCustomStorageChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('featureFlagChanged', handleCustomStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(
+        "featureFlagChanged",
+        handleCustomStorageChange,
+      );
     };
   }, [checkLocalStorage]);
 
@@ -107,16 +110,16 @@ export function usePinkMode() {
     try {
       const pinkModeResult = await getFeatureFlag(FeatureFlags.PINK_MODE);
       const enabled = pinkModeResult.enabled;
-      
+
       setIsPinkModeEnabled(enabled);
-      
+
       if (enabled) {
-        document.documentElement.classList.add('pink-mode');
+        document.documentElement.classList.add("pink-mode");
       } else {
-        document.documentElement.classList.remove('pink-mode');
+        document.documentElement.classList.remove("pink-mode");
       }
     } catch (error) {
-      console.error('Failed to refresh pink mode status:', error);
+      console.error("Failed to refresh pink mode status:", error);
     } finally {
       setIsLoading(false);
     }
@@ -125,6 +128,6 @@ export function usePinkMode() {
   return {
     isPinkModeEnabled,
     isLoading,
-    refreshPinkMode
+    refreshPinkMode,
   };
 }

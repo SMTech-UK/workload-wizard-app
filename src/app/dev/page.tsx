@@ -1,86 +1,95 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  TestTube, 
-  Flag, 
-  Activity, 
-  Settings, 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  TestTube,
+  Flag,
+  Activity,
+  Settings,
   Database,
   Users,
   Shield,
   FileText,
-  Palette
-} from 'lucide-react';
-import Link from 'next/link';
-import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
+  Palette,
+} from "lucide-react";
+import Link from "next/link";
+import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout";
 
 const devTools = [
   {
-    title: 'PostHog Test Dashboard',
-    description: 'Comprehensive testing for PostHog events, feature flags, user identification, and proxy configuration',
-    href: '/dev/posthog-test',
+    title: "PostHog Test Dashboard",
+    description:
+      "Comprehensive testing for PostHog events, feature flags, user identification, and proxy configuration",
+    href: "/dev/posthog-test",
     icon: TestTube,
-    status: 'active',
-    category: 'Analytics'
+    status: "active",
+    category: "Analytics",
   },
   {
-    title: 'Feature Flag Management',
-    description: 'Manage and preview all feature flags (PostHog and local) with comprehensive controls',
-    href: '/dev/features',
+    title: "Feature Flag Management",
+    description:
+      "Manage and preview all feature flags (PostHog and local) with comprehensive controls",
+    href: "/dev/features",
     icon: Flag,
-    status: 'active',
-    category: 'Features'
+    status: "active",
+    category: "Features",
   },
   {
-    title: 'Feature Flags Test',
-    description: 'Test feature flag discovery and compare different approaches',
-    href: '/dev/feature-flags-test',
+    title: "Feature Flags Test",
+    description: "Test feature flag discovery and compare different approaches",
+    href: "/dev/feature-flags-test",
     icon: Flag,
-    status: 'active',
-    category: 'Features'
+    status: "active",
+    category: "Features",
   },
   {
-    title: 'Feature Flag Test',
-    description: 'Test feature flags and early access features',
-    href: '/feature-flag-test',
+    title: "Feature Flag Test",
+    description: "Test feature flags and early access features",
+    href: "/feature-flag-test",
     icon: Flag,
-    status: 'active',
-    category: 'Features'
+    status: "active",
+    category: "Features",
   },
   {
-    title: 'Charts Test',
-    description: 'Test chart components and data visualization',
-    href: '/charts-test',
+    title: "Charts Test",
+    description: "Test chart components and data visualization",
+    href: "/charts-test",
     icon: Activity,
-    status: 'active',
-    category: 'UI'
+    status: "active",
+    category: "UI",
   },
   {
-    title: 'Feature Flags Example',
-    description: 'Example usage of feature flags in components',
-    href: '/feature-flags-example',
+    title: "Feature Flags Example",
+    description: "Example usage of feature flags in components",
+    href: "/feature-flags-example",
     icon: Settings,
-    status: 'active',
-    category: 'Features'
+    status: "active",
+    category: "Features",
   },
   {
-    title: 'UI Components',
-    description: 'Test and showcase UI components',
-    href: '/ui',
+    title: "UI Components",
+    description: "Test and showcase UI components",
+    href: "/ui",
     icon: FileText,
-    status: 'active',
-    category: 'UI'
-  }
+    status: "active",
+    category: "UI",
+  },
 ];
 
 const breadcrumbs = [
   { label: "Home", href: "/" },
   { label: "Dev", href: "/dev" },
-]
+];
 
-const categories = ['All', 'Analytics', 'Features', 'UI', 'Database', 'Security'];
+const categories = [
+  "All",
+  "Analytics",
+  "Features",
+  "UI",
+  "Database",
+  "Security",
+];
 
 export default function DevPage() {
   return (
@@ -89,7 +98,6 @@ export default function DevPage() {
       title="Dev Tools"
       subtitle="Testing and development utilities for WorkloadWizard"
     >
-
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -107,7 +115,9 @@ export default function DevPage() {
               <Flag className="h-4 w-4 text-green-500" />
               <span className="text-sm font-medium">Active</span>
             </div>
-            <p className="text-2xl font-bold">{devTools.filter(tool => tool.status === 'active').length}</p>
+            <p className="text-2xl font-bold">
+              {devTools.filter((tool) => tool.status === "active").length}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -124,7 +134,7 @@ export default function DevPage() {
       {/* Development Tools */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Available Tools</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {devTools.map((tool) => (
             <Card key={tool.href} className="hover:shadow-md transition-shadow">
@@ -134,7 +144,9 @@ export default function DevPage() {
                     <tool.icon className="h-5 w-5 text-blue-500" />
                     <CardTitle className="text-base">{tool.title}</CardTitle>
                   </div>
-                  <Badge variant={tool.status === 'active' ? 'default' : 'secondary'}>
+                  <Badge
+                    variant={tool.status === "active" ? "default" : "secondary"}
+                  >
                     {tool.status}
                   </Badge>
                 </div>
@@ -147,9 +159,7 @@ export default function DevPage() {
                   {tool.description}
                 </p>
                 <Button asChild size="sm" className="w-full">
-                  <Link href={tool.href}>
-                    Open Tool
-                  </Link>
+                  <Link href={tool.href}>Open Tool</Link>
                 </Button>
               </CardContent>
             </Card>

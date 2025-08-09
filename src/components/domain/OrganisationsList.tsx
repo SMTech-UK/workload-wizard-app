@@ -1,23 +1,36 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
-import type { Id } from '../../../convex/_generated/dataModel';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, RefreshCw, Edit } from 'lucide-react';
-import { EditOrganisationForm } from './EditOrganisationForm';
-import { toast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Trash2, RefreshCw, Edit } from "lucide-react";
+import { EditOrganisationForm } from "./EditOrganisationForm";
+import { toast } from "@/hooks/use-toast";
 
 export function OrganisationsList() {
   const organisations = useQuery(api.organisations.list);
   const deleteOrganisation = useMutation(api.organisations.remove);
-  const [editingOrganisation, setEditingOrganisation] = useState<any>(null);  
+  const [editingOrganisation, setEditingOrganisation] = useState<any>(null);
 
   // Handle case where Convex might not be ready
-  if (organisations === undefined && typeof window !== 'undefined') {
+  if (organisations === undefined && typeof window !== "undefined") {
     return (
       <Card>
         <CardContent className="p-6">
@@ -31,16 +44,23 @@ export function OrganisationsList() {
   }
 
   const handleDeleteOrganisation = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this organisation?')) return;
-    
+    if (!confirm("Are you sure you want to delete this organisation?")) return;
+
     try {
-      await deleteOrganisation({ id: id as unknown as Id<'organisations'> });
+      await deleteOrganisation({ id: id as unknown as Id<"organisations"> });
     } catch (err) {
-      toast.error('Failed to delete organisation', err instanceof Error ? err.message : undefined);
+      toast.error(
+        "Failed to delete organisation",
+        err instanceof Error ? err.message : undefined,
+      );
     }
   };
 
-  const handleEditOrganisation = (organisation: { _id: string; name: string; code: string }) => {
+  const handleEditOrganisation = (organisation: {
+    _id: string;
+    name: string;
+    code: string;
+  }) => {
     setEditingOrganisation(organisation);
   };
 
@@ -75,7 +95,9 @@ export function OrganisationsList() {
       <Card>
         <CardHeader>
           <CardTitle>Organisations</CardTitle>
-          <CardDescription>Manage all organisations in the system</CardDescription>
+          <CardDescription>
+            Manage all organisations in the system
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -93,7 +115,10 @@ export function OrganisationsList() {
               <TableBody>
                 {organisations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-muted-foreground"
+                    >
                       No organisations found
                     </TableCell>
                   </TableRow>
@@ -102,16 +127,19 @@ export function OrganisationsList() {
                     <TableRow key={org._id}>
                       <TableCell className="font-medium">{org.name}</TableCell>
                       <TableCell>{org.code}</TableCell>
-                      <TableCell>{org.contactEmail || 'N/A'}</TableCell>
+                      <TableCell>{org.contactEmail || "N/A"}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          org.status === 'active' 
-                            ? 'bg-green-100 text-green-800'
-                            : org.status === 'inactive'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {org.status.charAt(0).toUpperCase() + org.status.slice(1)}
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            org.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : org.status === "inactive"
+                                ? "bg-gray-100 text-gray-800"
+                                : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {org.status.charAt(0).toUpperCase() +
+                            org.status.slice(1)}
                         </span>
                       </TableCell>
                       <TableCell>{formatDate(org.createdAt)}</TableCell>
@@ -156,4 +184,4 @@ export function OrganisationsList() {
       )}
     </>
   );
-} 
+}

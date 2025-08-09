@@ -1,7 +1,7 @@
 // Main feature flag exports
-export * from './types';
-export * from './config';
-export * from './client';
+export * from "./types";
+export * from "./config";
+export * from "./client";
 // Server exports are only available server-side
 // export * from './server';
 
@@ -11,7 +11,7 @@ export {
   getFeatureFlags,
   isFeatureFlagEnabled,
   clearFeatureFlagCache,
-} from './client';
+} from "./client";
 
 // Server functions are only available server-side
 // export {
@@ -21,12 +21,10 @@ export {
 //   closePostHogServer,
 // } from './server';
 
-export {
-  FeatureFlags,
-} from './types';
+export { FeatureFlags } from "./types";
 
 export {
   getFeatureFlagConfig,
   getAllFeatureFlagConfigs,
   isValidFeatureFlag,
-} from './config';
+} from "./config";

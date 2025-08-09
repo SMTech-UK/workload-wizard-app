@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useUser } from '@clerk/nextjs';
+import { useUser } from "@clerk/nextjs";
 
-import { HomePlaceholder } from '@/components/common/PlaceholderPage';
+import { HomePlaceholder } from "@/components/common/PlaceholderPage";
 
 export default function DashboardPage() {
   const { isLoaded } = useUser();
@@ -15,7 +15,5 @@ export default function DashboardPage() {
     );
   }
 
-  return (
-      <HomePlaceholder />
-  );
+  return <HomePlaceholder />;
 }

@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { scrubPII } from '@/lib/analytics';
+import { describe, it, expect } from "vitest";
+import { scrubPII } from "@/lib/analytics";
 
-describe('analytics scrubPII', () => {
-  it('drops PII keys and preserves safe primitives', () => {
+describe("analytics scrubPII", () => {
+  it("drops PII keys and preserves safe primitives", () => {
     const input = {
-      email: 'user@example.com',
-      name: 'Jane Doe',
-      firstName: 'Jane',
-      lastName: 'Doe',
-      role: 'sysadmin',
+      email: "user@example.com",
+      name: "Jane Doe",
+      firstName: "Jane",
+      lastName: "Doe",
+      role: "sysadmin",
       count: 3,
       enabled: true,
       nothing: null,
@@ -20,7 +20,7 @@ describe('analytics scrubPII', () => {
     expect(out.name).toBeUndefined();
     expect(out.firstName).toBeUndefined();
     expect(out.lastName).toBeUndefined();
-    expect(out.role).toBe('sysadmin');
+    expect(out.role).toBe("sysadmin");
     expect(out.count).toBe(3);
     expect(out.enabled).toBe(true);
     expect(out.nothing).toBeNull();
@@ -28,5 +28,3 @@ describe('analytics scrubPII', () => {
     expect(out.arr).toBeUndefined();
   });
 });
-
-

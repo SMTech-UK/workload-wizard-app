@@ -1,17 +1,29 @@
-'use client';
+"use client";
 
-import posthog from 'posthog-js';
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { X, Key } from 'lucide-react';
-import { useQuery } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
-import type { Id } from '../../../convex/_generated/dataModel';
+import posthog from "posthog-js";
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { X, Key } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 interface User {
   _id?: string;
@@ -46,34 +58,49 @@ interface EditUserFormProps {
   isSysadmin?: boolean; // Flag to indicate if this is for sysadmin use
 }
 
-export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false }: EditUserFormProps) {
+export function EditUserForm({
+  user,
+  onClose,
+  onUserUpdated,
+  isSysadmin = false,
+}: EditUserFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [selectedOrganisationId, setSelectedOrganisationId] = useState(user.organisationId);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [selectedOrganisationId, setSelectedOrganisationId] = useState(
+    user.organisationId,
+  );
   const [selectedRoles, setSelectedRoles] = useState<string[]>(
-    user.systemRoles || user.roles || []
+    user.systemRoles || user.roles || [],
   );
   const [selectedOrgRoleIds, setSelectedOrgRoleIds] = useState<string[]>([]);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Get all organisations for sysadmin use
   const organisations = useQuery(api.organisations.list);
-  
+
   // Get organisational roles for the selected organisation
   const organisationalRoles = useQuery(
-    api.organisationalRoles.listByOrganisation, 
+    api.organisationalRoles.listByOrganisation,
     selectedOrganisationId
-      ? { organisationId: selectedOrganisationId as unknown as Id<'organisations'> }
-      : "skip"
+      ? {
+          organisationId:
+            selectedOrganisationId as unknown as Id<"organisations">,
+        }
+      : "skip",
   );
 
   useEffect(() => {
-    const incoming = ((user as unknown as { organisationalRoles?: { id: string }[] }).organisationalRoles || []).map((r) => r.id);
+    const incoming = (
+      (user as unknown as { organisationalRoles?: { id: string }[] })
+        .organisationalRoles || []
+    ).map((r) => r.id);
     setSelectedOrgRoleIds(incoming);
   }, [user]);
-
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,10 +109,10 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
 
     const formData = new FormData(event.currentTarget);
     const data = {
-      firstName: formData.get('firstName') as string,
-      lastName: formData.get('lastName') as string,
-      username: formData.get('username') as string,
-      email: formData.get('email') as string,
+      firstName: formData.get("firstName") as string,
+      lastName: formData.get("lastName") as string,
+      username: formData.get("username") as string,
+      email: formData.get("email") as string,
       systemRoles: selectedRoles,
       organisationalRoleIds: selectedOrgRoleIds,
       organisationId: isSysadmin ? selectedOrganisationId : user.organisationId,
@@ -94,31 +121,30 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
     try {
       // Update user details in both Clerk and Convex
       const updatePromises = [];
-      
+
       // Check if email has changed
       const emailChanged = data.email && data.email.trim() !== user.email;
 
       if (user.subject) {
-        
         if (emailChanged) {
           // If email changed, use the email update API
           updatePromises.push(
-            fetch('/api/update-user-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+            fetch("/api/update-user-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 userId: user.subject,
                 newEmail: data.email.trim(),
               }),
-            })
+            }),
           );
         }
 
         // Update other user details (excluding email if it's being updated separately)
         updatePromises.push(
-          fetch('/api/update-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          fetch("/api/update-user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               userId: user.subject,
               firstName: data.firstName,
@@ -129,33 +155,33 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
               organisationId: data.organisationId,
               // Don't include email - it's handled separately if changed
             }),
-          })
+          }),
         );
       }
 
       // Execute all updates in parallel
       const responses = await Promise.all(updatePromises);
-      
+
       // Check if any updates failed
       for (const response of responses) {
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to update user');
+          throw new Error(errorData.error || "Failed to update user");
         }
       }
 
-      posthog.capture('user-details-updated', {
+      posthog.capture("user-details-updated", {
         user_id: user.subject,
         email_changed: emailChanged,
         is_sysadmin: isSysadmin,
       });
 
-      const successMessage = emailChanged 
-        ? 'User updated successfully! Email has been updated and verified.' 
-        : 'User updated successfully!';
-      setMessage({ type: 'success', text: successMessage });
+      const successMessage = emailChanged
+        ? "User updated successfully! Email has been updated and verified."
+        : "User updated successfully!";
+      setMessage({ type: "success", text: successMessage });
       onUserUpdated();
-      
+
       // Close modal after showing success message
       timeoutRef.current = setTimeout(() => {
         onClose();
@@ -166,7 +192,10 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update user' });
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to update user",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -174,7 +203,10 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
 
   async function handleResetPassword() {
     if (!user.subject) {
-      setMessage({ type: 'error', text: 'Cannot reset password: User not found in Clerk' });
+      setMessage({
+        type: "error",
+        text: "Cannot reset password: User not found in Clerk",
+      });
       return;
     }
 
@@ -182,10 +214,10 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
     setMessage(null);
 
     try {
-      const response = await fetch('/api/reset-password', {
-        method: 'POST',
+      const response = await fetch("/api/reset-password", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: user.subject,
@@ -193,29 +225,34 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send password reset email');
+        throw new Error("Failed to send password reset email");
       }
 
-      posthog.capture('user-password-reset-initiated', {
+      posthog.capture("user-password-reset-initiated", {
         user_id: user.subject,
         is_sysadmin: isSysadmin,
       });
 
       const result = await response.json();
-      setMessage({ 
-        type: 'success', 
-        text: result.action === 'password_disabled' 
-          ? `✅ Password disabled for ${result.userEmail}. User must use "Forgot Password?" on the sign-in page to set a new password.`
-          : result.message 
+      setMessage({
+        type: "success",
+        text:
+          result.action === "password_disabled"
+            ? `✅ Password disabled for ${result.userEmail}. User must use "Forgot Password?" on the sign-in page to set a new password.`
+            : result.message,
       });
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to send password reset email' });
+      setMessage({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Failed to send password reset email",
+      });
     } finally {
       setIsResettingPassword(false);
     }
   }
-
-
 
   return (
     <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/20 flex items-center justify-center z-50">
@@ -244,7 +281,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
                 id="firstName"
                 name="firstName"
                 required
-                defaultValue={user.givenName || user.firstName || ''}
+                defaultValue={user.givenName || user.firstName || ""}
                 placeholder="John"
               />
             </div>
@@ -255,7 +292,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
                 id="lastName"
                 name="lastName"
                 required
-                defaultValue={user.familyName || user.lastName || ''}
+                defaultValue={user.familyName || user.lastName || ""}
                 placeholder="Doe"
               />
             </div>
@@ -266,7 +303,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
                 id="username"
                 name="username"
                 placeholder="username"
-                defaultValue={user.username || ''}
+                defaultValue={user.username || ""}
               />
               <p className="text-xs text-muted-foreground">
                 3-20 characters, letters, numbers, underscore, or dash only
@@ -289,8 +326,8 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
             {isSysadmin && (
               <div className="space-y-2">
                 <Label htmlFor="organisation">Organisation *</Label>
-                <Select 
-                  value={selectedOrganisationId || ''} 
+                <Select
+                  value={selectedOrganisationId || ""}
                   onValueChange={setSelectedOrganisationId}
                   required
                 >
@@ -314,66 +351,95 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="role-user"
-                    checked={selectedRoles.includes('user')}
+                    checked={selectedRoles.includes("user")}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedRoles([...selectedRoles, 'user']);
+                        setSelectedRoles([...selectedRoles, "user"]);
                       } else {
-                        setSelectedRoles(selectedRoles.filter(role => role !== 'user'));
+                        setSelectedRoles(
+                          selectedRoles.filter((role) => role !== "user"),
+                        );
                       }
                     }}
                   />
-                  <Label htmlFor="role-user" className="text-sm font-normal">User</Label>
+                  <Label htmlFor="role-user" className="text-sm font-normal">
+                    User
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="role-orgadmin"
-                    checked={selectedRoles.includes('orgadmin')}
+                    checked={selectedRoles.includes("orgadmin")}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedRoles([...selectedRoles, 'orgadmin']);
+                        setSelectedRoles([...selectedRoles, "orgadmin"]);
                       } else {
-                        setSelectedRoles(selectedRoles.filter(role => role !== 'orgadmin'));
+                        setSelectedRoles(
+                          selectedRoles.filter((role) => role !== "orgadmin"),
+                        );
                       }
                     }}
                   />
-                  <Label htmlFor="role-orgadmin" className="text-sm font-normal">Organisation Admin</Label>
+                  <Label
+                    htmlFor="role-orgadmin"
+                    className="text-sm font-normal"
+                  >
+                    Organisation Admin
+                  </Label>
                 </div>
                 {isSysadmin && (
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="role-sysadmin"
-                      checked={selectedRoles.includes('sysadmin')}
+                      checked={selectedRoles.includes("sysadmin")}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedRoles([...selectedRoles, 'sysadmin']);
+                          setSelectedRoles([...selectedRoles, "sysadmin"]);
                         } else {
-                          setSelectedRoles(selectedRoles.filter(role => role !== 'sysadmin'));
+                          setSelectedRoles(
+                            selectedRoles.filter((role) => role !== "sysadmin"),
+                          );
                         }
                       }}
                     />
-                    <Label htmlFor="role-sysadmin" className="text-sm font-normal">System Admin</Label>
+                    <Label
+                      htmlFor="role-sysadmin"
+                      className="text-sm font-normal"
+                    >
+                      System Admin
+                    </Label>
                   </div>
                 )}
                 {isSysadmin && (
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="role-developer"
-                      checked={selectedRoles.includes('developer')}
+                      checked={selectedRoles.includes("developer")}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedRoles([...selectedRoles, 'developer']);
+                          setSelectedRoles([...selectedRoles, "developer"]);
                         } else {
-                          setSelectedRoles(selectedRoles.filter(role => role !== 'developer'));
+                          setSelectedRoles(
+                            selectedRoles.filter(
+                              (role) => role !== "developer",
+                            ),
+                          );
                         }
                       }}
                     />
-                    <Label htmlFor="role-developer" className="text-sm font-normal">Developer</Label>
+                    <Label
+                      htmlFor="role-developer"
+                      className="text-sm font-normal"
+                    >
+                      Developer
+                    </Label>
                   </div>
                 )}
               </div>
               {selectedRoles.length === 0 && (
-                <p className="text-sm text-red-600">Please select at least one role</p>
+                <p className="text-sm text-red-600">
+                  Please select at least one role
+                </p>
               )}
             </div>
 
@@ -386,8 +452,14 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
                     <button
                       key={role._id}
                       type="button"
-                      onClick={() => setSelectedOrgRoleIds(checked ? selectedOrgRoleIds.filter(id => id !== role._id) : [...selectedOrgRoleIds, role._id])}
-                      className={`px-2 py-1 rounded border text-xs ${checked ? 'bg-slate-900 text-white' : 'bg-white'}`}
+                      onClick={() =>
+                        setSelectedOrgRoleIds(
+                          checked
+                            ? selectedOrgRoleIds.filter((id) => id !== role._id)
+                            : [...selectedOrgRoleIds, role._id],
+                        )
+                      }
+                      className={`px-2 py-1 rounded border text-xs ${checked ? "bg-slate-900 text-white" : "bg-white"}`}
                     >
                       {role.name}
                     </button>
@@ -397,9 +469,9 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
             </div>
             {(!organisationalRoles || organisationalRoles.length === 0) && (
               <p className="text-sm text-muted-foreground">
-                {isSysadmin && !selectedOrganisationId 
-                  ? 'Please select an organisation first' 
-                  : 'No organisational roles found for this organisation.'}
+                {isSysadmin && !selectedOrganisationId
+                  ? "Please select an organisation first"
+                  : "No organisational roles found for this organisation."}
               </p>
             )}
 
@@ -416,7 +488,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
                   disabled={true}
                 >
                   <Key className="w-4 h-4 mr-2" />
-                  {isResettingPassword ? 'Sending...' : 'Coming Soon'}
+                  {isResettingPassword ? "Sending..." : "Coming Soon"}
                 </Button>
                 <p className="text-xs text-muted-foreground">
                   Sends a password reset code via email to {user.email}
@@ -425,11 +497,13 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
             </div>
 
             {message && (
-              <div className={`p-3 rounded-md text-sm ${ 
-                message.type === 'success' 
-                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  message.type === "success"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}
+              >
                 {message.text}
               </div>
             )}
@@ -445,7 +519,7 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? 'Updating...' : 'Update User'}
+                {isLoading ? "Updating..." : "Update User"}
               </Button>
             </div>
           </form>
@@ -453,4 +527,4 @@ export function EditUserForm({ user, onClose, onUserUpdated, isSysadmin = false 
       </Card>
     </div>
   );
-} 
+}

@@ -1,31 +1,37 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { StandardizedSidebarLayout } from '@/components/layout/StandardizedSidebarLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
-import { 
+import { useState } from "react";
+import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -35,21 +41,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Save, 
-  X, 
-  Paperclip,
-  Settings
-} from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useMutation, useQuery } from 'convex/react';
-import type { Id } from '../../../../convex/_generated/dataModel';
-import { api } from '../../../../convex/_generated/api';
-import { useUser } from '@clerk/nextjs';
+} from "@/components/ui/alert-dialog";
+import { Plus, Edit, Trash2, Save, X, Paperclip, Settings } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useMutation, useQuery } from "convex/react";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import { api } from "../../../../convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
 
 interface Role {
   _id: string;
@@ -76,7 +78,7 @@ interface RoleWithPermissions extends Role {
     description: string;
     isGranted: boolean;
     isOverride: boolean;
-    source: 'system_default' | 'custom';
+    source: "system_default" | "custom";
   }>;
 }
 
@@ -86,32 +88,39 @@ export default function OrganisationRolesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  
+
   // Form state
-  const [roleName, setRoleName] = useState('');
-  const [roleDescription, setRoleDescription] = useState('');
+  const [roleName, setRoleName] = useState("");
+  const [roleDescription, setRoleDescription] = useState("");
 
   // Get current user's organisation
-  const currentUser = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
+  const currentUser = useQuery(
+    api.users.getBySubject,
+    user?.id ? { subject: user.id } : "skip",
+  );
 
-  // Get organisation roles (skip until orgId is available)
+  // Get organisation roles (server derives org from actor)
   const organisationRoles = useQuery(
     api.permissions.getOrganisationRoles,
-    currentUser?.organisationId ? { organisationId: currentUser.organisationId as unknown as Id<'organisations'> } : 'skip'
+    currentUser?.organisationId ? {} : "skip",
   );
 
   // Get system permissions
   const systemPermissions = useQuery(api.permissions.getSystemPermissions);
   const stagedForRole = useQuery(
     api.permissions.getOrganisationPermissions,
-    editingRole?._id ? { roleId: editingRole._id as unknown as Id<'user_roles'> } : 'skip'
+    editingRole?._id
+      ? { roleId: editingRole._id as unknown as Id<"user_roles"> }
+      : "skip",
   );
 
   // Mutations
   const createRole = useMutation(api.permissions.createOrganisationRole);
   const updateRole = useMutation(api.permissions.updateOrganisationRole);
   const deleteRole = useMutation(api.permissions.deleteOrganisationRole);
-  const updateRolePermissions = useMutation(api.permissions.updateRolePermissions);
+  const updateRolePermissions = useMutation(
+    api.permissions.updateRolePermissions,
+  );
 
   const handleCreateRole = async () => {
     if (!roleName.trim() || !currentUser?.organisationId) return;
@@ -119,26 +128,33 @@ export default function OrganisationRolesPage() {
     try {
       await createRole({
         name: roleName.trim(),
-        ...(roleDescription.trim() ? { description: roleDescription.trim() } : {}),
-        organisationId: currentUser.organisationId,
+        ...(roleDescription.trim()
+          ? { description: roleDescription.trim() }
+          : {}),
         permissions: selectedPermissions,
         ...(user?.id ? { performedBy: user.id } : {}),
-        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
+        ...(user?.fullName || user?.emailAddresses?.[0]?.emailAddress
+          ? {
+              performedByName:
+                user?.fullName ||
+                (user?.emailAddresses?.[0]?.emailAddress as string),
+            }
+          : {}),
       });
 
-      setRoleName('');
-      setRoleDescription('');
+      setRoleName("");
+      setRoleDescription("");
       setSelectedPermissions([]);
       setIsCreateDialogOpen(false);
     } catch (error) {
-      console.error('Error creating role:', error);
+      console.error("Error creating role:", error);
     }
   };
 
   const handleEditRole = (role: Role) => {
     setEditingRole(role);
     setRoleName(role.name);
-    setRoleDescription(role.description || '');
+    setRoleDescription(role.description || "");
     setSelectedPermissions(role.permissions);
     setIsEditDialogOpen(true);
   };
@@ -148,75 +164,110 @@ export default function OrganisationRolesPage() {
 
     try {
       await updateRole({
-        roleId: editingRole._id as unknown as Id<'user_roles'>,
+        roleId: editingRole._id as unknown as Id<"user_roles">,
         name: roleName.trim(),
-        ...(roleDescription.trim() ? { description: roleDescription.trim() } : {}),
+        ...(roleDescription.trim()
+          ? { description: roleDescription.trim() }
+          : {}),
         permissions: selectedPermissions,
         ...(user?.id ? { performedBy: user.id } : {}),
-        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
+        ...(user?.fullName || user?.emailAddresses?.[0]?.emailAddress
+          ? {
+              performedByName:
+                user?.fullName ||
+                (user?.emailAddresses?.[0]?.emailAddress as string),
+            }
+          : {}),
       });
 
       setEditingRole(null);
-      setRoleName('');
-      setRoleDescription('');
+      setRoleName("");
+      setRoleDescription("");
       setSelectedPermissions([]);
       setIsEditDialogOpen(false);
     } catch (error) {
-      console.error('Error updating role:', error);
+      console.error("Error updating role:", error);
     }
   };
 
   const handleDeleteRole = async (roleId: string) => {
     try {
-      await deleteRole({ 
-        roleId: roleId as unknown as Id<'user_roles'>,
+      await deleteRole({
+        roleId: roleId as unknown as Id<"user_roles">,
         ...(user?.id ? { performedBy: user.id } : {}),
-        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
+        ...(user?.fullName || user?.emailAddresses?.[0]?.emailAddress
+          ? {
+              performedByName:
+                user?.fullName ||
+                (user?.emailAddresses?.[0]?.emailAddress as string),
+            }
+          : {}),
       });
     } catch (error) {
-      console.error('Error deleting role:', error);
+      console.error("Error deleting role:", error);
     }
   };
 
-  const handlePermissionToggle = async (roleId: string, permissionId: string, isGranted: boolean, acceptStaged?: boolean) => {
+  const handlePermissionToggle = async (
+    roleId: string,
+    permissionId: string,
+    isGranted: boolean,
+    acceptStaged?: boolean,
+  ) => {
     try {
       await updateRolePermissions({
-        roleId: roleId as unknown as Id<'user_roles'>,
+        roleId: roleId as unknown as Id<"user_roles">,
         permissionId,
         isGranted,
         ...(acceptStaged ? { acceptStaged: !!acceptStaged } : {}),
         ...(user?.id ? { performedBy: user.id } : {}),
-        ...((user?.fullName || user?.emailAddresses?.[0]?.emailAddress) ? { performedByName: (user?.fullName || (user?.emailAddresses?.[0]?.emailAddress as string)) } : {}),
+        ...(user?.fullName || user?.emailAddresses?.[0]?.emailAddress
+          ? {
+              performedByName:
+                user?.fullName ||
+                (user?.emailAddresses?.[0]?.emailAddress as string),
+            }
+          : {}),
       });
     } catch (error) {
-      console.error('Error updating permission:', error);
+      console.error("Error updating permission:", error);
     }
   };
 
-  const [confirmApply, setConfirmApply] = useState<{ roleId: string; permissionId: string; details: { id: string; group: string; description: string } } | null>(null);
+  const [confirmApply, setConfirmApply] = useState<{
+    roleId: string;
+    permissionId: string;
+    details: { id: string; group: string; description: string };
+  } | null>(null);
 
   const getPermissionSource = (roleName: string, permissionId: string) => {
-    const permission = systemPermissions?.find(p => p.id === permissionId);
-    if (!permission) return 'custom';
-    
-    return permission.defaultRoles.includes(roleName) ? 'system_default' : 'custom';
+    const permission = systemPermissions?.find((p) => p.id === permissionId);
+    if (!permission) return "custom";
+
+    return permission.defaultRoles.includes(roleName)
+      ? "system_default"
+      : "custom";
   };
 
   const getPermissionDetails = (role: Role): RoleWithPermissions => {
-    const permissionDetails = systemPermissions?.map(perm => {
-      const isGranted = role.permissions.includes(perm.id);
-      const source: 'system_default' | 'custom' = getPermissionSource(role.name, perm.id) === 'system_default' ? 'system_default' : 'custom';
-      const isOverride = source === 'custom' && isGranted;
-      
-      return {
-        id: perm.id,
-        group: perm.group,
-        description: perm.description,
-        isGranted,
-        isOverride,
-        source,
-      };
-    }) || [];
+    const permissionDetails =
+      systemPermissions?.map((perm) => {
+        const isGranted = role.permissions.includes(perm.id);
+        const source: "system_default" | "custom" =
+          getPermissionSource(role.name, perm.id) === "system_default"
+            ? "system_default"
+            : "custom";
+        const isOverride = source === "custom" && isGranted;
+
+        return {
+          id: perm.id,
+          group: perm.group,
+          description: perm.description,
+          isGranted,
+          isOverride,
+          source,
+        };
+      }) || [];
 
     return {
       ...role,
@@ -237,7 +288,7 @@ export default function OrganisationRolesPage() {
   const breadcrumbs = [
     { label: "Home", href: "/" },
     { label: "Organisation", href: "/organisation" },
-    { label: "Roles" }
+    { label: "Roles" },
   ];
 
   const headerActions = (
@@ -256,79 +307,89 @@ export default function OrganisationRolesPage() {
       subtitle="Manage roles and permissions for your organisation"
       headerActions={headerActions}
     >
-        
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Role
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create New Role</DialogTitle>
-              <DialogDescription>
-                Create a new role with specific permissions
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="roleName">Role Name</Label>
-                <Input
-                  id="roleName"
-                  value={roleName}
-                  onChange={(e) => setRoleName(e.target.value)}
-                  placeholder="e.g., Department Head"
-                />
-              </div>
-              <div>
-                <Label htmlFor="roleDescription">Description</Label>
-                <Textarea
-                  id="roleDescription"
-                  value={roleDescription}
-                  onChange={(e) => setRoleDescription(e.target.value)}
-                  placeholder="Describe the role's responsibilities"
-                />
-              </div>
-              <div>
-                <Label>Permissions</Label>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {systemPermissions?.map((permission) => (
-                    <div key={permission.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={permission.id}
-                        checked={selectedPermissions.includes(permission.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedPermissions([...selectedPermissions, permission.id]);
-                          } else {
-                            setSelectedPermissions(selectedPermissions.filter(p => p !== permission.id));
-                          }
-                        }}
-                      />
-                      <Label htmlFor={permission.id} className="text-sm">
-                        {permission.description}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateRole}>
-                  Create Role
-                </Button>
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Role
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Role</DialogTitle>
+            <DialogDescription>
+              Create a new role with specific permissions
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="roleName">Role Name</Label>
+              <Input
+                id="roleName"
+                value={roleName}
+                onChange={(e) => setRoleName(e.target.value)}
+                placeholder="e.g., Department Head"
+              />
+            </div>
+            <div>
+              <Label htmlFor="roleDescription">Description</Label>
+              <Textarea
+                id="roleDescription"
+                value={roleDescription}
+                onChange={(e) => setRoleDescription(e.target.value)}
+                placeholder="Describe the role's responsibilities"
+              />
+            </div>
+            <div>
+              <Label>Permissions</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {systemPermissions?.map((permission) => (
+                  <div
+                    key={permission.id}
+                    className="flex items-center space-x-2"
+                  >
+                    <Checkbox
+                      id={permission.id}
+                      checked={selectedPermissions.includes(permission.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedPermissions([
+                            ...selectedPermissions,
+                            permission.id,
+                          ]);
+                        } else {
+                          setSelectedPermissions(
+                            selectedPermissions.filter(
+                              (p) => p !== permission.id,
+                            ),
+                          );
+                        }
+                      }}
+                    />
+                    <Label htmlFor={permission.id} className="text-sm">
+                      {permission.description}
+                    </Label>
+                  </div>
+                ))}
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateRole}>Create Role</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="space-y-6">
         {organisationRoles?.map((role) => {
           const roleWithPermissions = getPermissionDetails(role);
-          
+
           return (
             <Card key={role._id}>
               <CardHeader>
@@ -345,7 +406,10 @@ export default function OrganisationRolesPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Dialog open={isEditDialogOpen && editingRole?._id === role._id} onOpenChange={setIsEditDialogOpen}>
+                    <Dialog
+                      open={isEditDialogOpen && editingRole?._id === role._id}
+                      onOpenChange={setIsEditDialogOpen}
+                    >
                       <DialogTrigger asChild>
                         <Button
                           variant="outline"
@@ -373,30 +437,49 @@ export default function OrganisationRolesPage() {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="editRoleDescription">Description</Label>
+                            <Label htmlFor="editRoleDescription">
+                              Description
+                            </Label>
                             <Textarea
                               id="editRoleDescription"
                               value={roleDescription}
-                              onChange={(e) => setRoleDescription(e.target.value)}
+                              onChange={(e) =>
+                                setRoleDescription(e.target.value)
+                              }
                             />
                           </div>
                           <div>
                             <Label>Permissions</Label>
                             <div className="space-y-2 max-h-60 overflow-y-auto">
                               {systemPermissions?.map((permission) => (
-                                <div key={permission.id} className="flex items-center space-x-2">
+                                <div
+                                  key={permission.id}
+                                  className="flex items-center space-x-2"
+                                >
                                   <Checkbox
                                     id={`edit-${permission.id}`}
-                                    checked={selectedPermissions.includes(permission.id)}
+                                    checked={selectedPermissions.includes(
+                                      permission.id,
+                                    )}
                                     onCheckedChange={(checked) => {
                                       if (checked) {
-                                        setSelectedPermissions([...selectedPermissions, permission.id]);
+                                        setSelectedPermissions([
+                                          ...selectedPermissions,
+                                          permission.id,
+                                        ]);
                                       } else {
-                                        setSelectedPermissions(selectedPermissions.filter(p => p !== permission.id));
+                                        setSelectedPermissions(
+                                          selectedPermissions.filter(
+                                            (p) => p !== permission.id,
+                                          ),
+                                        );
                                       }
                                     }}
                                   />
-                                  <Label htmlFor={`edit-${permission.id}`} className="text-sm">
+                                  <Label
+                                    htmlFor={`edit-${permission.id}`}
+                                    className="text-sm"
+                                  >
                                     {permission.description}
                                   </Label>
                                 </div>
@@ -404,7 +487,10 @@ export default function OrganisationRolesPage() {
                             </div>
                           </div>
                           <div className="flex justify-end space-x-2">
-                            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                            <Button
+                              variant="outline"
+                              onClick={() => setIsEditDialogOpen(false)}
+                            >
                               Cancel
                             </Button>
                             <Button onClick={handleUpdateRole}>
@@ -414,7 +500,7 @@ export default function OrganisationRolesPage() {
                         </div>
                       </DialogContent>
                     </Dialog>
-                    
+
                     {!role.isDefault && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -427,8 +513,8 @@ export default function OrganisationRolesPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Role</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete the role &quot;{role.name}&quot;? 
-                              This action cannot be undone.
+                              Are you sure you want to delete the role &quot;
+                              {role.name}&quot;? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -469,7 +555,11 @@ export default function OrganisationRolesPage() {
                         </TableCell>
                         <TableCell>{permission.description}</TableCell>
                         <TableCell>
-                          <Badge variant={permission.isGranted ? "default" : "secondary"}>
+                          <Badge
+                            variant={
+                              permission.isGranted ? "default" : "secondary"
+                            }
+                          >
                             {permission.isGranted ? "Granted" : "Denied"}
                           </Badge>
                         </TableCell>
@@ -477,23 +567,34 @@ export default function OrganisationRolesPage() {
                           <div className="flex items-center gap-2">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                {permission.source === 'system_default' ? (
+                                {permission.source === "system_default" ? (
                                   <Paperclip className="w-4 h-4 text-blue-500" />
                                 ) : (
                                   <Settings className="w-4 h-4 text-green-500" />
                                 )}
                               </TooltipTrigger>
                               <TooltipContent>
-                                {permission.source === 'system_default'
-                                  ? 'Default: granted to this role by the system permission defaults'
-                                  : 'Custom: explicitly assigned to this role in your organisation'}
+                                {permission.source === "system_default"
+                                  ? "Default: granted to this role by the system permission defaults"
+                                  : "Custom: explicitly assigned to this role in your organisation"}
                               </TooltipContent>
                             </Tooltip>
                             <span className="text-sm">
-                              {permission.source === 'system_default' ? 'System Default' : 'Custom'}
+                              {permission.source === "system_default"
+                                ? "System Default"
+                                : "Custom"}
                             </span>
-                            <Badge variant={permission.source === 'system_default' ? 'secondary' : 'outline'} className="text-[10px] uppercase">
-                              {permission.source === 'system_default' ? 'default' : 'custom'}
+                            <Badge
+                              variant={
+                                permission.source === "system_default"
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                              className="text-[10px] uppercase"
+                            >
+                              {permission.source === "system_default"
+                                ? "default"
+                                : "custom"}
                             </Badge>
                           </div>
                         </TableCell>
@@ -501,35 +602,65 @@ export default function OrganisationRolesPage() {
                           <div className="flex items-center gap-2">
                             <Checkbox
                               checked={permission.isGranted}
-                              onCheckedChange={(checked) => 
-                                handlePermissionToggle(role._id, permission.id, !!checked)
+                              onCheckedChange={(checked) =>
+                                handlePermissionToggle(
+                                  role._id,
+                                  permission.id,
+                                  !!checked,
+                                )
                               }
-                              disabled={permission.source === 'system_default' && !permission.isOverride}
+                              disabled={
+                                permission.source === "system_default" &&
+                                !permission.isOverride
+                              }
                             />
-                            {!permission.isGranted && permission.source === 'system_default' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>
-                                    <Button
-                                      variant="secondary"
-                                      size="sm"
-                                      className="h-6 px-2 text-xs"
-                                      onClick={() => setConfirmApply({ roleId: role._id, permissionId: permission.id, details: { id: permission.id, group: permission.group, description: permission.description } })}
-                                    >
-                                      Staged change
-                                    </Button>
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <div className="space-y-1">
-                                    <div className="text-xs font-mono">{permission.id}</div>
-                                    <div className="text-xs"><span className="font-semibold">Group:</span> {permission.group}</div>
-                                    <div className="text-xs text-muted-foreground">{permission.description}</div>
-                                    <div className="text-[10px] uppercase tracking-wide text-orange-600">Pushed from system (staged)</div>
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
+                            {!permission.isGranted &&
+                              permission.source === "system_default" && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="h-6 px-2 text-xs"
+                                        onClick={() =>
+                                          setConfirmApply({
+                                            roleId: role._id,
+                                            permissionId: permission.id,
+                                            details: {
+                                              id: permission.id,
+                                              group: permission.group,
+                                              description:
+                                                permission.description,
+                                            },
+                                          })
+                                        }
+                                      >
+                                        Staged change
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs">
+                                    <div className="space-y-1">
+                                      <div className="text-xs font-mono">
+                                        {permission.id}
+                                      </div>
+                                      <div className="text-xs">
+                                        <span className="font-semibold">
+                                          Group:
+                                        </span>{" "}
+                                        {permission.group}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {permission.description}
+                                      </div>
+                                      <div className="text-[10px] uppercase tracking-wide text-orange-600">
+                                        Pushed from system (staged)
+                                      </div>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -543,29 +674,56 @@ export default function OrganisationRolesPage() {
       </div>
       {/* Confirm Apply Default Dialog */}
       {confirmApply && (
-        <Dialog open onOpenChange={(o) => { if (!o) setConfirmApply(null); }}>
+        <Dialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setConfirmApply(null);
+          }}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Apply default permission?</DialogTitle>
-            <DialogDescription>
-              This will apply the staged system default permission to this role.
-            </DialogDescription>
+              <DialogDescription>
+                This will apply the staged system default permission to this
+                role.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-2 text-sm">
-              <div><span className="font-semibold">Permission:</span> <code className="bg-muted px-1 py-0.5 rounded">{confirmApply.details.id}</code></div>
-              <div><span className="font-semibold">Group:</span> {confirmApply.details.group}</div>
-              <div className="text-muted-foreground">{confirmApply.details.description}</div>
+              <div>
+                <span className="font-semibold">Permission:</span>{" "}
+                <code className="bg-muted px-1 py-0.5 rounded">
+                  {confirmApply.details.id}
+                </code>
+              </div>
+              <div>
+                <span className="font-semibold">Group:</span>{" "}
+                {confirmApply.details.group}
+              </div>
+              <div className="text-muted-foreground">
+                {confirmApply.details.description}
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setConfirmApply(null)}>Cancel</Button>
-              <Button onClick={() => {
-                handlePermissionToggle(confirmApply.roleId, confirmApply.permissionId, true, true);
-                setConfirmApply(null);
-              }}>Apply</Button>
+              <Button variant="outline" onClick={() => setConfirmApply(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  handlePermissionToggle(
+                    confirmApply.roleId,
+                    confirmApply.permissionId,
+                    true,
+                    true,
+                  );
+                  setConfirmApply(null);
+                }}
+              >
+                Apply
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
       )}
     </StandardizedSidebarLayout>
   );
-} 
+}

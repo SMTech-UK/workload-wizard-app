@@ -1,8 +1,8 @@
-import { useQuery } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
-import { FeatureFlags, FeatureFlagResult } from './types';
-import { getUserFeatureFlagContext } from './auth-integration';
-import { useUser } from '@clerk/nextjs';
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { FeatureFlags, FeatureFlagResult } from "./types";
+import { getUserFeatureFlagContext } from "./auth-integration";
+import { useUser } from "@clerk/nextjs";
 
 /**
  * Convex query to get user's feature flag context
@@ -10,16 +10,19 @@ import { useUser } from '@clerk/nextjs';
  */
 export function useUserFeatureFlagContext() {
   const { user } = useUser();
-  
+
   // Query user data from Convex if needed
-  const userData = useQuery(api.users.getBySubject, user?.id ? { subject: user.id } : 'skip');
-  
+  const userData = useQuery(
+    api.users.getBySubject,
+    user?.id ? { subject: user.id } : "skip",
+  );
+
   if (!user) {
     return null;
   }
 
   const context = getUserFeatureFlagContext(user);
-  
+
   // Merge with Convex data if available
   // Optionally use userData for side-effects or logging; avoid mutating typed shape
 
@@ -33,10 +36,14 @@ export function useUserFeatureFlagContext() {
 export function useLogFeatureFlagUsage() {
   // You can create a Convex mutation to log feature flag usage
   // This is useful for analytics and debugging
-  
-  return async (flagName: FeatureFlags, enabled: boolean, context?: unknown) => {
+
+  return async (
+    flagName: FeatureFlags,
+    enabled: boolean,
+    context?: unknown,
+  ) => {
     // Example implementation - you can create a Convex mutation for this
-    console.log('Feature flag usage logged:', {
+    console.log("Feature flag usage logged:", {
       flagName,
       enabled,
       context,
@@ -51,13 +58,13 @@ export function useLogFeatureFlagUsage() {
  */
 export function useFeatureFlagOverrides() {
   const { user } = useUser();
-  
+
   // Query feature flag overrides from Convex
   const overrides = useQuery(
-    api.featureFlags.getOverrides, 
-    user?.id ? { userId: user.id } : 'skip'
+    api.featureFlags.getOverrides,
+    user?.id ? { userId: user.id } : "skip",
   );
-  
+
   return overrides || {};
 }
 
@@ -67,17 +74,17 @@ export function useFeatureFlagOverrides() {
 export function mergeFeatureFlagWithOverrides(
   posthogResult: FeatureFlagResult,
   flagName: FeatureFlags,
-  overrides: Record<string, unknown>
+  overrides: Record<string, unknown>,
 ): FeatureFlagResult {
   const override = overrides[flagName];
-  
-  if (typeof override === 'boolean') {
+
+  if (typeof override === "boolean") {
     return {
       enabled: override,
       payload: posthogResult.payload,
-      source: 'override',
+      source: "override",
     };
   }
-  
+
   return posthogResult;
 }

@@ -1,7 +1,7 @@
 // Server-only PostHog import was intentionally removed to avoid unused dep.
-import { FeatureFlags, FeatureFlagResult, FeatureFlagContext } from './types';
-import { getFeatureFlagConfig, isValidFeatureFlag } from './config';
-import { getCurrentUserDetails } from '@/lib/auth/currentUser';
+import { FeatureFlags, FeatureFlagResult, FeatureFlagContext } from "./types";
+import { getFeatureFlagConfig, isValidFeatureFlag } from "./config";
+import { getCurrentUserDetails } from "@/lib/auth/currentUser";
 
 // Server-side PostHog client - COMMENTED OUT FOR USER PERSISTENCE
 // let posthogServer: PostHog | null = null;
@@ -26,12 +26,12 @@ import { getCurrentUserDetails } from '@/lib/auth/currentUser';
  */
 export async function getServerFeatureFlag(
   flagName: FeatureFlags,
-  context?: FeatureFlagContext
+  context?: FeatureFlagContext,
 ): Promise<FeatureFlagResult> {
   // Validate flag name
   if (!isValidFeatureFlag(flagName)) {
     console.warn(`Invalid feature flag name: ${flagName}`);
-    return { enabled: false, source: 'fallback' };
+    return { enabled: false, source: "fallback" };
   }
 
   // COMMENTED OUT: Server-side PostHog to ensure user persistence
@@ -40,7 +40,7 @@ export async function getServerFeatureFlag(
   //   const posthog = getPostHogServer();
   //   if (posthog && context?.distinctId) {
   //     const flagValue = await posthog.getFeatureFlag(flagName, context.distinctId, context);
-  //     
+  //
   //     if (typeof flagValue === 'boolean') {
   //       return { enabled: flagValue, source: 'posthog' };
   //     } else if (typeof flagValue === 'string') {
@@ -67,7 +67,7 @@ export async function getServerFeatureFlag(
  */
 export async function getServerUserFeatureFlagContext(): Promise<FeatureFlagContext> {
   const userDetails = await getCurrentUserDetails();
-  
+
   if (!userDetails) {
     return {
       userProperties: {},
@@ -82,12 +82,18 @@ export async function getServerUserFeatureFlagContext(): Promise<FeatureFlagCont
     userProperties: {
       ...(userDetails.email ? { email: userDetails.email } : {}),
       fullName: userDetails.fullName,
-      ...(userDetails.organisationId ? { organisationId: userDetails.organisationId } : {}),
-      ...(userDetails.role ? { role: userDetails.role, userType: userDetails.role } : {}),
+      ...(userDetails.organisationId
+        ? { organisationId: userDetails.organisationId }
+        : {}),
+      ...(userDetails.role
+        ? { role: userDetails.role, userType: userDetails.role }
+        : {}),
       hasOrganisation: !!userDetails.organisationId,
     },
     groups: {
-      ...(userDetails.organisationId ? { organisation: userDetails.organisationId } : {}),
+      ...(userDetails.organisationId
+        ? { organisation: userDetails.organisationId }
+        : {}),
       ...(userDetails.role ? { role: userDetails.role } : {}),
     },
   } as FeatureFlagContext;
@@ -98,11 +104,11 @@ export async function getServerUserFeatureFlagContext(): Promise<FeatureFlagCont
  * This is the recommended way to use feature flags in API routes
  */
 export async function getServerFeatureFlagWithUser(
-  flagName: FeatureFlags
+  flagName: FeatureFlags,
 ): Promise<FeatureFlagResult> {
   // Get user context automatically from Clerk
   const context = await getServerUserFeatureFlagContext();
-  
+
   return getServerFeatureFlag(flagName, context);
 }
 
@@ -111,26 +117,26 @@ export async function getServerFeatureFlagWithUser(
  */
 function getFallbackFlag(
   flagName: FeatureFlags,
-  context?: FeatureFlagContext
+  context?: FeatureFlagContext,
 ): FeatureFlagResult {
   const config = getFeatureFlagConfig(flagName);
-  
+
   // Check if user is explicitly enabled/disabled
   if (context?.userEmail) {
     if (config.enabledFor?.userEmails?.includes(context.userEmail)) {
-      return { enabled: true, source: 'fallback' };
+      return { enabled: true, source: "fallback" };
     }
     if (config.disabledFor?.userEmails?.includes(context.userEmail)) {
-      return { enabled: false, source: 'fallback' };
+      return { enabled: false, source: "fallback" };
     }
   }
 
   if (context?.userId) {
     if (config.enabledFor?.userIds?.includes(context.userId)) {
-      return { enabled: true, source: 'fallback' };
+      return { enabled: true, source: "fallback" };
     }
     if (config.disabledFor?.userIds?.includes(context.userId)) {
-      return { enabled: false, source: 'fallback' };
+      return { enabled: false, source: "fallback" };
     }
   }
 
@@ -139,11 +145,11 @@ function getFallbackFlag(
     const hash = simpleHash(context.distinctId);
     const percentage = hash % 100;
     const enabled = percentage < config.rolloutPercentage;
-    return { enabled, source: 'fallback' };
+    return { enabled, source: "fallback" };
   }
 
   // Return default value
-  return { enabled: config.defaultValue, source: 'fallback' };
+  return { enabled: config.defaultValue, source: "fallback" };
 }
 
 /**
@@ -153,7 +159,7 @@ function simpleHash(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash);
@@ -164,16 +170,19 @@ function simpleHash(str: string): number {
  */
 export async function getServerFeatureFlags(
   flagNames: FeatureFlags[],
-  context?: FeatureFlagContext
+  context?: FeatureFlagContext,
 ): Promise<Record<FeatureFlags, FeatureFlagResult>> {
-  const results: Record<FeatureFlags, FeatureFlagResult> = {} as Record<FeatureFlags, FeatureFlagResult>;
-  
+  const results: Record<FeatureFlags, FeatureFlagResult> = {} as Record<
+    FeatureFlags,
+    FeatureFlagResult
+  >;
+
   await Promise.all(
     flagNames.map(async (flagName) => {
       results[flagName] = await getServerFeatureFlag(flagName, context);
-    })
+    }),
   );
-  
+
   return results;
 }
 
@@ -183,7 +192,7 @@ export async function getServerFeatureFlags(
 export async function captureFeatureFlagEvent(
   flagName: FeatureFlags,
   enabled: boolean,
-  context?: FeatureFlagContext
+  context?: FeatureFlagContext,
 ): Promise<void> {
   // COMMENTED OUT: Server-side PostHog to ensure user persistence
   // try {

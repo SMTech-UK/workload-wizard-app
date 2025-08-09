@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useUser } from "@clerk/nextjs"
-import { getUserRoles } from "@/lib/utils"
+import * as React from "react";
+import { useUser } from "@clerk/nextjs";
+import { getUserRoles } from "@/lib/utils";
 import {
   Building2,
   Home,
@@ -18,12 +18,12 @@ import {
   Database,
   Bug,
   Terminal,
-} from "lucide-react"
+} from "lucide-react";
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { NavMain } from "@/components/nav-main";
+import { NavProjects } from "@/components/nav-projects";
+import { NavUser } from "@/components/nav-user";
+import { TeamSwitcher } from "@/components/team-switcher";
 // Removed BETA_FEATURES imports - no longer needed
 import {
   Sidebar,
@@ -31,7 +31,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 // Generate role-based navigation data
 const getNavigationData = (userRoles?: string[]) => {
@@ -47,13 +47,13 @@ const getNavigationData = (userRoles?: string[]) => {
       url: "/account",
       icon: User,
     },
-  ]
+  ];
 
   // Add role-specific navigation
-  const roleNav = []
+  const roleNav = [];
 
   // Admin navigation (for both sysadmin and developer)
-  if (userRoles?.some(role => role === 'sysadmin' || role === 'developer')) {
+  if (userRoles?.some((role) => role === "sysadmin" || role === "developer")) {
     roleNav.push({
       title: "Admin",
       url: "/admin",
@@ -71,10 +71,10 @@ const getNavigationData = (userRoles?: string[]) => {
           title: "Organisations",
           url: "/admin/organisations",
         },
-        ...(
-          // Show Permissions page to sysadmin or developer (support both single and array roles via getUserRoles)
-          (userRoles?.some(r => r === 'sysadmin' || r === 'developer') ? [{ title: "Permissions", url: "/admin/permissions" }] : [])
-        ),
+        ...// Show Permissions page to sysadmin or developer (support both single and array roles via getUserRoles)
+        (userRoles?.some((r) => r === "sysadmin" || r === "developer")
+          ? [{ title: "Permissions", url: "/admin/permissions" }]
+          : []),
         {
           title: "Audit Logs",
           url: "/admin/audit-logs",
@@ -84,12 +84,11 @@ const getNavigationData = (userRoles?: string[]) => {
           url: "/admin/permissions/tests",
         },
       ],
-    })
+    });
   }
 
   // Developer-specific tools (only for developer role)
-  if (userRoles?.includes('developer')) {
-    
+  if (userRoles?.includes("developer")) {
     // Add developer-specific tools
     roleNav.push({
       title: "Dev Tools",
@@ -121,11 +120,11 @@ const getNavigationData = (userRoles?: string[]) => {
           url: "/ui",
         },
       ],
-    })
+    });
   }
 
   // Orgadmin navigation
-  if (userRoles?.includes('orgadmin')) {
+  if (userRoles?.includes("orgadmin")) {
     roleNav.push({
       title: "Organisation",
       url: "/organisation",
@@ -144,7 +143,7 @@ const getNavigationData = (userRoles?: string[]) => {
           url: "/organisation/settings",
         },
       ],
-    })
+    });
   }
 
   return {
@@ -162,15 +161,15 @@ const getNavigationData = (userRoles?: string[]) => {
     ],
     navMain: [...baseNav, ...roleNav],
     projects: getProjectsData(userRoles),
-  }
-}
+  };
+};
 
 // Generate role-based projects data
 const getProjectsData = (userRoles?: string[]) => {
-  const projects = []
+  const projects = [];
 
   // Admin projects (for both sysadmin and developer)
-  if (userRoles?.some(role => role === 'sysadmin' || role === 'developer')) {
+  if (userRoles?.some((role) => role === "sysadmin" || role === "developer")) {
     projects.push(
       {
         name: "User Management",
@@ -186,12 +185,12 @@ const getProjectsData = (userRoles?: string[]) => {
         name: "Audit & Compliance",
         url: "/admin/audit-logs",
         icon: FileText,
-      }
-    )
+      },
+    );
   }
 
   // Developer-specific projects (only for developer role)
-  if (userRoles?.includes('developer')) {
+  if (userRoles?.includes("developer")) {
     projects.push(
       {
         name: "Database Tools",
@@ -207,12 +206,12 @@ const getProjectsData = (userRoles?: string[]) => {
         name: "Debug Console",
         url: "/dev/debug",
         icon: Bug,
-      }
-    )
+      },
+    );
   }
 
   // Orgadmin projects
-  if (userRoles?.includes('orgadmin')) {
+  if (userRoles?.includes("orgadmin")) {
     projects.push(
       {
         name: "Team Management",
@@ -228,19 +227,19 @@ const getProjectsData = (userRoles?: string[]) => {
         name: "Organisation Settings",
         url: "/organisation/settings",
         icon: Building2,
-      }
-    )
+      },
+    );
   }
 
-  return projects
-}
+  return projects;
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useUser()
-  const userRoles = getUserRoles(user)
-  
+  const { user } = useUser();
+  const userRoles = getUserRoles(user);
+
   // Get role-based navigation data
-  const data = getNavigationData(userRoles)
+  const data = getNavigationData(userRoles);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -256,6 +255,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }
-

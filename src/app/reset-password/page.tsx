@@ -1,26 +1,38 @@
-'use client';
+"use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useSignIn } from '@clerk/nextjs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useSignIn } from "@clerk/nextjs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, CheckCircle, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          Loading…
+        </div>
+      }
+    >
       <ResetPasswordForm />
     </Suspense>
   );
 }
 
 function ResetPasswordForm() {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,9 +46,9 @@ function ResetPasswordForm() {
   const router = useRouter();
 
   useEffect(() => {
-    const tokenParam = searchParams.get('token');
+    const tokenParam = searchParams.get("token");
     if (!tokenParam) {
-      setError('No reset token provided. Please use the link from your email.');
+      setError("No reset token provided. Please use the link from your email.");
       return;
     }
     setToken(tokenParam);
@@ -44,28 +56,28 @@ function ResetPasswordForm() {
 
   const validatePassword = (password: string) => {
     if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
+      return "Password must be at least 8 characters long";
     }
     if (!/(?=.*[a-z])/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
+      return "Password must contain at least one lowercase letter";
     }
     if (!/(?=.*[A-Z])/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
+      return "Password must contain at least one uppercase letter";
     }
     if (!/(?=.*\d)/.test(password)) {
-      return 'Password must contain at least one number';
+      return "Password must contain at least one number";
     }
     if (!/(?=.*[!@#$%^&*])/.test(password)) {
-      return 'Password must contain at least one special character (!@#$%^&*)';
+      return "Password must contain at least one special character (!@#$%^&*)";
     }
     return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!token) {
-      setError('No reset token available');
+      setError("No reset token available");
       return;
     }
 
@@ -77,7 +89,7 @@ function ResetPasswordForm() {
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
@@ -88,32 +100,36 @@ function ResetPasswordForm() {
       // First, create a sign-in attempt with the reset token
       const signInAttempt = await signIn?.create({
         identifier: token,
-        strategy: 'reset_password_email_code',
+        strategy: "reset_password_email_code",
       });
 
       if (!signInAttempt) {
-        throw new Error('Failed to create sign-in attempt');
+        throw new Error("Failed to create sign-in attempt");
       }
 
       // Then attempt to complete the password reset
       const result = await signIn?.attemptFirstFactor({
-        strategy: 'reset_password_email_code',
+        strategy: "reset_password_email_code",
         code: token,
         password: password,
       });
 
-      if (result?.status === 'complete') {
+      if (result?.status === "complete") {
         setSuccess(true);
         // Redirect to dashboard after a short delay
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push("/dashboard");
         }, 2000);
       } else {
-        setError('Failed to reset password. Please try again or contact support.');
+        setError(
+          "Failed to reset password. Please try again or contact support.",
+        );
       }
     } catch (err) {
-      console.error('Password reset error:', err);
-      setError('Failed to reset password. The token may be invalid or expired.');
+      console.error("Password reset error:", err);
+      setError(
+        "Failed to reset password. The token may be invalid or expired.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -127,9 +143,12 @@ function ResetPasswordForm() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Password Reset Successful</CardTitle>
+            <CardTitle className="text-2xl">
+              Password Reset Successful
+            </CardTitle>
             <CardDescription>
-              Your password has been successfully reset. You will be redirected to the dashboard shortly.
+              Your password has been successfully reset. You will be redirected
+              to the dashboard shortly.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -142,9 +161,7 @@ function ResetPasswordForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-          <CardDescription>
-            Enter your new password below
-          </CardDescription>
+          <CardDescription>Enter your new password below</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
@@ -162,7 +179,7 @@ function ResetPasswordForm() {
               <div className="relative">
                 <Input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your new password"
@@ -190,7 +207,7 @@ function ResetPasswordForm() {
               <div className="relative">
                 <Input
                   id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your new password"
@@ -235,7 +252,7 @@ function ResetPasswordForm() {
                   Resetting Password...
                 </>
               ) : (
-                'Reset Password'
+                "Reset Password"
               )}
             </Button>
           </form>
@@ -243,7 +260,7 @@ function ResetPasswordForm() {
           <div className="mt-4 text-center">
             <Button
               variant="link"
-              onClick={() => router.push('/sign-in')}
+              onClick={() => router.push("/sign-in")}
               className="text-sm"
             >
               Back to Sign In
@@ -253,4 +270,4 @@ function ResetPasswordForm() {
       </Card>
     </div>
   );
-} 
+}
