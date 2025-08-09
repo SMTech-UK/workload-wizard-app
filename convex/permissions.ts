@@ -1452,18 +1452,17 @@ export const updateOrganisationRole = mutation({
     }
 
     // Authorization: only system admins or members of the same organisation can modify
-    if (args.performedBy) {
-      const performedBy = args.performedBy as string;
-      const actor = await ctx.db
-        .query("users")
-        .withIndex("by_subject", (q) => q.eq("subject", performedBy))
-        .first();
-
-      if (actor) {
-        const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
-        if (!isSystem && String(actor.organisationId) !== String(role.organisationId)) {
-          throw new Error("Unauthorized: Cannot modify roles outside your organisation");
-        }
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = args.performedBy ?? identity?.subject;
+    if (!subject) throw new Error("Unauthenticated");
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", subject))
+      .first();
+    if (actor) {
+      const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
+      if (!isSystem && String(actor.organisationId) !== String(role.organisationId)) {
+        throw new Error("Unauthorized: Cannot modify roles outside your organisation");
       }
     }
 
@@ -1477,14 +1476,14 @@ export const updateOrganisationRole = mutation({
     await ctx.db.patch(args.roleId, updates);
     
     // Audit
-    if (args.performedBy) {
+    if (subject) {
       const now = Date.now();
       await ctx.db.insert("audit_logs", {
         action: 'role.updated',
         entityType: 'role',
         entityId: String(args.roleId),
         entityName: args.name,
-        performedBy: args.performedBy,
+        performedBy: subject,
         ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         organisationId: role.organisationId,
         details: `Role updated: ${args.name}`,
@@ -1536,18 +1535,17 @@ export const deleteOrganisationRole = mutation({
     }
 
     // Authorization: only system admins or members of the same organisation can delete
-    if (args.performedBy) {
-      const performedBy = args.performedBy as string;
-      const actor = await ctx.db
-        .query("users")
-        .withIndex("by_subject", (q) => q.eq("subject", performedBy))
-        .first();
-
-      if (actor) {
-        const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
-        if (!isSystem && String(actor.organisationId) !== String(role.organisationId)) {
-          throw new Error("Unauthorized: Cannot delete roles outside your organisation");
-        }
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = args.performedBy ?? identity?.subject;
+    if (!subject) throw new Error("Unauthenticated");
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", subject))
+      .first();
+    if (actor) {
+      const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
+      if (!isSystem && String(actor.organisationId) !== String(role.organisationId)) {
+        throw new Error("Unauthorized: Cannot delete roles outside your organisation");
       }
     }
 
@@ -1558,13 +1556,13 @@ export const deleteOrganisationRole = mutation({
     });
 
     // Log audit event
-    if (args.performedBy) {
+    if (subject) {
       await ctx.db.insert("audit_logs", {
         action: 'role.deleted',
         entityType: 'role',
         entityId: args.roleId,
         entityName: role.name,
-        performedBy: args.performedBy,
+        performedBy: subject,
         ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         organisationId: role.organisationId,
         details: `Role "${role.name}" deleted`,
@@ -1602,18 +1600,17 @@ export const updateRolePermissions = mutation({
     }
 
     // Authorization: only system admins or members of the same organisation
-    if (args.performedBy) {
-      const performedBy = args.performedBy as string;
-      const actor = await ctx.db
-        .query("users")
-        .withIndex("by_subject", (q) => q.eq("subject", performedBy))
-        .first();
-
-      if (actor) {
-        const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
-        if (!isSystem && String(actor.organisationId) !== String(role.organisationId)) {
-          throw new Error("Unauthorized: Cannot modify roles outside your organisation");
-        }
+    const identity = await ctx.auth.getUserIdentity();
+    const subject = args.performedBy ?? identity?.subject;
+    if (!subject) throw new Error("Unauthenticated");
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", subject))
+      .first();
+    if (actor) {
+      const isSystem = Array.isArray(actor.systemRoles) && actor.systemRoles.some((r: string) => ["admin", "sysadmin", "developer"].includes(r));
+      if (!isSystem && String(actor.organisationId) !== String(role.organisationId)) {
+        throw new Error("Unauthorized: Cannot modify roles outside your organisation");
       }
     }
 
@@ -1650,7 +1647,7 @@ export const updateRolePermissions = mutation({
     });
 
     // Audit
-    if (args.performedBy) {
+    if (subject) {
       const systemPerm = await ctx.db
         .query("system_permissions")
         .withIndex("by_permission_id", (q) => q.eq("id", args.permissionId))
@@ -1661,7 +1658,7 @@ export const updateRolePermissions = mutation({
         entityType: 'permission',
         entityId: args.permissionId,
         entityName: systemPerm?.id || args.permissionId,
-        performedBy: args.performedBy,
+        performedBy: subject,
         ...(args.performedByName ? { performedByName: args.performedByName } : {}),
         organisationId: role.organisationId,
         details: `${args.isGranted ? 'Assigned' : 'Revoked'} permission ${args.permissionId} ${args.isGranted ? 'to' : 'from'} role ${role.name}`,
