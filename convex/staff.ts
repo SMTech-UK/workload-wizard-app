@@ -39,6 +39,20 @@ export const create = mutation({
       updatedAt: now,
     });
 
+    // Audit create
+    await ctx.db.insert("audit_logs", {
+      action: "create",
+      entityType: "lecturer_profile",
+      entityId: String(profileId),
+      entityName: args.fullName,
+      performedBy: args.userId,
+      organisationId: actor.organisationId,
+      details: `Created lecturer profile (${args.contract})`,
+      metadata: JSON.stringify({ email: args.email, fte: args.fte, maxTeachingHours: args.maxTeachingHours, totalContract: args.totalContract }),
+      timestamp: now,
+      severity: "info",
+    });
+
     return profileId;
   },
 });
@@ -84,6 +98,20 @@ export const edit = mutation({
     if (args.isActive !== undefined) updates.isActive = args.isActive;
 
     await ctx.db.patch(args.profileId, updates);
+
+    // Audit update
+    await ctx.db.insert("audit_logs", {
+      action: "update",
+      entityType: "lecturer_profile",
+      entityId: String(args.profileId),
+      performedBy: args.userId,
+      organisationId: profile.organisationId,
+      details: "Updated lecturer profile",
+      metadata: JSON.stringify(updates),
+      timestamp: Date.now(),
+      severity: "info",
+    });
+
     return args.profileId;
   },
 });
