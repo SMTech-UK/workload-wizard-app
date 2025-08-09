@@ -41,7 +41,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
 
     const formData = new FormData(event.currentTarget);
     const dataBase = {
-      id: organisation._id as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      id: organisation._id,
       name: formData.get('name') as string,
       code: formData.get('code') as string,
       status: formData.get('status') as string,
@@ -52,7 +52,7 @@ export function EditOrganisationForm({ organisation, onClose, onUpdate }: EditOr
       ...((formData.get('domain') as string) ? { domain: formData.get('domain') as string } : {}),
       ...((formData.get('website') as string) ? { website: formData.get('website') as string } : {}),
     };
-    const data = { ...dataBase, ...optional } as any;
+    const data: Parameters<typeof updateOrganisation>[0] = { ...dataBase, ...optional } as Parameters<typeof updateOrganisation>[0];
 
     try {
       await updateOrganisation(data);

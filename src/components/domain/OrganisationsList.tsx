@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 export function OrganisationsList() {
   const organisations = useQuery(api.organisations.list);
   const deleteOrganisation = useMutation(api.organisations.remove);
-  const [editingOrganisation, setEditingOrganisation] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [editingOrganisation, setEditingOrganisation] = useState<any>(null);  
 
   // Handle case where Convex might not be ready
   if (organisations === undefined && typeof window !== 'undefined') {
@@ -33,13 +34,13 @@ export function OrganisationsList() {
     if (!confirm('Are you sure you want to delete this organisation?')) return;
     
     try {
-      await deleteOrganisation({ id: id as any }); // eslint-disable-line @typescript-eslint/no-explicit-any
+      await deleteOrganisation({ id: id as unknown as Id<'organisations'> });
     } catch (err) {
       toast.error('Failed to delete organisation', err instanceof Error ? err.message : undefined);
     }
   };
 
-  const handleEditOrganisation = (organisation: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const handleEditOrganisation = (organisation: { _id: string; name: string; code: string }) => {
     setEditingOrganisation(organisation);
   };
 

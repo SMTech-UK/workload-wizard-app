@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient, currentUser } from '@clerk/nextjs/server';
+import { getOrganisationIdFromSession } from '@/lib/authz';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../convex/_generated/api';
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (isOrgAdmin && !isUpdatingOwnEmail) {
       const targetUser = await clerk.users.getUser(userId);
       const targetUserOrgId = targetUser.publicMetadata?.organisationId as string;
-      const currentUserOrgId = currentUserData.publicMetadata?.organisationId as string;
+      const currentUserOrgId = await getOrganisationIdFromSession();
       
       if (targetUserOrgId !== currentUserOrgId) {
         return NextResponse.json(

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { requirePermission } from "./permissions";
+import type { Id, Doc } from "./_generated/dataModel";
 
 export const create = mutation({
   args: {
@@ -37,7 +38,11 @@ export const create = mutation({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     } as const;
-    const optional: any = {
+    const optional: {
+      username?: string;
+      pictureUrl?: string;
+      tokenIdentifier?: string;
+    } = {
       ...(args.username ? { username: args.username } : {}),
       ...(args.pictureUrl ? { pictureUrl: args.pictureUrl } : {}),
       ...(args.tokenIdentifier ? { tokenIdentifier: args.tokenIdentifier } : {}),
@@ -179,11 +184,11 @@ export const list = query({
         // Get all current organisational role assignments for this user in their org (support multiple)
         const assignments = await ctx.db
           .query("user_role_assignments")
-          .withIndex("by_user_org", (q: any) => q.eq("userId", user.subject).eq("organisationId", user.organisationId))
-          .filter((q: any) => q.eq(q.field("isActive"), true))
+          .withIndex("by_user_org", (q) => q.eq("userId", user.subject).eq("organisationId", user.organisationId))
+          .filter((q) => q.eq(q.field("isActive"), true))
           .collect();
 
-        const organisationalRoles: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const organisationalRoles: Array<{ id: Id<"user_roles">; name: string; description: string } | null> = [];
         for (const a of assignments) {
           const role = await ctx.db.get(a.roleId);
           if (role && role.isActive) {
@@ -347,25 +352,29 @@ export const updateByWebhook = mutation({
 
     const { userId, ...updates } = args;
 
+    // Build a safe update object with correct types
+    const processedUpdates: Partial<Doc<"users">> & Record<string, unknown> = {};
+
+    if (updates.email !== undefined) processedUpdates.email = updates.email;
+    if (updates.username !== undefined) processedUpdates.username = updates.username;
+    if (updates.givenName !== undefined) processedUpdates.givenName = updates.givenName;
+    if (updates.familyName !== undefined) processedUpdates.familyName = updates.familyName;
+    if (updates.fullName !== undefined) processedUpdates.fullName = updates.fullName;
+    if (updates.systemRoles !== undefined) processedUpdates.systemRoles = updates.systemRoles;
+    if (updates.pictureUrl !== undefined) processedUpdates.pictureUrl = updates.pictureUrl;
+
     // Handle organisation ID conversion
-    let processedUpdates: any = { ...updates };
     if (updates.organisationId && updates.organisationId !== "") {
       try {
-        // Try to find the organisation by ID string
         const org = await ctx.db
           .query("organisations")
-          .filter((q) => q.eq(q.field("_id"), updates.organisationId as any))
+          .filter((q) => q.eq(q.field("_id"), updates.organisationId as unknown as Id<"organisations">))
           .first();
-        
         if (org) {
           processedUpdates.organisationId = org._id;
-        } else {
-          // Remove the organisationId if the org doesn't exist
-          delete processedUpdates.organisationId;
         }
       } catch {
-        // Remove the organisationId if conversion fails
-        delete processedUpdates.organisationId;
+        // ignore invalid org id
       }
     }
 
@@ -402,7 +411,7 @@ export const completeOnboarding = mutation({
     const data = args.onboardingData;
     
     // Prepare updates object with onboarding completion
-    const updates: any = {
+    const updates: Partial<Doc<"users">> & Record<string, unknown> = {
       onboardingCompleted: true,
       onboardingData: args.onboardingData,
       onboardingCompletedAt: Date.now(),

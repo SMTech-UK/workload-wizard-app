@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireOrgPermission } from "./permissions";
 
 // Get all roles for an organisation
 export const listByOrganisation = query({
@@ -100,29 +101,29 @@ export const assignToUser = mutation({
   args: {
     userId: v.string(),
     roleId: v.id("user_roles"),
-    organisationId: v.id("organisations"),
     assignedBy: v.string(),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
     
-    // Validate that the organisation exists and is active
-    const organisation = await ctx.db.get(args.organisationId);
+    // Validate role and derive organisation from it
+    const role = await ctx.db.get(args.roleId);
+    if (!role || !role.isActive) {
+      throw new Error('Role not found or inactive');
+    }
+    const organisation = await ctx.db.get(role.organisationId);
     if (!organisation || !organisation.isActive) {
       throw new Error('Organisation not found or inactive');
     }
 
-    // Validate that the role exists and belongs to the organisation
-    const role = await ctx.db.get(args.roleId);
-    if (!role || !role.isActive || role.organisationId !== args.organisationId) {
-      throw new Error('Role not found or does not belong to the organisation');
-    }
+    // Authorisation within derived org
+    await requireOrgPermission(ctx, args.assignedBy, "permissions.manage", String(role.organisationId));
 
     // Validate that the user exists in the organisation
     const user = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("subject"), args.userId))
-      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .filter((q) => q.eq(q.field("organisationId"), role.organisationId))
       .first();
     
     if (!user) {
@@ -133,7 +134,7 @@ export const assignToUser = mutation({
     const existingAssignments = await ctx.db
       .query("user_role_assignments")
       .filter((q) => q.eq(q.field("userId"), args.userId))
-      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .filter((q) => q.eq(q.field("organisationId"), role.organisationId))
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
@@ -148,11 +149,25 @@ export const assignToUser = mutation({
     const assignmentId = await ctx.db.insert("user_role_assignments", {
       userId: args.userId,
       roleId: args.roleId,
-      organisationId: args.organisationId,
+      organisationId: role.organisationId,
       assignedBy: args.assignedBy,
       isActive: true,
       createdAt: now,
       updatedAt: now,
+    });
+
+    // Audit
+    await ctx.db.insert("audit_logs", {
+      action: "user.role_changed",
+      entityType: "user",
+      entityId: args.userId,
+      entityName: user.fullName ?? user.email ?? args.userId,
+      performedBy: args.assignedBy,
+      organisationId: role.organisationId,
+      details: `Assigned role "${role.name}"`,
+      metadata: JSON.stringify({ roleId: role._id, roleName: role.name }),
+      timestamp: now,
+      severity: "info",
     });
 
     return assignmentId;
@@ -164,28 +179,33 @@ export const assignMultipleToUser = mutation({
   args: {
     userId: v.string(),
     roleIds: v.array(v.id("user_roles")),
-    organisationId: v.id("organisations"),
     assignedBy: v.string(),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Validate org
-    const organisation = await ctx.db.get(args.organisationId);
+    // Validate roles and derive organisation; ensure all roles belong to same org
+    const roles = await Promise.all(args.roleIds.map((rid) => ctx.db.get(rid)));
+    if (roles.some((r) => !r || !r.isActive)) {
+      throw new Error('One or more roles invalid or inactive');
+    }
+    const orgId = roles[0]!.organisationId;
+    if (roles.some((r) => String(r!.organisationId) !== String(orgId))) {
+      throw new Error('Roles must belong to the same organisation');
+    }
+
+    const organisation = await ctx.db.get(orgId);
     if (!organisation || !organisation.isActive) {
       throw new Error('Organisation not found or inactive');
     }
 
-    // Validate roles and org membership
-    const roles = await Promise.all(args.roleIds.map((rid) => ctx.db.get(rid)));
-    if (roles.some((r) => !r || !r.isActive || String((r as any).organisationId) !== String(args.organisationId))) {
-      throw new Error('One or more roles invalid for this organisation');
-    }
+    // Authorisation within derived org
+    await requireOrgPermission(ctx, args.assignedBy, "permissions.manage", String(orgId));
 
     const user = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("subject"), args.userId))
-      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .filter((q) => q.eq(q.field("organisationId"), orgId))
       .first();
     if (!user) throw new Error('User not found in the specified organisation');
 
@@ -193,7 +213,7 @@ export const assignMultipleToUser = mutation({
     const existingAssignments = await ctx.db
       .query("user_role_assignments")
       .filter((q) => q.eq(q.field("userId"), args.userId))
-      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .filter((q) => q.eq(q.field("organisationId"), orgId))
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
     for (const assignment of existingAssignments) {
@@ -205,13 +225,27 @@ export const assignMultipleToUser = mutation({
       await ctx.db.insert("user_role_assignments", {
         userId: args.userId,
         roleId: rid,
-        organisationId: args.organisationId,
+        organisationId: orgId,
         assignedBy: args.assignedBy,
         isActive: true,
         createdAt: now,
         updatedAt: now,
       });
     }
+
+    // Audit summary
+    await ctx.db.insert("audit_logs", {
+      action: "user.role_changed",
+      entityType: "user",
+      entityId: args.userId,
+      entityName: user.fullName ?? user.email ?? args.userId,
+      performedBy: args.assignedBy,
+      organisationId: orgId,
+      details: `Assigned ${args.roleIds.length} role(s)` ,
+      metadata: JSON.stringify({ roleIds: args.roleIds }),
+      timestamp: now,
+      severity: "info",
+    });
 
     return { assignedCount: args.roleIds.length };
   },
@@ -221,13 +255,19 @@ export const assignMultipleToUser = mutation({
 export const getUserRole = query({
   args: { 
     userId: v.string(),
-    organisationId: v.id("organisations")
   },
   handler: async (ctx, args) => {
+    // Derive organisation from the user's record
+    const target = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", args.userId))
+      .first();
+    if (!target) return null;
+
     const assignment = await ctx.db
       .query("user_role_assignments")
       .filter((q) => q.eq(q.field("userId"), args.userId))
-      .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+      .filter((q) => q.eq(q.field("organisationId"), target.organisationId))
       .filter((q) => q.eq(q.field("isActive"), true))
       .first();
 

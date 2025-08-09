@@ -203,7 +203,6 @@ export async function createUser(data: CreateUserData) {
         await convex.mutation(api.organisationalRoles.assignMultipleToUser, {
           userId: clerkUser.id,
           roleIds,
-          organisationId: organisationId,
           assignedBy: currentUserData.id,
         });
       } catch (roleError) {
@@ -214,7 +213,6 @@ export async function createUser(data: CreateUserData) {
         await convex.mutation(api.organisationalRoles.assignToUser, {
           userId: clerkUser.id,
           roleId: data.organisationalRoleId as unknown as Id<"user_roles">,
-          organisationId: organisationId,
           assignedBy: currentUserData.id,
         });
       } catch (roleError) {
@@ -422,12 +420,17 @@ export async function updateUser(userId: string, updates: {
     }
 
     // Prepare Clerk update data
-    const clerkUpdateData: any = { // eslint-disable-line @typescript-eslint/no-explicit-any
-      firstName: updates.firstName,
-      lastName: updates.lastName,
+    const clerkUpdateData: {
+      firstName?: string;
+      lastName?: string;
+      publicMetadata?: Record<string, unknown>;
+      password?: string;
+    } = {
+      ...(updates.firstName ? { firstName: updates.firstName } : {}),
+      ...(updates.lastName ? { lastName: updates.lastName } : {}),
       publicMetadata: {
-        roles: updates.roles,
-        organisationId: updates.organisationId,
+        ...(updates.roles ? { roles: updates.roles } : {}),
+        ...(updates.organisationId ? { organisationId: updates.organisationId } : {}),
       },
     };
 
@@ -450,7 +453,7 @@ export async function updateUser(userId: string, updates: {
       ...(updates.organisationId ? { organisationId: updates.organisationId as unknown as Id<"organisations"> } : {}),
       ...(updates.isActive !== undefined ? { isActive: updates.isActive } : {}),
       currentUserId: currentUserData!.id,
-    } as any);
+    });
     
     // Create detailed audit message
     const changeDetails = [];
@@ -472,7 +475,6 @@ export async function updateUser(userId: string, updates: {
           await convex.mutation(api.organisationalRoles.assignToUser, {
             userId: userId,
             roleId: updates.organisationalRoleId as unknown as Id<"user_roles">,
-            organisationId: targetOrganisationId as unknown as Id<"organisations">,
             assignedBy: currentUserData.id,
           });
         }
@@ -526,7 +528,7 @@ export async function getUsersByOrganisationId(organisationId: string) {
   try {
     // Get users from Convex filtered by organisation
     const convexUsers = await convex.query(api.users.listByOrganisation, { 
-      organisationId: organisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
+      organisationId: organisationId as unknown as Id<"organisations">
     });
     
     // Transform to match the expected interface and get organisational roles
@@ -537,7 +539,6 @@ export async function getUsersByOrganisationId(organisationId: string) {
         try {
           const userRoleData = await convex.query(api.organisationalRoles.getUserRole, {
             userId: user.subject,
-            organisationId: user.organisationId,
           });
           if (userRoleData?.role) {
             organisationalRole = {
@@ -741,7 +742,7 @@ export async function getUsersByOrganisationIdWithOverride(organisationId: strin
   try {
     // Get users from Convex filtered by organisation
     const convexUsers = await convex.query(api.users.listByOrganisation, { 
-      organisationId: targetOrganisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
+      organisationId: targetOrganisationId as unknown as Id<"organisations">
     });
     
     // Transform to match the expected interface and get organisational roles
@@ -752,7 +753,6 @@ export async function getUsersByOrganisationIdWithOverride(organisationId: strin
         try {
           const userRoleData = await convex.query(api.organisationalRoles.getUserRole, {
             userId: user.subject,
-            organisationId: user.organisationId,
           });
           if (userRoleData?.role) {
             organisationalRole = {
@@ -814,7 +814,7 @@ export async function getAllUsersByOrganisationIdWithOverride(organisationId: st
   try {
     // Get all users from Convex filtered by organisation (including inactive)
     const convexUsers = await convex.query(api.users.listAllByOrganisation, { 
-      organisationId: targetOrganisationId as any // eslint-disable-line @typescript-eslint/no-explicit-any
+      organisationId: targetOrganisationId as unknown as Id<"organisations">
     });
     
     // Transform to match the expected interface and get organisational roles
@@ -825,7 +825,6 @@ export async function getAllUsersByOrganisationIdWithOverride(organisationId: st
         try {
           const userRoleData = await convex.query(api.organisationalRoles.getUserRole, {
             userId: user.subject,
-            organisationId: user.organisationId,
           });
           if (userRoleData?.role) {
             organisationalRole = {
