@@ -909,6 +909,136 @@ export const deleteSystemPermission = mutation({
   },
 });
 
+/** Seed core academic year permissions */
+export const seedAcademicYearPermissions = mutation({
+  args: {
+    upsert: v.optional(v.boolean()),
+    performedBy: v.optional(v.string()),
+    performedByName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const defaults = [
+      {
+        id: "year.view.live",
+        group: "academic_years",
+        description: "View live (published) academic years",
+        defaultRoles: [
+          "Admin",
+          "Organisation Admin",
+          "orgadmin",
+          "Manager",
+          "Lecturer",
+          "Viewer",
+        ],
+      },
+      {
+        id: "year.view.staging",
+        group: "academic_years",
+        description: "View staged/draft academic years",
+        defaultRoles: ["Admin", "Organisation Admin", "orgadmin", "Manager"],
+      },
+      {
+        id: "year.view.archived",
+        group: "academic_years",
+        description: "View archived academic years",
+        defaultRoles: ["Admin", "Organisation Admin", "orgadmin"],
+      },
+      {
+        id: "year.edit.live",
+        group: "academic_years",
+        description: "Edit live (published) academic years (e.g. set default, rename, dates)",
+        defaultRoles: ["Admin", "Organisation Admin", "orgadmin"],
+      },
+      {
+        id: "year.edit.staging",
+        group: "academic_years",
+        description: "Edit staged/draft academic years (create, modify before publish)",
+        defaultRoles: ["Admin", "Organisation Admin", "orgadmin", "Manager"],
+      },
+      {
+        id: "year.edit.archived",
+        group: "academic_years",
+        description: "Edit archived academic years (e.g. rename, notes)",
+        defaultRoles: ["Admin", "Organisation Admin", "orgadmin"],
+      },
+    ];
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const item of defaults) {
+      const existing = await ctx.db
+        .query("system_permissions")
+        .withIndex("by_permission_id", (q) => q.eq("id", item.id))
+        .first();
+      if (!existing) {
+        await ctx.db.insert("system_permissions", {
+          id: item.id,
+          group: item.group,
+          description: item.description,
+          defaultRoles: item.defaultRoles,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+        created++;
+        if (args.performedBy) {
+          await writeAudit(ctx as MutationCtx, {
+            action: "create",
+            entityType: "permission",
+            entityId: item.id,
+            entityName: item.id,
+            performedBy: args.performedBy,
+            ...(args.performedByName
+              ? { performedByName: args.performedByName }
+              : {}),
+            details: `Academic year permission created: ${item.id}`,
+            metadata: JSON.stringify(item),
+            severity: "info",
+          });
+        }
+        continue;
+      }
+      if (args.upsert ?? true) {
+        const oldValues = {
+          group: existing.group,
+          description: existing.description,
+          defaultRoles: existing.defaultRoles,
+        };
+        await ctx.db.patch(existing._id, {
+          group: item.group,
+          description: item.description,
+          defaultRoles: item.defaultRoles,
+          isActive: true,
+          updatedAt: now,
+        });
+        updated++;
+        if (args.performedBy) {
+          await writeAudit(ctx as MutationCtx, {
+            action: "update",
+            entityType: "permission",
+            entityId: existing.id,
+            entityName: existing.id,
+            performedBy: args.performedBy,
+            ...(args.performedByName
+              ? { performedByName: args.performedByName }
+              : {}),
+            details: `Academic year permission upserted: ${existing.id}`,
+            metadata: JSON.stringify({ oldValues, newValues: item }),
+            severity: "info",
+          });
+        }
+      } else {
+        skipped++;
+      }
+    }
+
+    return { total: defaults.length, created, updated, skipped };
+  },
+});
+
 /**
  * Debug function to check what organizations and roles exist
  */

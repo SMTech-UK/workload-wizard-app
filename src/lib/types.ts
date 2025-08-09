@@ -6,6 +6,9 @@ export interface AcademicYear {
   endDate: string;
   isActive: boolean;
   staging: boolean;
+  organisationId: string;
+  status: "draft" | "published" | "archived";
+  isDefaultForOrg: boolean;
   createdAt: number;
   updatedAt: number;
 }
