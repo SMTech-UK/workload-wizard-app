@@ -44,4 +44,25 @@ export async function seedDefaultOrgRoles(organisationId: string) {
   return { organisationId, roles: Object.keys(DEFAULT_ROLES) };
 }
 
+export function listPermissionsByGroup(): Record<string, Array<{ id: PermissionId; description: string }>> {
+  const entries = Object.entries(PERMISSIONS) as Array<[
+    PermissionId,
+    { group: string; description: string }
+  ]>;
+  return entries.reduce<Record<string, Array<{ id: PermissionId; description: string }>>>((acc, [id, meta]) => {
+    const list = acc[meta.group] ?? [];
+    list.push({ id, description: meta.description });
+    acc[meta.group] = list;
+    return acc;
+  }, {});
+}
+
+export function rolesForPermission(permissionId: PermissionId): string[] {
+  const roles: string[] = [];
+  for (const [role, perms] of Object.entries(DEFAULT_ROLES)) {
+    if (perms.includes(permissionId)) roles.push(role);
+  }
+  return roles;
+}
+
 
