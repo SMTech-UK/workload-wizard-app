@@ -222,6 +222,16 @@ export default defineSchema({
     updatedAt: v.float64(),
   }).index("by_name", ["name"]),
 
+  // 🏫 Campuses
+  campuses: defineTable({
+    name: v.string(),
+    code: v.string(),
+    organisationId: v.id("organisations"),
+    isActive: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_organisation", ["organisationId"]),
+
   // 🏢 Organisation Roles
   organisation_roles: defineTable({
     name: v.string(),

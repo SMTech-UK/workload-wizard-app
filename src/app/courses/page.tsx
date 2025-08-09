@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
@@ -32,6 +32,21 @@ export default function CoursesPage() {
         }
       : "skip",
   );
+  const campuses = useQuery(
+    api.campuses.listByOrganisation,
+    organisationId
+      ? {
+          organisationId: organisationId as string & {
+            __tableName: "organisations";
+          },
+        }
+      : "skip",
+  );
+
+  const lecturerProfiles = useQuery(
+    api.staff.list,
+    user?.id ? { userId: user.id } : "skip",
+  );
 
   const createCourse = useMutation(api.courses.create);
   const [form, setForm] = useState({
@@ -41,14 +56,6 @@ export default function CoursesPage() {
     studentCount: "",
     campuses: "",
   });
-  const [leaders, setLeaders] = useState<Array<{ id: string; name: string }>>(
-    [],
-  );
-  useEffect(() => {
-    // Lightweight leader list via lecturer_profiles.list using Clerk subject
-    // We can't call directly without user id here; skip population for now
-    setLeaders([]);
-  }, []);
   const [error, setError] = useState<string | null>(null);
   const canSubmit = useMemo(
     () => form.code.trim().length > 0 && form.name.trim().length > 0,
@@ -131,17 +138,24 @@ export default function CoursesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="leader">
-                  Course Leader (Lecturer Profile ID)
-                </Label>
-                <Input
-                  id="leader"
+                <Label htmlFor="leader">Course Leader</Label>
+                <Select
                   value={form.leaderProfileId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, leaderProfileId: e.target.value }))
+                  onValueChange={(val) =>
+                    setForm((f) => ({ ...f, leaderProfileId: val }))
                   }
-                  placeholder="lecturer_profile_id"
-                />
+                >
+                  <SelectTrigger id="leader">
+                    <SelectValue placeholder="Select a lecturer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(lecturerProfiles || []).map((p) => (
+                      <SelectItem key={p._id} value={p._id}>
+                        {p.fullName} ({p.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="students">Student Count</Label>
@@ -157,15 +171,42 @@ export default function CoursesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="campuses">Campuses (comma separated)</Label>
-                <Input
-                  id="campuses"
-                  value={form.campuses}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, campuses: e.target.value }))
-                  }
-                  placeholder="Main, City, West"
-                />
+                <Label>Campuses</Label>
+                <div className="flex flex-wrap gap-2">
+                  {(campuses || []).map((campus) => {
+                    const selected = (form.campuses as string)
+                      .split(",")
+                      .filter(Boolean)
+                      .includes(campus._id);
+                    return (
+                      <button
+                        key={campus._id}
+                        type="button"
+                        className={`px-3 py-1 rounded-full text-sm border ${selected ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                        onClick={() => {
+                          const current = (form.campuses as string)
+                            .split(",")
+                            .filter(Boolean);
+                          if (selected) {
+                            setForm((f) => ({
+                              ...f,
+                              campuses: current
+                                .filter((id) => id !== campus._id)
+                                .join(","),
+                            }));
+                          } else {
+                            setForm((f) => ({
+                              ...f,
+                              campuses: [...current, campus._id].join(","),
+                            }));
+                          }
+                        }}
+                      >
+                        {campus.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               {error && (
                 <div className="text-sm text-red-600 border border-red-200 bg-red-50 p-2 rounded">

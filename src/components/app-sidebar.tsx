@@ -48,6 +48,16 @@ const getNavigationData = (userRoles?: string[]) => {
       icon: Building2,
     },
     {
+      title: "Lecturers",
+      url: "/lecturers",
+      icon: Users,
+    },
+    {
+      title: "Campuses",
+      url: "/campuses",
+      icon: Building,
+    },
+    {
       title: "Account",
       url: "/account",
       icon: User,
