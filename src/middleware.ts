@@ -3,6 +3,30 @@ import { NextResponse } from 'next/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../convex/_generated/api'
 
+// Simple token bucket per-IP for a few sensitive routes
+const RATE_LIMITS: Record<string, { tokens: number; lastRefill: number }> = Object.create(null);
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_TOKENS = 20; // 20 requests/min per IP
+
+function shouldRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const bucket = RATE_LIMITS[ip] ?? { tokens: RATE_LIMIT_TOKENS, lastRefill: now };
+  // refill
+  const elapsed = now - bucket.lastRefill;
+  if (elapsed > RATE_LIMIT_WINDOW_MS) {
+    bucket.tokens = RATE_LIMIT_TOKENS;
+    bucket.lastRefill = now;
+  }
+  // spend
+  if (bucket.tokens <= 0) {
+    RATE_LIMITS[ip] = bucket;
+    return true;
+  }
+  bucket.tokens -= 1;
+  RATE_LIMITS[ip] = bucket;
+  return false;
+}
+
 const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/api/webhooks/clerk', '/terms', '/privacy', '/reset-password'])
 const isAccountRoute = createRouteMatcher(['/account(.*)'])
 const isApiRoute = createRouteMatcher([
@@ -31,6 +55,14 @@ export default clerkMiddleware(async (auth, req) => {
   // Allow API routes for authenticated users (but don't check onboarding status)
   if (isApiRoute(req)) {
     await auth.protect()
+    // Basic rate limit for sensitive endpoints
+    const url = new URL(req.url)
+    const path = url.pathname
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+    const isSensitive = ['/api/admin/flags/toggle', '/api/analytics/track', '/api/reset-password', '/api/admin/reset-password'].some((p) => path.startsWith(p))
+    if (isSensitive && shouldRateLimit(ip)) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
     return NextResponse.next()
   }
   
