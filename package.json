@@ -13,11 +13,16 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "test": "vitest run",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui --open",
     "depcheck": "depcheck --ignore-bin-package=true --ignores=@tailwindcss/postcss,tailwindcss,eslint-config-next,tw-animate-css",
     "depgraph": "madge --circular --extensions ts,tsx src",
     "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
+    "db:reset": "node -e \"(async()=>{const {ConvexHttpClient}=require('convex/browser');const {api}=require('./convex/_generated/api');const c=new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);await c.mutation(api.devTools.resetDemoData,{});console.log('reset ok')})()\"",
+    "db:seed": "node -e \"(async()=>{const {ConvexHttpClient}=require('convex/browser');const {api}=require('./convex/_generated/api');const c=new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);await c.mutation(api.devTools.seedDemoData,{});console.log('seed ok')})()\"",
+    "test:smoke": "playwright test tests/e2e/smoke.spec.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -57,6 +62,7 @@
   "devDependencies": {
     "@clerk/types": "^4.29.0",
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.54.2",
     "@tailwindcss/postcss": "^4",
     "@types/react": "^19",
     "@types/react-dom": "^19",

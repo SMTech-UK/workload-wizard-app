@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -34,10 +36,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { withToast } from "@/lib/utils";
+import { GenericDeleteModal } from "@/components/domain/GenericDeleteModal";
 
 export default function CourseDetailPage() {
   const params = useParams<{ id: string }>();
   const courseId = params?.id as string;
+  const { toast } = useToast();
 
   const course = useQuery(
     api.courses.getById,
@@ -50,10 +56,15 @@ export default function CourseDetailPage() {
   const addYear = useMutation(api.courses.addYear);
 
   const [yearInput, setYearInput] = useState<string>("1");
+  const [isAddingYear, setIsAddingYear] = useState(false);
   const canAdd = useMemo(() => {
     const val = Number(yearInput);
-    return Number.isFinite(val) && val >= 1 && val <= 10;
-  }, [yearInput]);
+    const formatOk = Number.isFinite(val) && val >= 1 && val <= 10;
+    const exists = Array.isArray(years)
+      ? (years as any[]).some((y) => Number((y as any).yearNumber) === val)
+      : false;
+    return formatOk && !exists;
+  }, [yearInput, years]);
 
   if (!course) {
     return (
@@ -109,16 +120,48 @@ export default function CourseDetailPage() {
                 onChange={(e) => setYearInput(e.target.value)}
                 className="w-24"
               />
+              {(() => {
+                const val = Number(yearInput);
+                const exists = Array.isArray(years)
+                  ? (years as any[]).some(
+                      (y) => Number((y as any).yearNumber) === val,
+                    )
+                  : false;
+                return Number.isFinite(val) && exists ? (
+                  <p className="text-xs text-destructive">
+                    Year already exists for this course
+                  </p>
+                ) : null;
+              })()}
             </div>
             <Button
-              disabled={!canAdd}
+              disabled={!canAdd || isAddingYear}
               onClick={async () => {
                 const yearNumber = Number(yearInput);
-                await addYear({ courseId: course._id, yearNumber } as any);
-                setYearInput(String(yearNumber + 1));
+                setIsAddingYear(true);
+                try {
+                  await addYear({ courseId: course._id, yearNumber } as any);
+                  setYearInput(String(yearNumber + 1));
+                  toast({
+                    title: "Year added",
+                    description: `Year ${yearNumber} has been added successfully.`,
+                    variant: "success",
+                  });
+                } catch (error) {
+                  toast({
+                    title: "Failed to add year",
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : "An error occurred",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsAddingYear(false);
+                }
               }}
             >
-              Add Year
+              {isAddingYear ? "Adding..." : "Add Year"}
             </Button>
           </div>
           <div>
@@ -146,6 +189,7 @@ export default function CourseDetailPage() {
 }
 
 function CourseYearModules({ yearId }: { yearId: string }) {
+  const { toast } = useToast();
   const attached = useQuery(api.modules.listForCourseYear, {
     courseYearId: yearId as string & { __tableName: "course_years" },
   } as any);
@@ -155,6 +199,13 @@ function CourseYearModules({ yearId }: { yearId: string }) {
 
   const [selected, setSelected] = useState<string>("");
   const [isCore, setIsCore] = useState<boolean>(true);
+  const [isAttaching, setIsAttaching] = useState(false);
+  const [isDetaching, setIsDetaching] = useState(false);
+  const [detaching, setDetaching] = useState<{
+    moduleId: string;
+    moduleCode: string;
+    moduleName: string;
+  } | null>(null);
 
   const available = useMemo(() => {
     const used = new Set(
@@ -180,6 +231,14 @@ function CourseYearModules({ yearId }: { yearId: string }) {
               ))}
             </SelectContent>
           </Select>
+          {!!selected &&
+            (attached || []).some(
+              (a: any) => String(a.module?._id) === selected,
+            ) && (
+              <p className="text-xs text-destructive mt-1">
+                Module already attached to this year
+              </p>
+            )}
         </div>
         <div>
           <Label className="block">Core?</Label>
@@ -192,17 +251,39 @@ function CourseYearModules({ yearId }: { yearId: string }) {
           </button>
         </div>
         <Button
-          disabled={!selected}
+          disabled={
+            !selected ||
+            (attached || []).some(
+              (a: any) => String(a.module?._id) === selected,
+            ) ||
+            isAttaching
+          }
           onClick={async () => {
-            await attach({
-              courseYearId: yearId as any,
-              moduleId: selected as any,
-              isCore,
-            });
-            setSelected("");
+            setIsAttaching(true);
+            try {
+              await withToast(
+                () =>
+                  attach({
+                    courseYearId: yearId as any,
+                    moduleId: selected as any,
+                    isCore,
+                  }),
+                {
+                  success: {
+                    title: "Module attached",
+                    description: "Module has been attached successfully.",
+                  },
+                  error: { title: "Failed to attach module" },
+                },
+                toast,
+              );
+              setSelected("");
+            } finally {
+              setIsAttaching(false);
+            }
           }}
         >
-          Attach
+          {isAttaching ? "Attaching..." : "Attach"}
         </Button>
       </div>
       <div className="mt-3">
@@ -219,10 +300,12 @@ function CourseYearModules({ yearId }: { yearId: string }) {
                   />
                   <button
                     className="ml-1 text-destructive"
-                    onClick={async () => {
-                      await detach({
-                        courseYearId: yearId as any,
-                        moduleId: a.module?._id as any,
+                    disabled={isDetaching}
+                    onClick={() => {
+                      setDetaching({
+                        moduleId: String(a.module?._id),
+                        moduleCode: String(a.module?.code || "Unknown"),
+                        moduleName: String(a.module?.name || ""),
                       });
                     }}
                   >
@@ -238,6 +321,39 @@ function CourseYearModules({ yearId }: { yearId: string }) {
           </div>
         )}
       </div>
+
+      {detaching && (
+        <GenericDeleteModal
+          entityType="Module from Course Year"
+          entityName={detaching.moduleName}
+          entityCode={detaching.moduleCode}
+          onConfirm={async () => {
+            try {
+              setIsDetaching(true);
+              await withToast(
+                () =>
+                  detach({
+                    courseYearId: yearId as any,
+                    moduleId: detaching.moduleId as any,
+                  }),
+                {
+                  success: {
+                    title: "Module detached",
+                    description: `${detaching.moduleCode} has been detached successfully.`,
+                  },
+                  error: { title: "Failed to detach module" },
+                },
+                toast,
+              );
+              setDetaching(null);
+            } finally {
+              setIsDetaching(false);
+            }
+          }}
+          onCancel={() => setDetaching(null)}
+          isDeleting={isDetaching}
+        />
+      )}
     </div>
   );
 }
@@ -248,6 +364,8 @@ function ModuleIterationAndGroupsAndAllocations({
   moduleId: string;
 }) {
   const { currentYear } = useAcademicYear();
+  const { toast } = useToast();
+  const { user } = useUser();
   const iteration = useQuery(
     api.modules.getIterationForYear,
     currentYear?._id
@@ -270,20 +388,61 @@ function ModuleIterationAndGroupsAndAllocations({
   // Allocations UI bits
   const profiles = useQuery(
     (api as any).staff.list,
-    (api as any) ? ({ userId: "me" } as any) : ("skip" as any),
+    user?.id ? ({ userId: user.id } as any) : ("skip" as any),
   );
   const assign = useMutation((api as any).allocations.assignLecturer);
   const removeAllocation = useMutation((api as any).allocations.remove);
+  const updateAllocation = useMutation((api as any).allocations.update);
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [selectedLecturerId, setSelectedLecturerId] = useState<string>("");
   const [hoursOverride, setHoursOverride] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [detaching, setDetaching] = useState<{
+    moduleId: string;
+    moduleCode: string;
+    moduleName: string;
+  } | null>(null);
   const listAllocations = useQuery(
     (api as any).allocations.listForGroup,
     selectedGroupId
       ? ({ groupId: selectedGroupId as any } as any)
       : ("skip" as any),
   ) as Array<{ allocation: any; lecturer: any }> | undefined;
+
+  // Get module teaching hours for preview
+  const moduleHours = useQuery(
+    (api as any).allocations.getModuleTeachingHours,
+    selectedGroupId
+      ? ({ groupId: selectedGroupId as any } as any)
+      : ("skip" as any),
+  );
+
+  // Get lecturer totals for instant updates
+  const lecturerTotals = useQuery(
+    (api as any).allocations.getLecturerTotals,
+    selectedLecturerId
+      ? ({
+          lecturerId: selectedLecturerId as any,
+          academicYearId: (currentYear as any)?._id,
+        } as any)
+      : ("skip" as any),
+  );
+
+  const resetDialogState = () => {
+    setSelectedGroupId("");
+    setSelectedLecturerId("");
+    setHoursOverride("");
+    setIsSubmitting(false);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      resetDialogState();
+    }
+    setAssignOpen(open);
+  };
 
   if (!currentYear)
     return <span className="text-muted-foreground">Select AY</span>;
@@ -295,18 +454,42 @@ function ModuleIterationAndGroupsAndAllocations({
           <span className="text-emerald-700">
             Iteration: {currentYear.name}
           </span>
+          {/* Link to dedicated iteration details page */}
+          <Link
+            href={`/courses/${String((useParams() as any)?.id)}/iterations/${String((iteration as any)?._id)}`}
+            className="text-xs underline"
+          >
+            View details
+          </Link>
           <button
             className="text-xs underline"
+            disabled={isCreatingGroup}
             onClick={async () => {
               const name = prompt("Group name?");
               if (!name) return;
-              await createGroup({
-                moduleIterationId: (iteration as any)._id,
-                name,
-              } as any);
+              setIsCreatingGroup(true);
+              try {
+                await withToast(
+                  () =>
+                    createGroup({
+                      moduleIterationId: (iteration as any)._id,
+                      name,
+                    } as any),
+                  {
+                    success: {
+                      title: "Group created",
+                      description: `Group "${name}" has been created successfully.`,
+                    },
+                    error: { title: "Failed to create group" },
+                  },
+                  toast,
+                );
+              } finally {
+                setIsCreatingGroup(false);
+              }
             }}
           >
-            + Add Group
+            {isCreatingGroup ? "Creating..." : "+ Add Group"}
           </button>
           {Array.isArray(groups) && groups.length > 0 ? (
             <span className="text-xs text-muted-foreground">
@@ -314,7 +497,7 @@ function ModuleIterationAndGroupsAndAllocations({
             </span>
           ) : null}
           {Array.isArray(groups) && groups.length > 0 ? (
-            <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+            <Dialog open={assignOpen} onOpenChange={handleDialogClose}>
               <DialogTrigger asChild>
                 <button className="text-xs underline">Assign lecturer</button>
               </DialogTrigger>
@@ -322,6 +505,40 @@ function ModuleIterationAndGroupsAndAllocations({
                 <DialogHeader>
                   <DialogTitle>Assign Lecturer</DialogTitle>
                 </DialogHeader>
+
+                {/* Selection Summary */}
+                {(selectedGroupId || selectedLecturerId) && (
+                  <div className="space-y-2 p-3 bg-muted/30 rounded-md">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Current Selection
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {selectedGroupId && (
+                        <div>
+                          <span className="text-muted-foreground">Group:</span>
+                          <div className="font-medium">
+                            {(groups as any[])?.find(
+                              (g) => String(g._id) === selectedGroupId,
+                            )?.name || selectedGroupId}
+                          </div>
+                        </div>
+                      )}
+                      {selectedLecturerId && (
+                        <div>
+                          <span className="text-muted-foreground">
+                            Lecturer:
+                          </span>
+                          <div className="font-medium">
+                            {(profiles as any[])?.find(
+                              (p) => String(p._id) === selectedLecturerId,
+                            )?.fullName || selectedLecturerId}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <Label>Group</Label>
@@ -367,40 +584,175 @@ function ModuleIterationAndGroupsAndAllocations({
                       value={hoursOverride}
                       onChange={(e) => setHoursOverride(e.target.value)}
                       placeholder="Enter number of hours"
+                      min="0"
+                      max="1000"
                     />
+                    {hoursOverride.trim() && (
+                      <div className="mt-1 text-xs">
+                        {isNaN(Number(hoursOverride)) ? (
+                          <span className="text-destructive">
+                            Please enter a valid number
+                          </span>
+                        ) : Number(hoursOverride) < 0 ? (
+                          <span className="text-destructive">
+                            Hours cannot be negative
+                          </span>
+                        ) : Number(hoursOverride) > 1000 ? (
+                          <span className="text-destructive">
+                            Hours cannot exceed 1000
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Override: {hoursOverride}h (computed:{" "}
+                            {moduleHours?.computedHours || 0}h)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Computed hours preview */}
+                  {moduleHours && (
+                    <div className="space-y-2 p-3 bg-muted/50 rounded-md">
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Module Hours Preview
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Module:</span>
+                          <div className="font-medium">
+                            {moduleHours.moduleCode} - {moduleHours.moduleName}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">
+                            Credits:
+                          </span>
+                          <div className="font-medium">
+                            {moduleHours.credits}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">
+                            Computed Hours:
+                          </span>
+                          <div className="font-medium">
+                            {moduleHours.computedHours}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">
+                            Total Module Hours:
+                          </span>
+                          <div className="font-medium">
+                            {moduleHours.totalHours}
+                          </div>
+                        </div>
+                      </div>
+                      {hoursOverride.trim() && (
+                        <div className="pt-2 border-t">
+                          <div className="text-xs text-muted-foreground">
+                            Override Hours:{" "}
+                            <span className="font-medium text-foreground">
+                              {hoursOverride}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Lecturer totals preview */}
+                  {lecturerTotals && (
+                    <div className="space-y-2 p-3 bg-blue-50 rounded-md">
+                      <div className="text-sm font-medium text-blue-700">
+                        Lecturer Current Allocation
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-blue-600">Teaching:</span>
+                          <div className="font-medium text-blue-800">
+                            {lecturerTotals.allocatedTeaching}h
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-blue-600">Admin:</span>
+                          <div className="font-medium text-blue-800">
+                            {lecturerTotals.allocatedAdmin}h
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-blue-600">Total:</span>
+                          <div className="font-medium text-blue-800">
+                            {lecturerTotals.allocatedTotal}h
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-blue-600">
+                        Active allocations: {lecturerTotals.allocationCount}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button
-                    disabled={!selectedGroupId || !selectedLecturerId}
+                    disabled={
+                      !selectedGroupId ||
+                      !selectedLecturerId ||
+                      isSubmitting ||
+                      (hoursOverride.trim() !== "" &&
+                        (isNaN(Number(hoursOverride)) ||
+                          Number(hoursOverride) < 0 ||
+                          Number(hoursOverride) > 1000))
+                    }
                     onClick={async () => {
-                      await assign({
-                        groupId: selectedGroupId as any,
-                        lecturerId: selectedLecturerId as any,
-                        academicYearId: (currentYear as any)._id,
-                        organisationId:
-                          (groups as any[])[0]?.organisationId ||
-                          (iteration as any)?.organisationId,
-                        type: "teaching",
-                        ...(hoursOverride.trim()
-                          ? { hoursOverride: Number(hoursOverride) }
-                          : {}),
-                      } as any);
-                      setAssignOpen(false);
-                      setSelectedGroupId("");
-                      setSelectedLecturerId("");
-                      setHoursOverride("");
+                      setIsSubmitting(true);
+                      try {
+                        await assign({
+                          groupId: selectedGroupId as any,
+                          lecturerId: selectedLecturerId as any,
+                          academicYearId: (currentYear as any)._id,
+                          organisationId:
+                            (groups as any[])[0]?.organisationId ||
+                            (iteration as any)?.organisationId,
+                          type: "teaching",
+                          ...(hoursOverride.trim()
+                            ? { hoursOverride: Number(hoursOverride) }
+                            : {}),
+                        } as any);
+                        toast({
+                          title: "Lecturer assigned",
+                          description: `Lecturer ${selectedLecturerId} assigned to group ${selectedGroupId} for ${currentYear.name}.`,
+                        });
+                        handleDialogClose(false);
+                      } catch (e: unknown) {
+                        const errorMessage =
+                          e instanceof Error
+                            ? e.message
+                            : "Unknown error occurred";
+                        toast({
+                          title: "Error assigning lecturer",
+                          description: `Failed to assign lecturer: ${errorMessage}`,
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsSubmitting(false);
+                      }
                     }}
                   >
-                    Assign
+                    {isSubmitting ? "Assigning..." : "Assign"}
                   </Button>
                 </DialogFooter>
-                {!!selectedGroupId && Array.isArray(listAllocations) && (
+                {!!selectedGroupId && (
                   <div className="mt-4 border-t pt-3 space-y-2">
                     <div className="text-sm font-medium">
                       Existing allocations
                     </div>
-                    {listAllocations.length === 0 ? (
+                    {!Array.isArray(listAllocations) ? (
+                      <div className="text-sm text-muted-foreground">
+                        Loading...
+                      </div>
+                    ) : listAllocations.length === 0 ? (
                       <div className="text-sm text-muted-foreground">None</div>
                     ) : (
                       <Table>
@@ -443,13 +795,137 @@ function ModuleIterationAndGroupsAndAllocations({
                                 <TableCell className="py-2 text-right text-sm tabular-nums">
                                   {hours}
                                 </TableCell>
-                                <TableCell className="py-2 text-right">
+                                <TableCell className="py-2 text-right space-x-3">
+                                  <button
+                                    className="text-xs underline"
+                                    onClick={async () => {
+                                      const input = prompt(
+                                        "Change allocation type (teaching/admin)",
+                                        allocation.type,
+                                      );
+                                      if (input === null) return;
+                                      const next = input.trim().toLowerCase();
+                                      if (
+                                        next !== "teaching" &&
+                                        next !== "admin"
+                                      ) {
+                                        toast({
+                                          title: "Invalid type",
+                                          description:
+                                            "Type must be 'teaching' or 'admin'",
+                                          variant: "destructive",
+                                        });
+                                        return;
+                                      }
+                                      await withToast(
+                                        () =>
+                                          updateAllocation({
+                                            allocationId: allocation._id,
+                                            type: next,
+                                          } as any),
+                                        {
+                                          success: {
+                                            title: "Allocation updated",
+                                            description: `Type set to ${next}`,
+                                          },
+                                          error: { title: "Update failed" },
+                                        },
+                                        toast,
+                                      );
+                                    }}
+                                  >
+                                    Type
+                                  </button>
+                                  <button
+                                    className="text-xs underline"
+                                    onClick={async () => {
+                                      const input = prompt(
+                                        "Set hours override (leave blank to clear)",
+                                        typeof allocation.hoursOverride ===
+                                          "number"
+                                          ? String(allocation.hoursOverride)
+                                          : "",
+                                      );
+                                      if (input === null) return; // cancelled
+                                      const trimmed = input.trim();
+                                      if (trimmed === "") {
+                                        await withToast(
+                                          () =>
+                                            updateAllocation({
+                                              allocationId: allocation._id,
+                                              hoursOverride: null,
+                                            } as any),
+                                          {
+                                            success: {
+                                              title: "Override cleared",
+                                              description:
+                                                "Hours override removed; using computed hours.",
+                                            },
+                                            error: { title: "Update failed" },
+                                          },
+                                          toast,
+                                        );
+                                      } else {
+                                        const value = Number(trimmed);
+                                        if (
+                                          !Number.isFinite(value) ||
+                                          value < 0 ||
+                                          value > 1000
+                                        ) {
+                                          toast({
+                                            title: "Update failed",
+                                            description:
+                                              "Enter a number between 0 and 1000",
+                                            variant: "destructive",
+                                          });
+                                          return;
+                                        }
+                                        await withToast(
+                                          () =>
+                                            updateAllocation({
+                                              allocationId: allocation._id,
+                                              hoursOverride: value,
+                                            } as any),
+                                          {
+                                            success: {
+                                              title: "Allocation updated",
+                                              description: `Override set to ${value}h`,
+                                            },
+                                            error: { title: "Update failed" },
+                                          },
+                                          toast,
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
                                   <button
                                     className="text-xs text-destructive underline"
                                     onClick={async () => {
-                                      await removeAllocation({
-                                        allocationId: allocation._id,
-                                      } as any);
+                                      if (
+                                        confirm(
+                                          `Are you sure you want to remove ${lecturer?.fullName || allocation.lecturerId} from this group?`,
+                                        )
+                                      ) {
+                                        await withToast(
+                                          () =>
+                                            removeAllocation({
+                                              allocationId: allocation._id,
+                                            } as any),
+                                          {
+                                            success: {
+                                              title: "Allocation removed",
+                                              description: `Lecturer ${lecturer?.fullName || allocation.lecturerId} removed from group.`,
+                                            },
+                                            error: {
+                                              title:
+                                                "Error removing allocation",
+                                            },
+                                          },
+                                          toast,
+                                        );
+                                      }
                                     }}
                                   >
                                     Remove
@@ -475,10 +951,22 @@ function ModuleIterationAndGroupsAndAllocations({
           onClick={async () => {
             try {
               setIsCreating(true);
-              await createIteration({
-                moduleId: moduleId as any,
-                academicYearId: (currentYear as any)._id,
-              } as any);
+              await withToast(
+                () =>
+                  createIteration({
+                    moduleId: moduleId as any,
+                    academicYearId: (currentYear as any)._id,
+                  } as any),
+                {
+                  success: {
+                    title: "Iteration created",
+                    description:
+                      "Module iteration has been created successfully.",
+                  },
+                  error: { title: "Failed to create iteration" },
+                },
+                toast,
+              );
             } finally {
               setIsCreating(false);
             }

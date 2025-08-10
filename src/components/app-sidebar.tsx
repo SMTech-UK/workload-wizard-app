@@ -90,6 +90,10 @@ const getNavigationData = (userRoles?: string[]) => {
           title: "Organisations",
           url: "/admin/organisations",
         },
+        {
+          title: "Admin Allocation Categories",
+          url: "/admin/allocations/categories",
+        },
         ...// Show Permissions page to sysadmin or developer (support both single and array roles via getUserRoles)
         (userRoles?.some((r) => r === "sysadmin" || r === "developer")
           ? [{ title: "Permissions", url: "/admin/permissions" }]

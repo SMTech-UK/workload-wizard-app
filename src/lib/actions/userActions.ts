@@ -36,7 +36,7 @@ export async function createUser(data: CreateUserData) {
   const currentUserData = await currentUser();
 
   if (!currentUserData) {
-    throw new Error("Unauthorized: User not authenticated");
+    throw new Error("Unauthorised: User not authenticated");
   }
 
   // Check if user has appropriate permissions
@@ -51,7 +51,7 @@ export async function createUser(data: CreateUserData) {
     userRole === "orgadmin" || (userRoles && userRoles.includes("orgadmin"));
 
   if (!isAdmin && !isOrgAdmin) {
-    throw new Error("Unauthorized: Admin access required");
+    throw new Error("Unauthorised: Admin access required");
   }
 
   // If orgadmin, ensure they can only create users in their own organisation
@@ -60,13 +60,13 @@ export async function createUser(data: CreateUserData) {
     currentUserData.publicMetadata?.organisationId !== data.organisationId
   ) {
     throw new Error(
-      "Unauthorized: Can only create users in your own organisation",
+      "Unauthorised: Can only create users in your own organisation",
     );
   }
 
   // Ensure user has an organisationId (for orgadmins)
   if (isOrgAdmin && !currentUserData.publicMetadata?.organisationId) {
-    throw new Error("Unauthorized: User must be assigned to an organisation");
+    throw new Error("Unauthorised: User must be assigned to an organisation");
   }
 
   // Validate email format
@@ -306,7 +306,7 @@ export async function listUsers() {
     ) &&
       !isDevLoginSession)
   ) {
-    throw new Error("Unauthorized: Admin access required");
+    throw new Error("Unauthorised: Admin access required");
   }
 
   try {
@@ -359,7 +359,7 @@ export async function deleteUser(userId: string) {
     ) &&
       !isDevLoginSession)
   ) {
-    throw new Error("Unauthorized: Admin access required");
+    throw new Error("Unauthorised: Admin access required");
   }
 
   try {
@@ -436,7 +436,7 @@ export async function updateUser(
   const currentUserData = await currentUser();
 
   if (!currentUserData) {
-    throw new Error("Unauthorized: User not authenticated");
+    throw new Error("Unauthorised: User not authenticated");
   }
 
   // Check if user has appropriate permissions
@@ -451,14 +451,14 @@ export async function updateUser(
     userRole === "orgadmin" || (userRoles && userRoles.includes("orgadmin"));
 
   if (!isAdmin && !isOrgAdmin) {
-    throw new Error("Unauthorized: Admin access required");
+    throw new Error("Unauthorised: Admin access required");
   }
 
   // If orgadmin, ensure they can only update users in their own organisation
   if (isOrgAdmin) {
     // Ensure orgadmin has an organisationId
     if (!currentUserData.publicMetadata?.organisationId) {
-      throw new Error("Unauthorized: User must be assigned to an organisation");
+      throw new Error("Unauthorised: User must be assigned to an organisation");
     }
 
     // Get the user being updated to check their organisation
@@ -470,11 +470,11 @@ export async function updateUser(
 
       if (userOrgId !== currentUserOrgId) {
         throw new Error(
-          "Unauthorized: Can only update users in your own organisation",
+          "Unauthorised: Can only update users in your own organisation",
         );
       }
     } catch {
-      throw new Error("Unauthorized: Cannot access user information");
+      throw new Error("Unauthorised: Cannot access user information");
     }
   }
 
@@ -594,7 +594,7 @@ export async function getUsersByOrganisationId(organisationId: string) {
   const currentUserData = await currentUser();
 
   if (!currentUserData) {
-    throw new Error("Unauthorized: User not authenticated");
+    throw new Error("Unauthorised: User not authenticated");
   }
 
   // Check if user has access to this organisation
@@ -614,7 +614,7 @@ export async function getUsersByOrganisationId(organisationId: string) {
     ) &&
     currentUserData.publicMetadata?.organisationId !== organisationId
   ) {
-    throw new Error("Unauthorized: Access denied to this organisation");
+    throw new Error("Unauthorised: Access denied to this organisation");
   }
 
   // Ensure user has an organisationId (for orgadmins)
@@ -622,7 +622,7 @@ export async function getUsersByOrganisationId(organisationId: string) {
     currentUserData.publicMetadata?.role === "orgadmin" &&
     !currentUserData.publicMetadata?.organisationId
   ) {
-    throw new Error("Unauthorized: User must be assigned to an organisation");
+    throw new Error("Unauthorised: User must be assigned to an organisation");
   }
 
   try {
@@ -683,7 +683,7 @@ export async function deactivateUser(userId: string) {
   const currentUserData = await currentUser();
 
   if (!currentUserData) {
-    throw new Error("Unauthorized: User not authenticated");
+    throw new Error("Unauthorised: User not authenticated");
   }
 
   // Only orgadmin, sysadmin, and developer can deactivate users
@@ -703,7 +703,7 @@ export async function deactivateUser(userId: string) {
         role === "orgadmin" || role === "sysadmin" || role === "developer",
     )
   ) {
-    throw new Error("Unauthorized: Admin access required");
+    throw new Error("Unauthorised: Admin access required");
   }
 
   // Ensure user has an organisationId (for orgadmins)
@@ -711,7 +711,7 @@ export async function deactivateUser(userId: string) {
     currentUserRoles.includes("orgadmin") &&
     !currentUserData.publicMetadata?.organisationId
   ) {
-    throw new Error("Unauthorized: User must be assigned to an organisation");
+    throw new Error("Unauthorised: User must be assigned to an organisation");
   }
 
   try {
@@ -767,7 +767,7 @@ export async function reactivateUser(userId: string) {
   const currentUserData = await currentUser();
 
   if (!currentUserData) {
-    throw new Error("Unauthorized: User not authenticated");
+    throw new Error("Unauthorised: User not authenticated");
   }
 
   // Only orgadmin, sysadmin, and developer can reactivate users
@@ -787,7 +787,7 @@ export async function reactivateUser(userId: string) {
         role === "orgadmin" || role === "sysadmin" || role === "developer",
     )
   ) {
-    throw new Error("Unauthorized: Admin access required");
+    throw new Error("Unauthorised: Admin access required");
   }
 
   // Ensure user has an organisationId (for orgadmins)
@@ -845,7 +845,7 @@ export async function updateLastSignInForCurrentUser() {
   const currentUserData = await currentUser();
 
   if (!currentUserData) {
-    throw new Error("Unauthorized: User not authenticated");
+    throw new Error("Unauthorised: User not authenticated");
   }
 
   try {

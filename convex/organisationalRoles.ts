@@ -209,15 +209,24 @@ export const assignToUser = mutation({
       String(role.organisationId),
     );
 
-    // Validate that the user exists in the organisation
+    // Validate that the user exists and is a member of the organisation
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("subject"), args.userId))
-      .filter((q) => q.eq(q.field("organisationId"), role.organisationId))
+      .withIndex("by_subject", (q) => q.eq("subject", args.userId))
       .first();
 
     if (!user) {
-      throw new Error("User not found in the specified organisation");
+      throw new Error("User not found");
+    }
+
+    const membership = await ctx.db
+      .query("user_organisations")
+      .withIndex("by_user_org", (q) =>
+        q.eq("userId", args.userId).eq("organisationId", role.organisationId),
+      )
+      .first();
+    if (!membership) {
+      throw new Error("User is not a member of the specified organisation");
     }
 
     // First, deactivate any existing role assignments for this user in this organisation

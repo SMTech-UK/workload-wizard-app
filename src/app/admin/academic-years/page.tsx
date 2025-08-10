@@ -16,9 +16,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMemo, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { withToast } from "@/lib/utils";
+import { useFeatureFlag, FeatureFlags } from "@/hooks/useFeatureFlag";
 
 export default function AcademicYearsAdminPage() {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [isSettingStatus, setIsSettingStatus] = useState<string | null>(null);
+
   const years = useQuery(
     (api as any).academicYears.listForOrganisation,
     user?.id ? ({ userId: user.id } as any) : ("skip" as any),
@@ -27,6 +35,12 @@ export default function AcademicYearsAdminPage() {
   const create = useMutation((api as any).academicYears.create);
   const update = useMutation((api as any).academicYears.update);
   const setStatus = useMutation((api as any).academicYears.setStatus);
+  const cloneYear = useMutation((api as any).academicYears.clone);
+  const bulkSetStatus = useMutation((api as any).academicYears.bulkSetStatus);
+
+  const { enabled: bulkEnabled } = useFeatureFlag(
+    FeatureFlags.ACADEMIC_YEAR_BULK_OPS,
+  );
 
   const [form, setForm] = useState({
     name: "",
@@ -124,26 +138,42 @@ export default function AcademicYearsAdminPage() {
               </div>
               <Button
                 className="w-full"
-                disabled={!canCreate || !user?.id}
+                disabled={!canCreate || !user?.id || isLoading}
                 onClick={async () => {
-                  await create({
-                    userId: user!.id,
-                    name: form.name.trim(),
-                    startDate: form.startDate,
-                    endDate: form.endDate,
-                    status: form.status,
-                    isDefaultForOrg: form.isDefaultForOrg,
-                  } as any);
-                  setForm({
-                    name: "",
-                    startDate: "",
-                    endDate: "",
-                    status: "draft",
-                    isDefaultForOrg: false,
-                  });
+                  setIsLoading(true);
+                  try {
+                    await withToast(
+                      () =>
+                        create({
+                          userId: user!.id,
+                          name: form.name.trim(),
+                          startDate: form.startDate,
+                          endDate: form.endDate,
+                          status: form.status,
+                          isDefaultForOrg: form.isDefaultForOrg,
+                        } as any),
+                      {
+                        success: {
+                          title: "Academic Year Created",
+                          description: `Academic year "${form.name.trim()}" has been created successfully.`,
+                        },
+                        error: { title: "Failed to create academic year" },
+                      },
+                      toast,
+                    );
+                    setForm({
+                      name: "",
+                      startDate: "",
+                      endDate: "",
+                      status: "draft",
+                      isDefaultForOrg: false,
+                    });
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }}
               >
-                Create
+                {isLoading ? "Creating..." : "Create"}
               </Button>
             </div>
           </CardContent>
@@ -151,7 +181,50 @@ export default function AcademicYearsAdminPage() {
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>All Years</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>All Years</CardTitle>
+              {bulkEnabled && Array.isArray(years) && years.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={""}
+                    onValueChange={async (v) => {
+                      if (!user?.id) return;
+                      const ids = years.map((y) => y._id);
+                      setIsSettingStatus("bulk");
+                      try {
+                        await withToast(
+                          () =>
+                            bulkSetStatus({
+                              userId: user!.id,
+                              ids,
+                              status: v,
+                            } as any),
+                          {
+                            success: {
+                              title: "Bulk Status Updated",
+                              description: `All ${years.length} years → ${v}.`,
+                            },
+                            error: { title: "Failed bulk update" },
+                          },
+                          toast,
+                        );
+                      } finally {
+                        setIsSettingStatus(null);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Bulk set status…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="published">Publish all</SelectItem>
+                      <SelectItem value="draft">Mark all draft</SelectItem>
+                      <SelectItem value="archived">Archive all</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -180,54 +253,162 @@ export default function AcademicYearsAdminPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={isUpdating === String(y._id)}
                           onClick={async () => {
-                            await update({
-                              userId: user!.id,
-                              id: y._id,
-                              isDefaultForOrg: true,
-                            } as any);
+                            setIsUpdating(String(y._id));
+                            try {
+                              await withToast(
+                                () =>
+                                  update({
+                                    userId: user!.id,
+                                    id: y._id,
+                                    isDefaultForOrg: true,
+                                  } as any),
+                                {
+                                  success: {
+                                    title: "Default Set",
+                                    description: `"${y.name}" is now the default academic year.`,
+                                  },
+                                  error: { title: "Failed to set default" },
+                                },
+                                toast,
+                              );
+                            } finally {
+                              setIsUpdating(null);
+                            }
                           }}
                         >
-                          Set default
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={async () => {
-                            await setStatus({
-                              userId: user!.id,
-                              id: y._id,
-                              status: "published",
-                            } as any);
-                          }}
-                        >
-                          Publish
+                          {isUpdating === String(y._id)
+                            ? "Setting..."
+                            : "Set default"}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            await setStatus({
-                              userId: user!.id,
-                              id: y._id,
-                              status: "draft",
-                            } as any);
+                            if (!user?.id) return;
+                            setIsLoading(true);
+                            try {
+                              await withToast(
+                                () =>
+                                  cloneYear({
+                                    userId: user!.id,
+                                    sourceId: y._id,
+                                    name: `${y.name} (copy)`,
+                                    startDate: y.startDate,
+                                    endDate: y.endDate,
+                                  } as any),
+                                {
+                                  success: {
+                                    title: "Year Cloned",
+                                    description: `Created a draft copy of "${y.name}".`,
+                                  },
+                                  error: { title: "Failed to clone year" },
+                                },
+                                toast,
+                              );
+                            } finally {
+                              setIsLoading(false);
+                            }
                           }}
                         >
-                          Mark draft
+                          Clone
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={isSettingStatus === String(y._id)}
+                          onClick={async () => {
+                            setIsSettingStatus(String(y._id));
+                            try {
+                              await withToast(
+                                () =>
+                                  setStatus({
+                                    userId: user!.id,
+                                    id: y._id,
+                                    status: "published",
+                                  } as any),
+                                {
+                                  success: {
+                                    title: "Status Updated",
+                                    description: `"${y.name}" has been published.`,
+                                  },
+                                  error: { title: "Failed to publish" },
+                                },
+                                toast,
+                              );
+                            } finally {
+                              setIsSettingStatus(null);
+                            }
+                          }}
+                        >
+                          {isSettingStatus === String(y._id)
+                            ? "Publishing..."
+                            : "Publish"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isSettingStatus === String(y._id)}
+                          onClick={async () => {
+                            setIsSettingStatus(String(y._id));
+                            try {
+                              await withToast(
+                                () =>
+                                  setStatus({
+                                    userId: user!.id,
+                                    id: y._id,
+                                    status: "draft",
+                                  } as any),
+                                {
+                                  success: {
+                                    title: "Status Updated",
+                                    description: `"${y.name}" has been marked as draft.`,
+                                  },
+                                  error: { title: "Failed to update status" },
+                                },
+                                toast,
+                              );
+                            } finally {
+                              setIsSettingStatus(null);
+                            }
+                          }}
+                        >
+                          {isSettingStatus === String(y._id)
+                            ? "Updating..."
+                            : "Mark draft"}
                         </Button>
                         <Button
                           variant="destructive"
                           size="sm"
+                          disabled={isSettingStatus === String(y._id)}
                           onClick={async () => {
-                            await setStatus({
-                              userId: user!.id,
-                              id: y._id,
-                              status: "archived",
-                            } as any);
+                            setIsSettingStatus(String(y._id));
+                            try {
+                              await withToast(
+                                () =>
+                                  setStatus({
+                                    userId: user!.id,
+                                    id: y._id,
+                                    status: "archived",
+                                  } as any),
+                                {
+                                  success: {
+                                    title: "Status Updated",
+                                    description: `"${y.name}" has been archived.`,
+                                  },
+                                  error: { title: "Failed to archive" },
+                                },
+                                toast,
+                              );
+                            } finally {
+                              setIsSettingStatus(null);
+                            }
                           }}
                         >
-                          Archive
+                          {isSettingStatus === String(y._id)
+                            ? "Archiving..."
+                            : "Archive"}
                         </Button>
                       </div>
                     </li>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFeatureFlag } from "@/lib/feature-flags/client";
+import { getServerFeatureFlag } from "@/lib/feature-flags/server";
 import { FeatureFlags } from "@/lib/feature-flags/types";
 
 export async function GET(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await getFeatureFlag(flagName as FeatureFlags);
+    const result = await getServerFeatureFlag(flagName as FeatureFlags);
 
     return NextResponse.json({
       flag: flagName,
@@ -60,8 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // For now, we'll just return the current status
-    // In a real implementation, you might update the flag value
-    const result = await getFeatureFlag(flagName as FeatureFlags);
+    const result = await getServerFeatureFlag(flagName as FeatureFlags);
 
     return NextResponse.json({
       flag: flagName,

@@ -39,13 +39,13 @@ describe("authz guards", () => {
     );
   });
 
-  it("requireOrgPermission allows orgadmin/sysadmin", async () => {
+  it("requireOrgPermission allows sysadmin/admin; orgadmin must have permission (no bypass)", async () => {
     (auth as any).mockResolvedValue({
       userId: "u4",
       sessionClaims: { role: "orgadmin", organisationId: "org1" },
     });
     (currentUser as any).mockResolvedValue({ publicMetadata: {} });
-    await expect(requireOrgPermission("users.view")).resolves.toBe(true);
+    await expect(requireOrgPermission("users.view")).rejects.toThrow();
 
     (auth as any).mockResolvedValue({
       userId: "u5",

@@ -142,6 +142,20 @@ export const update = mutation({
       course.organisationId as any,
     );
 
+    // Uniqueness: prevent duplicate codes within the same organisation if code changed
+    if (args.code !== course.code) {
+      const conflict = await ctx.db
+        .query("courses" as any)
+        .withIndex("by_organisation" as any, (q) =>
+          (q as any).eq("organisationId", course.organisationId as any),
+        )
+        .filter((q) => (q as any).eq((q as any).field("code"), args.code))
+        .first();
+      if (conflict && String(conflict._id) !== String(args.id)) {
+        throw new Error("Course code already exists in this organisation");
+      }
+    }
+
     const now = Date.now();
     const updates: Record<string, unknown> = {
       code: args.code,
@@ -231,6 +245,38 @@ export const listYears = query({
       .order("asc")
       .collect();
     return years;
+  },
+});
+
+// Check if a course code is available within the actor's organisation
+export const isCodeAvailable = query({
+  args: { code: v.string(), excludeId: v.optional(v.id("courses")) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return { available: false };
+
+    // Derive organisation from actor
+    const actor = await ctx.db
+      .query("users" as any)
+      .withIndex("by_subject" as any, (q) =>
+        (q as any).eq("subject", identity.subject),
+      )
+      .first();
+    if (!actor) return { available: false };
+
+    const existing = await ctx.db
+      .query("courses" as any)
+      .withIndex("by_organisation" as any, (q) =>
+        (q as any).eq("organisationId", actor.organisationId as any),
+      )
+      .filter((q) => (q as any).eq((q as any).field("code"), args.code))
+      .first();
+
+    if (!existing) return { available: true };
+    if (args.excludeId && String(existing._id) === String(args.excludeId)) {
+      return { available: true };
+    }
+    return { available: false };
   },
 });
 

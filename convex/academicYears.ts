@@ -7,6 +7,7 @@ import {
 import { v } from "convex/values";
 import { type Id, type Doc } from "./_generated/dataModel";
 import { requireOrgPermission } from "./permissions";
+import { writeAudit } from "./audit";
 
 type YearStatus = "draft" | "published" | "archived";
 
@@ -289,6 +290,204 @@ export const setStatus = mutation({
       status: args.status as YearStatus,
       updatedAt: now,
     });
+    try {
+      await writeAudit(ctx, {
+        action: "year.status_change",
+        entityType: "academic_year",
+        entityId: String(args.id),
+        entityName: year.name,
+        performedBy: args.userId,
+        organisationId: orgId,
+        details: `Status → ${args.status}`,
+        severity: "info",
+      });
+    } catch {}
     return args.id;
+  },
+});
+
+// Clone an academic year (and optionally related iterations/groups later)
+export const clone = mutation({
+  args: {
+    userId: v.string(),
+    sourceId: v.id("academic_years"),
+    name: v.string(),
+    startDate: v.string(),
+    endDate: v.string(),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"))),
+    setDefault: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) throw new Error("Source year not found");
+    const can = await hasOrgPermission(
+      ctx,
+      args.userId,
+      "year.edit.staging",
+      source.organisationId as Id<"organisations">,
+    );
+    if (!can) throw new Error("Permission denied");
+    const now = Date.now();
+
+    // If making default, clear other defaults first
+    if (args.setDefault) {
+      const existingDefaults = await ctx.db
+        .query("academic_years")
+        .withIndex("by_organisation", (q) =>
+          q.eq("organisationId", source.organisationId),
+        )
+        .filter((q) => q.eq(q.field("isDefaultForOrg"), true))
+        .collect();
+      for (const row of existingDefaults) {
+        await ctx.db.patch(row._id, { isDefaultForOrg: false, updatedAt: now });
+      }
+    }
+
+    const newYearId = await ctx.db.insert("academic_years", {
+      name: args.name,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      isActive: true,
+      staging: true,
+      organisationId: source.organisationId,
+      status: (args.status ?? "draft") as YearStatus,
+      isDefaultForOrg: !!args.setDefault,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    try {
+      await writeAudit(ctx, {
+        action: "year.clone",
+        entityType: "academic_year",
+        entityId: String(newYearId),
+        entityName: args.name,
+        performedBy: args.userId,
+        organisationId: source.organisationId as Id<"organisations">,
+        details: `Cloned from ${String(source._id)} (${source.name})`,
+        severity: "info",
+      });
+    } catch {}
+
+    return newYearId;
+  },
+});
+
+// Bulk status update for multiple years within user's organisation
+export const bulkSetStatus = mutation({
+  args: {
+    userId: v.string(),
+    ids: v.array(v.id("academic_years")),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const first = await ctx.db.get(args.ids[0]);
+    if (!first) throw new Error("Year not found");
+    const orgId = first.organisationId as Id<"organisations">;
+    // Ensure all ids belong to same org and exist
+    const rows = await Promise.all(args.ids.map((id) => ctx.db.get(id)));
+    for (const y of rows) {
+      if (!y) throw new Error("Year not found");
+      if (String(y.organisationId) !== String(orgId))
+        throw new Error("Cross-organisation bulk update not allowed");
+    }
+    const requiredPerm =
+      args.status === "archived"
+        ? "year.edit.archived"
+        : args.status === "published"
+          ? "year.edit.live"
+          : "year.edit.staging";
+    const can = await hasOrgPermission(ctx, args.userId, requiredPerm, orgId);
+    if (!can) throw new Error("Permission denied");
+
+    const now = Date.now();
+    for (const y of rows) {
+      await ctx.db.patch(y!._id, {
+        status: args.status as YearStatus,
+        updatedAt: now,
+      });
+    }
+    try {
+      await writeAudit(ctx, {
+        action: "year.bulk_status_change",
+        entityType: "academic_year",
+        entityId: args.ids.map(String).join(","),
+        performedBy: args.userId,
+        organisationId: orgId,
+        details: `Status → ${args.status} (${args.ids.length} items)`,
+        severity: "info",
+      });
+    } catch {}
+    return args.ids.length;
+  },
+});
+
+// Preferences: get and upsert selected AY and includeDrafts
+export const getPreferences = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await getActor(ctx, args.userId);
+    const pref = await ctx.db
+      .query("user_preferences")
+      .withIndex("by_user_org", (q) =>
+        q.eq("userId", args.userId).eq("organisationId", user.organisationId),
+      )
+      .first();
+    return pref || null;
+  },
+});
+
+export const setPreferences = mutation({
+  args: {
+    userId: v.string(),
+    selectedAcademicYearId: v.optional(v.id("academic_years")),
+    includeDrafts: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getActor(ctx, args.userId);
+    const now = Date.now();
+    const existing = await ctx.db
+      .query("user_preferences")
+      .withIndex("by_user_org", (q) =>
+        q.eq("userId", args.userId).eq("organisationId", user.organisationId),
+      )
+      .first();
+
+    const updates: any = { updatedAt: now };
+    if (typeof args.selectedAcademicYearId !== "undefined") {
+      // Validate belongs to same org if provided
+      if (args.selectedAcademicYearId) {
+        const year = await ctx.db.get(args.selectedAcademicYearId);
+        if (
+          year &&
+          String(year.organisationId) !== String(user.organisationId)
+        ) {
+          throw new Error("Selected academic year is not in your organisation");
+        }
+      }
+      updates.selectedAcademicYearId = args.selectedAcademicYearId;
+    }
+    if (typeof args.includeDrafts !== "undefined") {
+      updates.includeDrafts = args.includeDrafts;
+    }
+
+    if (existing) {
+      await ctx.db.patch(existing._id, updates);
+      return existing._id;
+    } else {
+      const id = await ctx.db.insert("user_preferences", {
+        userId: args.userId,
+        organisationId: user.organisationId,
+        selectedAcademicYearId: updates.selectedAcademicYearId,
+        includeDrafts: updates.includeDrafts,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return id;
+    }
   },
 });

@@ -81,6 +81,8 @@ export default function FeaturebaseMessenger() {
 
   const hasBootedRef = useRef<string | null>(null);
   const [userHash, setUserHash] = useState<string | undefined>(undefined);
+  const identityField =
+    process.env.NEXT_PUBLIC_FEATUREBASE_IDENTITY_FIELD || "userId"; // 'email' | 'userId'
 
   useEffect(() => {
     if (!isLoaded || !user?.id) return;
@@ -109,34 +111,45 @@ export default function FeaturebaseMessenger() {
     }
 
     const appId = process.env.NEXT_PUBLIC_FEATUREBASE_APP_ID || "";
-    if (!appId) return;
+    const enableInDev =
+      process.env.NEXT_PUBLIC_FEATUREBASE_ENABLE_DEV === "true";
+    const isProd = process.env.NODE_ENV === "production";
+    // Avoid noisy websocket errors in local dev unless explicitly enabled
+    if (!appId || (!isProd && !enableInDev)) return;
     if (!isLoaded) return;
     // If we have an orgId but orgName hasn't resolved yet, wait to include it in first boot payload
     if (context.organisationId && !context.organisationName) return;
-    const identifier = user?.id || context.email;
-    if (!identifier) return;
+    // Enforce identifier presence according to configured identity field to avoid Featurebase preferring the wrong field
+    const identifier = identityField === "email" ? context.email : user?.id;
+    // If no identifier yet (e.g., on sign-in page), allow anonymous boot (no userHash, no identity fields)
 
     async function boot() {
-      let userHash: string | undefined = undefined;
-      try {
-        const res = await fetch("/api/featurebase/user-hash");
-        if (res.ok) {
-          const data = (await res.json()) as { userHash?: string };
-          userHash = data.userHash;
-        }
-      } catch {}
+      let latestHash: string | undefined = userHash;
+      if (!latestHash && identifier) {
+        try {
+          const res = await fetch("/api/featurebase/user-hash");
+          if (res.ok) {
+            const data = (await res.json()) as { userHash?: string };
+            latestHash = data.userHash;
+          }
+        } catch {}
+      }
 
       const createdAtIso = user?.createdAt
         ? new Date(user.createdAt as any).toISOString()
         : undefined;
       const payload: BootPayload = {
         appId,
-        email: context.email,
-        userId: user?.id,
+        // Only include identity if we have it; otherwise boot anonymously
+        ...(identifier
+          ? identityField === "email"
+            ? { email: context.email }
+            : { userId: user?.id }
+          : {}),
         createdAt: createdAtIso,
         theme: "light",
         language: "en",
-        userHash,
+        ...(identifier && latestHash ? { userHash: latestHash } : {}),
         organisationId: context.organisationId,
         organisationName: context.organisationName,
         role: context.role,
@@ -150,20 +163,30 @@ export default function FeaturebaseMessenger() {
         const v = (payload as any)[k];
         if (v === undefined) delete (payload as any)[k];
       });
-      const bootKey = `${identifier}:${userHash || "nohash"}:${context.organisationName || "noname"}:${(context as any).systemRoles || ""}:${(context as any).orgRoles || ""}`;
+      const bootKey = `${identifier || "anon"}:${latestHash || "nohash"}:${
+        context.organisationName || "noname"
+      }:${(context as any).systemRoles || ""}:${(context as any).orgRoles || ""}`;
       if (hasBootedRef.current === bootKey) return;
       hasBootedRef.current = bootKey;
       win.Featurebase!("boot", payload);
     }
 
     boot();
-  }, [isLoaded, user, context, userHash]);
+  }, [isLoaded, user, context, userHash, identityField]);
 
-  return (
+  const enableInDev = process.env.NEXT_PUBLIC_FEATUREBASE_ENABLE_DEV === "true";
+  const isProd = process.env.NODE_ENV === "production";
+  const shouldLoadScript =
+    Boolean(process.env.NEXT_PUBLIC_FEATUREBASE_APP_ID) &&
+    (isProd || enableInDev);
+  return shouldLoadScript ? (
     <Script
       src="https://do.featurebase.app/js/sdk.js"
       id="featurebase-sdk"
       strategy="afterInteractive"
+      onError={() => {
+        /* suppress console error noise in dev */
+      }}
     />
-  );
+  ) : null;
 }

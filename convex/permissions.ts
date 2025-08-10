@@ -161,6 +161,75 @@ export const getOrganisationPermissions = query({
 });
 
 /**
+ * Compute effective permissions for a user within an organisation.
+ * Combines system defaults for their roles and role-specific overrides.
+ */
+export const getUserEffectivePermissions = query({
+  args: {
+    userId: v.string(),
+    organisationId: v.id("organisations"),
+  },
+  handler: async (ctx, { userId, organisationId }) => {
+    const assignments = await ctx.db
+      .query("user_role_assignments")
+      .withIndex("by_user_org", (q) =>
+        q.eq("userId", userId).eq("organisationId", organisationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+    if (assignments.length === 0)
+      return [] as Array<{
+        id: string;
+        source: string;
+        description: string;
+        group: string;
+      }>;
+
+    const roles = (
+      await Promise.all(assignments.map((a) => ctx.db.get(a.roleId)))
+    ).filter((r): r is Doc<"user_roles"> => Boolean(r && r.isActive));
+
+    const systemPermissions = await ctx.db
+      .query("system_permissions")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    const map = new Map<
+      string,
+      { id: string; source: string; description: string; group: string }
+    >();
+
+    for (const role of roles) {
+      // defaults
+      for (const sp of systemPermissions) {
+        if (sp.defaultRoles.includes(role.name)) {
+          map.set(sp.id, {
+            id: sp.id,
+            source: "system_default",
+            description: sp.description,
+            group: sp.group,
+          });
+        }
+      }
+      // explicit
+      for (const pid of role.permissions) {
+        const sp = systemPermissions.find((p) => p.id === pid);
+        if (sp) {
+          map.set(pid, {
+            id: pid,
+            source: "custom",
+            description: sp.description,
+            group: sp.group,
+          });
+        }
+      }
+    }
+
+    return Array.from(map.values());
+  },
+});
+
+/**
  * Seed default roles and permissions for a new organisation
  */
 export const seedDefaultOrgRolesAndPermissions = mutation({
@@ -1056,7 +1125,6 @@ export const seedAcademicYearPermissions = mutation({
         defaultRoles: [
           "Admin",
           "Organisation Admin",
-          "orgadmin",
           "Manager",
           "Lecturer",
           "Viewer",
@@ -1066,27 +1134,27 @@ export const seedAcademicYearPermissions = mutation({
         id: "year.view.staging",
         group: "academic_years",
         description: "View staged/draft academic years",
-        defaultRoles: ["Admin", "Organisation Admin", "orgadmin", "Manager"],
+        defaultRoles: ["Admin", "Organisation Admin", "Manager"],
       },
       {
         id: "year.view.archived",
         group: "academic_years",
         description: "View archived academic years",
-        defaultRoles: ["Admin", "Organisation Admin", "orgadmin"],
+        defaultRoles: ["Admin", "Organisation Admin"],
       },
       {
         id: "year.edit.live",
         group: "academic_years",
         description:
           "Edit live (published) academic years (e.g. set default, rename, dates)",
-        defaultRoles: ["Admin", "Organisation Admin", "orgadmin"],
+        defaultRoles: ["Admin", "Organisation Admin"],
       },
       {
         id: "year.edit.staging",
         group: "academic_years",
         description:
           "Edit staged/draft academic years (create, modify before publish)",
-        defaultRoles: ["Admin", "Organisation Admin", "orgadmin", "Manager"],
+        defaultRoles: ["Admin", "Organisation Admin", "Manager"],
       },
       {
         id: "year.edit.archived",
@@ -1891,7 +1959,7 @@ export const updateOrganisationRole = mutation({
       throw new Error("Role not found");
     }
 
-    // Authorization: only system admins or members of the same organisation can modify
+    // Authorisation: only system admins or members of the same organisation can modify
     const identity = await ctx.auth.getUserIdentity();
     const subject = args.performedBy ?? identity?.subject;
     if (!subject) throw new Error("Unauthenticated");
@@ -1910,7 +1978,7 @@ export const updateOrganisationRole = mutation({
         String(actor.organisationId) !== String(role.organisationId)
       ) {
         throw new Error(
-          "Unauthorized: Cannot modify roles outside your organisation",
+          "Unauthorised: Cannot modify roles outside your organisation",
         );
       }
     }
@@ -1991,7 +2059,7 @@ export const deleteOrganisationRole = mutation({
       throw new Error("Cannot delete role that has assigned users");
     }
 
-    // Authorization: only system admins or members of the same organisation can delete
+    // Authorisation: only system admins or members of the same organisation can delete
     const identity = await ctx.auth.getUserIdentity();
     const subject = args.performedBy ?? identity?.subject;
     if (!subject) throw new Error("Unauthenticated");
@@ -2010,7 +2078,7 @@ export const deleteOrganisationRole = mutation({
         String(actor.organisationId) !== String(role.organisationId)
       ) {
         throw new Error(
-          "Unauthorized: Cannot delete roles outside your organisation",
+          "Unauthorised: Cannot delete roles outside your organisation",
         );
       }
     }
@@ -2066,7 +2134,7 @@ export const updateRolePermissions = mutation({
       throw new Error("Role not found");
     }
 
-    // Authorization: only system admins or members of the same organisation
+    // Authorisation: only system admins or members of the same organisation
     const identity = await ctx.auth.getUserIdentity();
     const subject = args.performedBy ?? identity?.subject;
     if (!subject) throw new Error("Unauthenticated");
@@ -2085,7 +2153,7 @@ export const updateRolePermissions = mutation({
         String(actor.organisationId) !== String(role.organisationId)
       ) {
         throw new Error(
-          "Unauthorized: Cannot modify roles outside your organisation",
+          "Unauthorised: Cannot modify roles outside your organisation",
         );
       }
     }
@@ -2266,14 +2334,6 @@ export const requireOrgPermission = async (
   // Must be operating within their own organisation
   if (String(user.organisationId) !== String(organisationId)) {
     throw new Error("Permission denied: cross-organisation access not allowed");
-  }
-
-  // Organisation admins are allowed for org-scoped permissions within their org
-  if (
-    Array.isArray(user.systemRoles) &&
-    user.systemRoles.some((r: string) => r === "orgadmin")
-  ) {
-    return true;
   }
 
   // Then enforce the permission

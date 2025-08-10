@@ -7,7 +7,7 @@ export async function GET() {
 
   // Protect the route by checking if the user is signed in
   if (!userId) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new NextResponse("Unauthorised", { status: 401 });
   }
 
   // Use `currentUser()` to get the Backend API User object

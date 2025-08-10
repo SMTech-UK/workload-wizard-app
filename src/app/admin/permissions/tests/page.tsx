@@ -15,6 +15,7 @@ import { Settings, Play } from "lucide-react";
 // header actions use plain buttons (no dropdown)
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { useToast } from "@/hooks/use-toast";
 
 type TestSummary = {
   totalTests: number;
@@ -35,6 +36,7 @@ type UserTestResult = {
 type TestRun = { testResults: UserTestResult[]; summary: TestSummary };
 
 export default function PermissionTestsPage() {
+  const { toast } = useToast();
   const [testResults, setTestResults] = useState<TestRun | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [orgLoading, setOrgLoading] = useState(false);
@@ -54,12 +56,18 @@ export default function PermissionTestsPage() {
       console.log("Creating test organisation...");
       const result = await createTestOrg();
       console.log("Test organisation created:", result);
-      alert(
-        `Created test organisation with ${result.roles.length} roles and ${result.permissions.length} permissions`,
-      );
+      toast({
+        title: "Test organisation created",
+        description: `Created with ${result.roles.length} roles and ${result.permissions.length} permissions`,
+        variant: "success",
+      });
     } catch (error) {
       console.error("Error creating test organisation:", error);
-      alert("Error creating test organisation: " + (error as Error).message);
+      toast({
+        title: "Failed to create test organisation",
+        description: (error as Error)?.message ?? "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setOrgLoading(false);
     }
@@ -71,12 +79,18 @@ export default function PermissionTestsPage() {
       console.log("Creating test users...");
       const result = await createTestUsers();
       console.log("Test users created:", result);
-      alert(
-        `Created ${result.users.length} test users with ${result.roleAssignments.length} role assignments`,
-      );
+      toast({
+        title: "Test users created",
+        description: `Created ${result.users.length} users with ${result.roleAssignments.length} assignments`,
+        variant: "success",
+      });
     } catch (error) {
       console.error("Error creating test users:", error);
-      alert("Error creating test users: " + (error as Error).message);
+      toast({
+        title: "Failed to create test users",
+        description: (error as Error)?.message ?? "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setUserLoading(false);
     }
@@ -92,10 +106,18 @@ export default function PermissionTestsPage() {
       await createTestUsers();
 
       console.log("Test data created successfully!");
-      alert("Test data created successfully!");
+      toast({
+        title: "Test data created",
+        description: "Organisation and users created successfully",
+        variant: "success",
+      });
     } catch (error) {
       console.error("Error setting up test data:", error);
-      alert("Error setting up test data: " + (error as Error).message);
+      toast({
+        title: "Failed to setup test data",
+        description: (error as Error)?.message ?? "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

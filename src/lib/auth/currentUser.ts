@@ -24,7 +24,7 @@ export async function getUserOrgOrThrow() {
   const user = await currentUser();
 
   if (!user) {
-    throw new Error("Unauthorized: User not authenticated");
+    throw new Error("Unauthorised: User not authenticated");
   }
 
   const organisationId = user.publicMetadata?.organisationId as
@@ -32,7 +32,7 @@ export async function getUserOrgOrThrow() {
     | undefined;
 
   if (!organisationId) {
-    throw new Error("Unauthorized: User must be assigned to an organisation");
+    throw new Error("Unauthorised: User must be assigned to an organisation");
   }
 
   return {
@@ -55,7 +55,7 @@ export async function getUserOrgOrThrowWithValidation(
   const user = await getUserOrgOrThrow();
 
   if (user.organisationId !== requiredOrganisationId) {
-    throw new Error("Unauthorized: Access denied to this organisation");
+    throw new Error("Unauthorised: Access denied to this organisation");
   }
 
   return user;

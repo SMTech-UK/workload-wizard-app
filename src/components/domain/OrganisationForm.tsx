@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useToast } from "@/hooks/use-toast";
+import { withToast, isZodError, formatZodError } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 interface OrganisationFormData {
   name: string;
@@ -25,17 +29,35 @@ interface OrganisationFormData {
 
 export function OrganisationForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const { toast } = useToast();
 
   const createOrganisation = useMutation(api.organisations.create);
+
+  const Schema = z.object({
+    name: z.string().trim().min(1, "Name is required"),
+    code: z
+      .string()
+      .trim()
+      .min(1, "Code is required")
+      .max(10, "Code max 10 chars")
+      .regex(/^[A-Za-z0-9_-]+$/, "Code can use letters, numbers, _ or -"),
+    contactEmail: z
+      .string()
+      .email("Invalid email")
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
+    contactPhone: z.string().optional(),
+    domain: z.string().optional(),
+    website: z
+      .string()
+      .url("Invalid URL")
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
+  });
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
-    setMessage(null);
 
     const formData = new FormData(event.currentTarget);
     const dataBase = {
@@ -56,26 +78,35 @@ export function OrganisationForm() {
         ? { website: formData.get("website") as string }
         : {}),
     } as Partial<OrganisationFormData>;
-    const data: OrganisationFormData = {
-      ...dataBase,
-      ...optional,
-    } as OrganisationFormData;
+    let data: OrganisationFormData;
+    try {
+      data = Schema.parse({ ...dataBase, ...optional });
+    } catch (err) {
+      toast({
+        title: "Validation error",
+        description: isZodError(err)
+          ? formatZodError(err)
+          : "Please check the form",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      await createOrganisation(data);
-      setMessage({
-        type: "success",
-        text: "Organisation created successfully!",
-      });
+      await withToast(
+        () => createOrganisation(data),
+        {
+          success: {
+            title: "Organisation created",
+            description: "Organisation created successfully!",
+          },
+          error: { title: "Failed to create organisation" },
+        },
+        toast,
+      );
+      track("organisation.created", { code: data.code, name: data.name });
       (event.target as HTMLFormElement).reset();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Failed to create organisation",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -136,18 +167,6 @@ export function OrganisationForm() {
               placeholder="https://university.ac.uk"
             />
           </div>
-
-          {message && (
-            <div
-              className={`p-3 rounded-md text-sm ${
-                message.type === "success"
-                  ? "bg-green-50 text-green-700 border border-green-200"
-                  : "bg-red-50 text-red-700 border border-red-200"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
 
           <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading ? "Creating..." : "Create Organisation"}

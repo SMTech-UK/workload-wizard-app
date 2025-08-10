@@ -3,6 +3,11 @@ export enum FeatureFlags {
   // Add your feature flags here
   // Example: NEW_DASHBOARD = 'new_dashboard',
   PINK_MODE = "pink-mode",
+  NEW_ALLOCATION_UI = "new-allocation-ui",
+  ADVANCED_AUDIT_LOGS = "advanced-audit-logs",
+  BETA_FEATURES = "beta-features",
+  EXPERIMENTAL_PERMISSIONS = "experimental-permissions",
+  ACADEMIC_YEAR_BULK_OPS = "academic-year-bulk-ops",
 }
 
 // Feature flag configuration interface

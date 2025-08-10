@@ -8,10 +8,18 @@ import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSideb
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useMemo, useState } from "react";
+import { EditCourseForm } from "@/components/domain/EditCourseForm";
+import { PermissionGate } from "@/components/common/PermissionGate";
+import { GenericDeleteModal } from "@/components/domain/GenericDeleteModal";
+import { useToast } from "@/hooks/use-toast";
+import { Edit, Trash2 } from "lucide-react";
+import { withToast } from "@/lib/utils";
 
 export default function CoursesPage() {
   const { user } = useUser();
+  const { toast } = useToast();
   const organisationId = (user?.publicMetadata?.organisationId as string) || "";
   const courses = useQuery(
     api.courses.listByOrganisation,
@@ -25,11 +33,102 @@ export default function CoursesPage() {
   );
 
   const createCourse = useMutation(api.courses.create);
+  const deleteCourse = useMutation(api.courses.remove);
   const [form, setForm] = useState({ code: "", name: "" });
+  const codeAvailability = useQuery(
+    (api as any).courses.isCodeAvailable,
+    form.code.trim() ? ({ code: form.code.trim() } as any) : ("skip" as any),
+  ) as { available: boolean } | undefined;
+  const [editingCourse, setEditingCourse] = useState<any>(null);
+  const [deletingCourse, setDeletingCourse] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState<
+    Set<string>
+  >(new Set());
+
   const canSubmit = useMemo(
-    () => form.code.trim().length > 0 && form.name.trim().length > 0,
-    [form],
+    () =>
+      form.code.trim().length > 0 &&
+      form.name.trim().length > 0 &&
+      (codeAvailability ? codeAvailability.available : true),
+    [form, codeAvailability],
   );
+
+  const handleCreateCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createCourse({
+        code: form.code.trim(),
+        name: form.name.trim(),
+      } as any);
+      setForm({ code: "", name: "" });
+      toast({
+        title: "Course created",
+        description: `${form.code.trim()} has been created successfully.`,
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to create course",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditCourse = (course: any) => {
+    setEditingCourse(course);
+  };
+
+  const handleDeleteCourse = (course: any) => {
+    setDeletingCourse(course);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingCourse) return;
+    const toDelete = deletingCourse;
+    setIsDeleting(true);
+    try {
+      setOptimisticallyRemovedIds((prev) => {
+        const next = new Set(prev);
+        next.add(String(toDelete._id));
+        return next;
+      });
+      await withToast(
+        () => deleteCourse({ id: toDelete._id as any }),
+        {
+          success: {
+            title: "Course deleted",
+            description: `${toDelete.code} has been deleted successfully.`,
+          },
+          error: { title: "Failed to delete course" },
+        },
+        toast,
+      );
+      setDeletingCourse(null);
+    } catch (error) {
+      // handled by withToast
+      setOptimisticallyRemovedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(String(toDelete._id));
+        return next;
+      });
+    } finally {
+      setIsDeleting(false);
+      setTimeout(() => {
+        setOptimisticallyRemovedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(String(toDelete._id));
+          return next;
+        });
+      }, 600);
+    }
+  };
+
+  const handleCourseUpdated = () => {
+    setEditingCourse(null);
+  };
 
   return (
     <StandardizedSidebarLayout
@@ -46,17 +145,7 @@ export default function CoursesPage() {
             <CardTitle>Create Course</CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              className="space-y-3"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                await createCourse({
-                  code: form.code.trim(),
-                  name: form.name.trim(),
-                } as any);
-                setForm({ code: "", name: "" });
-              }}
-            >
+            <form className="space-y-3" onSubmit={handleCreateCourse}>
               <div className="space-y-2">
                 <Label htmlFor="code">Code</Label>
                 <Input
@@ -67,6 +156,13 @@ export default function CoursesPage() {
                   }
                   placeholder="CSE100"
                 />
+                {form.code.trim() &&
+                  codeAvailability &&
+                  !codeAvailability.available && (
+                    <p className="text-xs text-destructive">
+                      Course code already exists in your organisation
+                    </p>
+                  )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
@@ -79,13 +175,22 @@ export default function CoursesPage() {
                   placeholder="Computer Science"
                 />
               </div>
-              <button
-                className="btn btn-primary w-full"
-                disabled={!canSubmit}
-                type="submit"
+              <PermissionGate
+                permission="courses.create"
+                fallback={
+                  <Button
+                    className="w-full"
+                    disabled
+                    title="Insufficient permissions"
+                  >
+                    Create
+                  </Button>
+                }
               >
-                Create
-              </button>
+                <Button className="w-full" disabled={!canSubmit} type="submit">
+                  Create
+                </Button>
+              </PermissionGate>
             </form>
           </CardContent>
         </Card>
@@ -99,13 +204,64 @@ export default function CoursesPage() {
               {Array.isArray(courses) && courses.length ? (
                 <ul className="divide-y">
                   {courses.map((c: any) => (
-                    <li key={c._id} className="py-2">
-                      <Link
-                        href={`/courses/${c._id}`}
-                        className="hover:underline"
-                      >
-                        <span className="font-medium">{c.code}</span> — {c.name}
-                      </Link>
+                    <li key={c._id} className="py-3">
+                      <div className="flex items-center justify-between">
+                        <Link
+                          href={`/courses/${c._id}`}
+                          className="hover:underline flex-1"
+                        >
+                          <span className="font-medium">{c.code}</span> —{" "}
+                          {c.name}
+                        </Link>
+                        <div className="flex items-center space-x-2">
+                          <PermissionGate
+                            permission="courses.edit"
+                            fallback={
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 opacity-50 cursor-not-allowed"
+                                disabled
+                                title="Insufficient permissions"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            }
+                          >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCourse(c)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </PermissionGate>
+                          <PermissionGate
+                            permission="courses.delete"
+                            fallback={
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-600 opacity-50 cursor-not-allowed"
+                                disabled
+                                title="Insufficient permissions"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            }
+                          >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCourse(c)}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </PermissionGate>
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -118,6 +274,27 @@ export default function CoursesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Course Modal */}
+      {editingCourse && (
+        <EditCourseForm
+          course={editingCourse}
+          onClose={() => setEditingCourse(null)}
+          onCourseUpdated={handleCourseUpdated}
+        />
+      )}
+
+      {/* Delete Course Modal */}
+      {deletingCourse && (
+        <GenericDeleteModal
+          entityType="Course"
+          entityName={deletingCourse.name}
+          entityCode={deletingCourse.code}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeletingCourse(null)}
+          isDeleting={isDeleting}
+        />
+      )}
     </StandardizedSidebarLayout>
   );
 }

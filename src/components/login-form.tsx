@@ -85,7 +85,7 @@ export function LoginForm({
           posthog.capture("login_submitted", { success: true });
         }
         await setActive({ session: result.createdSessionId });
-        router.push("/");
+        router.push("/dashboard");
       } else {
         const errorMessage = "Sign in failed. Please check your credentials.";
         // Only capture if PostHog is available

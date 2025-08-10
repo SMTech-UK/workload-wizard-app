@@ -25,7 +25,7 @@ export function TeamSwitcher() {
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">WorkloadWizard</span>
             <span className="truncate text-xs text-muted-foreground">
-              v0.0.1
+              v0.3.0
             </span>
           </div>
         </SidebarMenuButton>

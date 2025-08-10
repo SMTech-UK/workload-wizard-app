@@ -59,7 +59,33 @@ export default defineSchema({
     onboardingCompletedAt: v.optional(v.float64()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }).index("by_subject", ["subject"]),
+  })
+    .index("by_subject", ["subject"])
+    .index("by_email", ["email"]),
+
+  // 👤 User Preferences (per user per organisation)
+  user_preferences: defineTable({
+    userId: v.string(), // Clerk subject ID
+    organisationId: v.id("organisations"),
+    selectedAcademicYearId: v.optional(v.id("academic_years")),
+    includeDrafts: v.optional(v.boolean()),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_user", ["userId"]) // list all preferences for a user
+    .index("by_user_org", ["userId", "organisationId"]), // upsert/keyed by pair
+
+  // 👥 User ↔ Organisation memberships (supports multi-org membership)
+  user_organisations: defineTable({
+    userId: v.string(),
+    organisationId: v.id("organisations"),
+    isPrimary: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_user", ["userId"]) // list orgs for a user
+    .index("by_org", ["organisationId"]) // list users for an org
+    .index("by_user_org", ["userId", "organisationId"]), // membership existence check
 
   // 📋 Audit Logs
   audit_logs: defineTable({
@@ -186,6 +212,7 @@ export default defineSchema({
     fte: v.float64(),
     maxTeachingHours: v.float64(),
     totalContract: v.float64(),
+    userSubject: v.optional(v.string()), // Optional link to Clerk subject / users.subject
     role: v.optional(v.string()),
     teamName: v.optional(v.string()),
     prefWorkingLocation: v.optional(v.string()),
@@ -309,4 +336,24 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_flag", ["userId", "flagName"]),
+
+  // 🚩 Organisation-level Feature Flag Overrides
+  organisationFlagOverrides: defineTable({
+    organisationId: v.id("organisations"),
+    flagName: v.string(),
+    enabled: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_org", ["organisationId"]) // list overrides for an org
+    .index("by_org_flag", ["organisationId", "flagName"]), // lookup specific flag override
+
+  // 🚩 Global Feature Flag Settings (runtime rollout % etc.)
+  featureFlagSettings: defineTable({
+    flagName: v.string(),
+    rolloutPercentage: v.optional(v.float64()),
+    defaultValueOverride: v.optional(v.boolean()),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_flag", ["flagName"]),
 });

@@ -2,6 +2,8 @@ import posthog from "posthog-js";
 import { FeatureFlags, FeatureFlagResult, FeatureFlagContext } from "./types";
 import { getFeatureFlagConfig, isValidFeatureFlag } from "./config";
 import { getUserFeatureFlagContext } from "./auth-integration";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/../convex/_generated/api";
 
 // Cache for feature flag results to avoid repeated PostHog calls
 const flagCache = new Map<string, FeatureFlagResult>();
@@ -135,6 +137,45 @@ export async function getFeatureFlag(
         ...result,
         timestamp: Date.now(),
       } as CachedFlagResult);
+      // Merge with server-side org/user overrides if available
+      try {
+        if (
+          typeof window !== "undefined" &&
+          process.env.NEXT_PUBLIC_CONVEX_URL
+        ) {
+          const client = new ConvexHttpClient(
+            process.env.NEXT_PUBLIC_CONVEX_URL,
+          );
+          const userCtx = getUserFeatureFlagContext(null);
+          if (userCtx.userId) {
+            const effective = await client.query(
+              api.featureFlags.getEffectiveFlagValue,
+              {
+                userId: userCtx.userId,
+                flagName,
+              },
+            );
+            if (effective && typeof effective.enabled === "boolean") {
+              const merged: FeatureFlagResult = {
+                enabled: effective.enabled,
+                payload: posthogResult.payload,
+                source: effective.source as any,
+              };
+              flagCache.set(cacheKey, {
+                ...merged,
+                timestamp: Date.now(),
+              } as CachedFlagResult);
+              return merged;
+            }
+          }
+        }
+      } catch (mergeErr) {
+        console.warn(
+          "Failed to merge server overrides for flag",
+          flagName,
+          mergeErr,
+        );
+      }
       return result;
     } else {
       console.warn(
@@ -147,7 +188,35 @@ export async function getFeatureFlag(
   }
 
   // Fallback to config defaults
-  const fallbackResult = getFallbackFlag(flagName, context);
+  let fallbackResult = getFallbackFlag(flagName, context);
+  // Merge server-side settings and org overrides into fallback
+  try {
+    if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_CONVEX_URL) {
+      const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+      const userCtx = getUserFeatureFlagContext(null);
+      if (userCtx.userId) {
+        const effective = await client.query(
+          api.featureFlags.getEffectiveFlagValue,
+          {
+            userId: userCtx.userId,
+            flagName,
+          },
+        );
+        if (effective && typeof effective.enabled === "boolean") {
+          fallbackResult = {
+            enabled: effective.enabled,
+            source: effective.source as any,
+          };
+        }
+      }
+    }
+  } catch (mergeErr) {
+    console.warn(
+      "Failed to merge server overrides for flag (fallback)",
+      flagName,
+      mergeErr,
+    );
+  }
   flagCache.set(cacheKey, {
     ...fallbackResult,
     timestamp: Date.now(),

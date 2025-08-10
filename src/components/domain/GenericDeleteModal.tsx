@@ -9,69 +9,44 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 
 interface GenericDeleteModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  entityType: string;
+  entityName: string;
+  entityCode?: string;
   onConfirm: () => Promise<void>;
-  title: string;
-  description: string;
-  itemName?: string;
-  itemDetails?: Record<string, string | null | undefined>;
-  warningMessage?: string;
-  confirmButtonText?: string;
-  canDelete?: boolean;
-  onError?: (error: string) => void;
-  showForceDelete?: boolean;
-  forceDelete?: boolean;
-  onForceDeleteChange?: (force: boolean) => void;
+  onCancel: () => void;
+  isDeleting?: boolean;
 }
 
 export function GenericDeleteModal({
-  isOpen,
-  onClose,
+  entityType,
+  entityName,
+  entityCode,
   onConfirm,
-  title,
-  description,
-  itemName,
-  itemDetails,
-  warningMessage,
-  confirmButtonText = "Delete",
-  canDelete = true,
-  onError,
-  showForceDelete = false,
-  forceDelete = false,
-  onForceDeleteChange,
+  onCancel,
+  isDeleting = false,
 }: GenericDeleteModalProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  if (!isOpen) return null;
 
   const handleConfirm = async () => {
     setIsLoading(true);
-    setError(null);
     try {
       await onConfirm();
-    } catch (err) {
-      const errorMessage = (err as Error).message;
-      setError(errorMessage);
-      if (onError) {
-        onError(errorMessage);
-      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  const displayName = entityCode ? `${entityCode} — ${entityName}` : entityName;
+
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ background: "rgba(0,0,0,0.5)" }}
+      style={{ background: "rgba(0,0,0,0.06)" }}
     >
-      <Card className="w-full max-w-md mx-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -79,17 +54,17 @@ export function GenericDeleteModal({
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <CardTitle className="text-lg">{title}</CardTitle>
+                <CardTitle className="text-lg">Delete {entityType}</CardTitle>
                 <CardDescription className="text-sm">
-                  {description}
+                  This action cannot be undone
                 </CardDescription>
               </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClose}
-              disabled={isLoading}
+              onClick={onCancel}
+              disabled={isLoading || isDeleting}
               className="h-8 w-8 p-0"
             >
               <X className="h-4 w-4" />
@@ -103,64 +78,27 @@ export function GenericDeleteModal({
               <Trash2 className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="space-y-2">
                 <p className="text-sm font-medium text-red-800">
-                  Are you sure you want to delete this {itemName || "item"}?
+                  Are you sure you want to delete this{" "}
+                  {entityType.toLowerCase()}?
                 </p>
-
-                {itemDetails && Object.keys(itemDetails).length > 0 && (
-                  <div className="text-sm text-red-700 space-y-1">
-                    {Object.entries(itemDetails).map(
-                      ([key, value]) =>
-                        value && (
-                          <p key={key}>
-                            <strong>{key}:</strong> {value}
-                          </p>
-                        ),
-                    )}
-                  </div>
-                )}
-
-                {warningMessage && (
-                  <p className="text-xs text-red-600 mt-2">{warningMessage}</p>
-                )}
-
-                {error && (
-                  <div className="mt-3 p-2 bg-red-100 border border-red-300 rounded text-xs text-red-700">
-                    <strong>Error:</strong> {error}
-                  </div>
-                )}
+                <div className="text-sm text-red-700 space-y-1">
+                  <p>
+                    <strong>Name:</strong> {displayName}
+                  </p>
+                </div>
+                <p className="text-xs text-red-600 mt-2">
+                  This will permanently remove the {entityType.toLowerCase()}{" "}
+                  from the system. All associated data will be lost.
+                </p>
               </div>
             </div>
           </div>
 
-          {showForceDelete && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="force-delete"
-                  checked={forceDelete}
-                  onCheckedChange={(checked) =>
-                    onForceDeleteChange?.(checked as boolean)
-                  }
-                />
-                <label
-                  htmlFor="force-delete"
-                  className="text-sm font-medium text-orange-800 cursor-pointer"
-                >
-                  Force Delete (Sysadmin Override)
-                </label>
-              </div>
-              <p className="text-xs text-orange-700 mt-1 ml-6">
-                This will automatically remove the {itemName || "item"} from all
-                roles and organisations before deletion.
-              </p>
-            </div>
-          )}
-
           <div className="flex space-x-3 pt-2">
             <Button
               variant="outline"
-              onClick={onClose}
-              disabled={isLoading}
+              onClick={onCancel}
+              disabled={isLoading || isDeleting}
               className="flex-1"
             >
               Cancel
@@ -168,18 +106,18 @@ export function GenericDeleteModal({
             <Button
               variant="destructive"
               onClick={handleConfirm}
-              disabled={isLoading || !canDelete}
+              disabled={isLoading || isDeleting}
               className="flex-1"
             >
-              {isLoading ? (
+              {isLoading || isDeleting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {forceDelete ? "Force Deleting..." : "Deleting..."}
+                  Deleting...
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4 mr-2" />
-                  {forceDelete ? "Force Delete" : confirmButtonText}
+                  Delete {entityType}
                 </>
               )}
             </Button>

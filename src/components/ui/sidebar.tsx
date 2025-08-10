@@ -163,7 +163,22 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, setOpen } = useSidebar();
+
+  // Restore persisted expanded/collapsed state (desktop only)
+  React.useEffect(() => {
+    if (typeof window === "undefined" || isMobile) return;
+    const saved = localStorage.getItem("sidebar-ui-state");
+    if (saved === "expanded") setOpen(true);
+    if (saved === "collapsed") setOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
+
+  // Persist state whenever it changes (desktop only)
+  React.useEffect(() => {
+    if (typeof window === "undefined" || isMobile) return;
+    localStorage.setItem("sidebar-ui-state", state);
+  }, [state, isMobile]);
 
   if (collapsible === "none") {
     return (

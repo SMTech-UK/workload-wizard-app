@@ -2,6 +2,8 @@
 import { FeatureFlags, FeatureFlagResult, FeatureFlagContext } from "./types";
 import { getFeatureFlagConfig, isValidFeatureFlag } from "./config";
 import { getCurrentUserDetails } from "@/lib/auth/currentUser";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/../convex/_generated/api";
 
 // Server-side PostHog client - COMMENTED OUT FOR USER PERSISTENCE
 // let posthogServer: PostHog | null = null;
@@ -58,8 +60,53 @@ export async function getServerFeatureFlag(
   //   console.warn(`PostHog server feature flag check failed for ${flagName}:`, error);
   // }
 
-  // Fallback to config defaults
-  return getFallbackFlag(flagName, context);
+  // Fallback to config defaults and merge server overrides
+  let result = getFallbackFlag(flagName, context);
+  try {
+    const userDetails = await getCurrentUserDetails();
+    if (userDetails && process.env.NEXT_PUBLIC_CONVEX_URL) {
+      const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+      const effective = await client.query(
+        api.featureFlags.getEffectiveFlagValue,
+        {
+          userId: userDetails.id,
+          flagName,
+        },
+      );
+      if (effective && typeof effective.enabled === "boolean") {
+        result = {
+          enabled: effective.enabled,
+          source: effective.source as any,
+        };
+      } else {
+        // Merge global settings if present
+        const settings = await client.query(api.featureFlags.getFlagSettings, {
+          flagName,
+        });
+        if (settings) {
+          if (typeof settings.defaultValueOverride === "boolean") {
+            result = {
+              enabled: settings.defaultValueOverride,
+              source: "fallback",
+            };
+          } else if (
+            typeof settings.rolloutPercentage === "number" &&
+            context?.distinctId
+          ) {
+            const hash = simpleHash(context.distinctId);
+            const percentage = hash % 100;
+            result = {
+              enabled: percentage < settings.rolloutPercentage,
+              source: "fallback",
+            };
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Server flag override merge failed", err);
+  }
+  return result;
 }
 
 /**

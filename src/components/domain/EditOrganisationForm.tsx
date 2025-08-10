@@ -21,6 +21,8 @@ import {
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { withToast } from "@/lib/utils";
 
 interface Organisation {
   _id: string;
@@ -46,17 +48,13 @@ export function EditOrganisationForm({
   onUpdate,
 }: EditOrganisationFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const { toast } = useToast();
 
   const updateOrganisation = useMutation(api.organisations.update);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
-    setMessage(null);
 
     const formData = new FormData(event.currentTarget);
     const dataBase = {
@@ -78,30 +76,26 @@ export function EditOrganisationForm({
       ...((formData.get("website") as string)
         ? { website: formData.get("website") as string }
         : {}),
-    };
-    const data: Parameters<typeof updateOrganisation>[0] = {
-      ...dataBase,
-      ...optional,
-    } as Parameters<typeof updateOrganisation>[0];
+    } as Partial<Organisation>;
 
     try {
-      await updateOrganisation(data);
-      setMessage({
-        type: "success",
-        text: "Organisation updated successfully!",
-      });
+      await withToast(
+        () =>
+          updateOrganisation({
+            ...dataBase,
+            ...optional,
+          } as any),
+        {
+          success: {
+            title: "Organisation updated",
+            description: "Organisation updated successfully!",
+          },
+          error: { title: "Failed to update organisation" },
+        },
+        toast,
+      );
       onUpdate();
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Failed to update organisation",
-      });
+      onClose();
     } finally {
       setIsLoading(false);
     }
@@ -204,18 +198,6 @@ export function EditOrganisationForm({
                 </SelectContent>
               </Select>
             </div>
-
-            {message && (
-              <div
-                className={`p-3 rounded-md text-sm ${
-                  message.type === "success"
-                    ? "bg-green-50 text-green-700 border border-green-200"
-                    : "bg-red-50 text-red-700 border border-red-200"
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
 
             <div className="flex gap-3 pt-4">
               <Button

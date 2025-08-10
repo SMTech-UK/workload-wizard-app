@@ -133,6 +133,20 @@ export const update = mutation({
       "modules.edit",
       moduleDoc.organisationId as any,
     );
+
+    // Uniqueness: prevent duplicate codes within the same organisation if code changed
+    if (args.code !== moduleDoc.code) {
+      const conflict = await ctx.db
+        .query("modules" as any)
+        .withIndex("by_organisation" as any, (q) =>
+          (q as any).eq("organisationId", moduleDoc.organisationId as any),
+        )
+        .filter((q) => (q as any).eq((q as any).field("code"), args.code))
+        .first();
+      if (conflict && String(conflict._id) !== String(args.id)) {
+        throw new Error("Module code already exists in this organisation");
+      }
+    }
     const now = Date.now();
     await (ctx.db as any).patch(args.id as any, {
       code: args.code,
@@ -191,6 +205,38 @@ export const remove = mutation({
     } catch {}
 
     return args.id;
+  },
+});
+
+// Check if a module code is available within the actor's organisation
+export const isCodeAvailable = query({
+  args: { code: v.string(), excludeId: v.optional(v.id("modules")) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return { available: false };
+
+    // Derive organisation from actor
+    const actor = await ctx.db
+      .query("users" as any)
+      .withIndex("by_subject" as any, (q) =>
+        (q as any).eq("subject", identity.subject),
+      )
+      .first();
+    if (!actor) return { available: false };
+
+    const existing = await ctx.db
+      .query("modules" as any)
+      .withIndex("by_organisation" as any, (q) =>
+        (q as any).eq("organisationId", actor.organisationId as any),
+      )
+      .filter((q) => (q as any).eq((q as any).field("code"), args.code))
+      .first();
+
+    if (!existing) return { available: true };
+    if (args.excludeId && String(existing._id) === String(args.excludeId)) {
+      return { available: true };
+    }
+    return { available: false };
   },
 });
 
@@ -507,5 +553,13 @@ export const createIterationForDefaultYear = mutation({
     } catch {}
 
     return id;
+  },
+});
+
+// Get a specific iteration by ID
+export const getIterationById = query({
+  args: { id: v.id("module_iterations") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
   },
 });

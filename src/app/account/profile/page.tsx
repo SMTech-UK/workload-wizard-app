@@ -108,7 +108,7 @@ export default function ProfilePage() {
 
   const formatDate = (date: Date | null) => {
     if (!date) return "Unknown";
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-GB", {
       year: "numeric",
       month: "long",
       day: "numeric",

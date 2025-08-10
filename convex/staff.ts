@@ -90,6 +90,7 @@ export const edit = mutation({
     maxTeachingHours: v.optional(v.float64()),
     totalContract: v.optional(v.float64()),
     isActive: v.optional(v.boolean()),
+    userSubject: v.optional(v.string()), // link to users.subject
     role: v.optional(v.string()),
     teamName: v.optional(v.string()),
     prefWorkingLocation: v.optional(v.string()),

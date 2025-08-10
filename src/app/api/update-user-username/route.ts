@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     if (!currentUserData) {
       return NextResponse.json(
-        { error: "Unauthorized: User not authenticated" },
+        { error: "Unauthorised: User not authenticated" },
         { status: 401 },
       );
     }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     if (!isAdmin && !isOrgAdmin) {
       return NextResponse.json(
-        { error: "Unauthorized: Admin access required" },
+        { error: "Unauthorised: Admin access required" },
         { status: 403 },
       );
     }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Unauthorized: Can only update usernames for users in your own organisation",
+              "Unauthorised: Can only update usernames for users in your own organisation",
           },
           { status: 403 },
         );

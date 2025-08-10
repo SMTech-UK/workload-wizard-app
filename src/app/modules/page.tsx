@@ -9,17 +9,116 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EditModuleForm } from "@/components/domain/EditModuleForm";
+import { PermissionGate } from "@/components/common/PermissionGate";
+import { GenericDeleteModal } from "@/components/domain/GenericDeleteModal";
+import { useToast } from "@/hooks/use-toast";
+import { Edit, Trash2 } from "lucide-react";
+import { withToast } from "@/lib/utils";
 
 export default function ModulesPage() {
+  const { toast } = useToast();
   const modules = useQuery(api.modules.listByOrganisation);
   const { currentYear } = useAcademicYear();
   const create = useMutation(api.modules.create);
+  const deleteModule = useMutation(api.modules.remove);
 
   const [form, setForm] = useState({ code: "", name: "", credits: "" });
+  const codeAvailability = useQuery(
+    (api as any).modules.isCodeAvailable,
+    form.code.trim() ? ({ code: form.code.trim() } as any) : ("skip" as any),
+  ) as { available: boolean } | undefined;
+  const [editingModule, setEditingModule] = useState<any>(null);
+  const [deletingModule, setDeletingModule] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState<
+    Set<string>
+  >(new Set());
+
   const canSubmit = useMemo(
-    () => form.code.trim().length > 0 && form.name.trim().length > 0,
-    [form],
+    () =>
+      form.code.trim().length > 0 &&
+      form.name.trim().length > 0 &&
+      (codeAvailability ? codeAvailability.available : true),
+    [form, codeAvailability],
   );
+
+  const handleCreateModule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await create({
+        code: form.code.trim(),
+        name: form.name.trim(),
+        ...(form.credits.trim() ? { credits: Number(form.credits) } : {}),
+      });
+      setForm({ code: "", name: "", credits: "" });
+      toast({
+        title: "Module created",
+        description: `${form.code.trim()} has been created successfully.`,
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to create module",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditModule = (module: any) => {
+    setEditingModule(module);
+  };
+
+  const handleDeleteModule = (module: any) => {
+    setDeletingModule(module);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingModule) return;
+    const toDelete = deletingModule;
+    setIsDeleting(true);
+    try {
+      setOptimisticallyRemovedIds((prev) => {
+        const next = new Set(prev);
+        next.add(String(toDelete._id));
+        return next;
+      });
+      await withToast(
+        () => deleteModule({ id: toDelete._id as any }),
+        {
+          success: {
+            title: "Module deleted",
+            description: `${toDelete.code} has been deleted successfully.`,
+          },
+          error: { title: "Failed to delete module" },
+        },
+        toast,
+      );
+      setDeletingModule(null);
+    } catch (error) {
+      // handled by withToast
+      setOptimisticallyRemovedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(String(toDelete._id));
+        return next;
+      });
+    } finally {
+      setIsDeleting(false);
+      setTimeout(() => {
+        setOptimisticallyRemovedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(String(toDelete._id));
+          return next;
+        });
+      }, 600);
+    }
+  };
+
+  const handleModuleUpdated = () => {
+    setEditingModule(null);
+  };
 
   return (
     <StandardizedSidebarLayout
@@ -36,20 +135,7 @@ export default function ModulesPage() {
             <CardTitle>Create Module</CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              className="space-y-3"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                await create({
-                  code: form.code.trim(),
-                  name: form.name.trim(),
-                  ...(form.credits.trim()
-                    ? { credits: Number(form.credits) }
-                    : {}),
-                });
-                setForm({ code: "", name: "", credits: "" });
-              }}
-            >
+            <form className="space-y-3" onSubmit={handleCreateModule}>
               <div className="space-y-2">
                 <Label htmlFor="code">Code</Label>
                 <Input
@@ -60,6 +146,13 @@ export default function ModulesPage() {
                   }
                   placeholder="MOD101"
                 />
+                {form.code.trim() &&
+                  codeAvailability &&
+                  !codeAvailability.available && (
+                    <p className="text-xs text-destructive">
+                      Module code already exists in your organisation
+                    </p>
+                  )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
@@ -85,9 +178,22 @@ export default function ModulesPage() {
                   placeholder="20"
                 />
               </div>
-              <Button type="submit" disabled={!canSubmit} className="w-full">
-                Create
-              </Button>
+              <PermissionGate
+                permission="modules.create"
+                fallback={
+                  <Button
+                    className="w-full"
+                    disabled
+                    title="Insufficient permissions"
+                  >
+                    Create
+                  </Button>
+                }
+              >
+                <Button type="submit" disabled={!canSubmit} className="w-full">
+                  Create
+                </Button>
+              </PermissionGate>
             </form>
           </CardContent>
         </Card>
@@ -105,9 +211,9 @@ export default function ModulesPage() {
                   {modules.map((m) => (
                     <li
                       key={m._id}
-                      className="py-2 flex items-center justify-between"
+                      className="py-3 flex items-center justify-between"
                     >
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium">{m.code}</div>
                         <div className="text-sm text-muted-foreground">
                           {m.name}
@@ -115,6 +221,54 @@ export default function ModulesPage() {
                             ? ` · ${m.credits} credits`
                             : null}
                         </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <PermissionGate
+                          permission="modules.edit"
+                          fallback={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 opacity-50 cursor-not-allowed"
+                              disabled
+                              title="Insufficient permissions"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          }
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditModule(m)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate
+                          permission="modules.delete"
+                          fallback={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-red-600 opacity-50 cursor-not-allowed"
+                              disabled
+                              title="Insufficient permissions"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          }
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteModule(m)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
                       </div>
                     </li>
                   ))}
@@ -128,6 +282,27 @@ export default function ModulesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Module Modal */}
+      {editingModule && (
+        <EditModuleForm
+          module={editingModule}
+          onClose={() => setEditingModule(null)}
+          onModuleUpdated={handleModuleUpdated}
+        />
+      )}
+
+      {/* Delete Module Modal */}
+      {deletingModule && (
+        <GenericDeleteModal
+          entityType="Module"
+          entityName={deletingModule.name}
+          entityCode={deletingModule.code}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeletingModule(null)}
+          isDeleting={isDeleting}
+        />
+      )}
     </StandardizedSidebarLayout>
   );
 }

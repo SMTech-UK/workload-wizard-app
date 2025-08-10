@@ -81,27 +81,61 @@ export function AcademicYearProvider({
     user?.id ? { userId: user.id } : "skip",
   ) || []) as AcademicYear[];
 
+  // Load server preferences (selected year + includeDrafts)
+  const preferences = useQuery(
+    apiAny.academicYears.getPreferences,
+    user?.id ? { userId: user.id } : "skip",
+  ) as
+    | {
+        _id: string;
+        selectedAcademicYearId?: string;
+        includeDrafts?: boolean;
+      }
+    | null
+    | undefined;
+
   // UI toggle: include drafts (only meaningful for management)
   const [includeDrafts, setIncludeDraftsState] = useState<boolean>(false);
 
   // Load persisted includeDrafts per org
   React.useEffect(() => {
     if (!orgIdStr) return;
+    // Prefer server preference; fall back to localStorage once
+    if (typeof preferences?.includeDrafts !== "undefined") {
+      setIncludeDraftsState(!!preferences.includeDrafts);
+      return;
+    }
     try {
       const raw = localStorage.getItem(`ay_drafts:${orgIdStr}`);
       if (raw !== null) setIncludeDraftsState(raw === "1");
     } catch {}
-  }, [orgIdStr]);
+  }, [orgIdStr, preferences?.includeDrafts]);
+
+  const setPrefsMutation = useMutation(apiAny.academicYears.setPreferences);
 
   const setIncludeDrafts = useCallback(
     (v: boolean) => {
       setIncludeDraftsState(v);
+      // Persist to server, and also localStorage for fast restore
+      if (user?.id) {
+        setPrefsMutation({ userId: user.id, includeDrafts: v }).catch(
+          (err: unknown) => {
+            const message =
+              err instanceof Error ? err.message : "Failed to save preferences";
+            toast({
+              title: "Preferences not saved",
+              description: `${message}. Kept locally for now.`,
+              variant: "destructive",
+            });
+          },
+        );
+      }
       try {
         if (orgIdStr)
           localStorage.setItem(`ay_drafts:${orgIdStr}`, v ? "1" : "0");
       } catch {}
     },
-    [orgIdStr],
+    [orgIdStr, setPrefsMutation, user?.id, toast],
   );
 
   const years = useMemo(() => {
@@ -130,7 +164,15 @@ export function AcademicYearProvider({
   // Ensure we always have a selection when years change
   React.useEffect(() => {
     if (!orgIdStr) return;
-    // Try to restore from storage first
+    // Try server preference first
+    const preferred = preferences?.selectedAcademicYearId
+      ? String(preferences.selectedAcademicYearId)
+      : null;
+    if (preferred && years.some((y) => String(y._id) === preferred)) {
+      if (currentYearId !== preferred) setCurrentYearIdState(preferred);
+      return;
+    }
+    // Try to restore from storage
     try {
       const stored = localStorage.getItem(`ay_current:${orgIdStr}`);
       if (stored && years.some((y) => String(y._id) === stored)) {
@@ -147,16 +189,36 @@ export function AcademicYearProvider({
     ) {
       setCurrentYearIdState(defaultYearId);
     }
-  }, [years, currentYearId, defaultYearId, orgIdStr]);
+  }, [
+    years,
+    currentYearId,
+    defaultYearId,
+    orgIdStr,
+    preferences?.selectedAcademicYearId,
+  ]);
 
   const setCurrentYearId = useCallback(
     (id: string) => {
       setCurrentYearIdState(id);
+      if (user?.id) {
+        setPrefsMutation({
+          userId: user.id,
+          selectedAcademicYearId: id as unknown as Id<"academic_years">,
+        }).catch((err: unknown) => {
+          const message =
+            err instanceof Error ? err.message : "Failed to save preferences";
+          toast({
+            title: "Preferences not saved",
+            description: `${message}. Kept locally for now.`,
+            variant: "destructive",
+          });
+        });
+      }
       try {
         if (orgIdStr) localStorage.setItem(`ay_current:${orgIdStr}`, id);
       } catch {}
     },
-    [orgIdStr],
+    [orgIdStr, setPrefsMutation, user?.id, toast],
   );
 
   // Mutations

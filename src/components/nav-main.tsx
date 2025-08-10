@@ -2,7 +2,7 @@
 
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import posthog from "posthog-js";
 
 import {
@@ -38,32 +38,28 @@ export function NavMain({
 }) {
   const { state } = useSidebar();
   const router = useRouter();
-  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
-
-  // Load saved state from localStorage on mount
-  useEffect(() => {
-    const savedState = localStorage.getItem("sidebar-nav-state");
-    if (savedState) {
-      try {
-        const parsed = JSON.parse(savedState);
-        setOpenItems(new Set(parsed));
-      } catch (error) {
-        console.warn("Failed to parse saved sidebar state:", error);
-        // Fallback to default state
-        setOpenItems(
-          new Set(
-            items.filter((item) => item.isActive).map((item) => item.title),
-          ),
-        );
+  // Synchronously initialize from localStorage to avoid flicker
+  const initialisedFromStorageRef = useRef(false);
+  const [openItems, setOpenItems] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const saved = localStorage.getItem("sidebar-nav-state");
+      if (saved) {
+        const parsed = JSON.parse(saved) as string[];
+        initialisedFromStorageRef.current = true;
+        return new Set(parsed);
       }
-    } else {
-      // Initialize with active items if no saved state
-      setOpenItems(
-        new Set(
-          items.filter((item) => item.isActive).map((item) => item.title),
-        ),
-      );
+    } catch (err) {
+      console.warn("Failed to read sidebar state:", err);
     }
+    return new Set();
+  });
+
+  // When items load and there was no saved state, open any default active groups
+  useEffect(() => {
+    if (initialisedFromStorageRef.current) return;
+    const defaults = items.filter((i) => i.isActive).map((i) => i.title);
+    if (defaults.length > 0) setOpenItems(new Set(defaults));
   }, [items]);
 
   // Save state to localStorage whenever it changes

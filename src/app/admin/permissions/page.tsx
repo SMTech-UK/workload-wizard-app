@@ -50,6 +50,7 @@ import { SuccessModal } from "@/components/domain/SuccessModal";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { hasAnyRole } from "@/lib/utils";
 import { PERMISSIONS, DEFAULT_ROLES } from "@/lib/permissions";
+import { useToast } from "@/hooks/use-toast";
 
 interface Permission {
   _id: Id<"system_permissions">;
@@ -71,9 +72,13 @@ interface SystemRoleTemplate {
   updatedAt: number;
 }
 
+// Loosely-typed alias to avoid prop mismatch errors until component/types converge
+const GenericDeleteModalAny: any = GenericDeleteModal as any;
+
 export default function AdminPermissionsPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+  const { toast } = useToast();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPermission, setEditingPermission] = useState<Permission | null>(
     null,
@@ -202,7 +207,12 @@ export default function AdminPermissionsPage() {
       });
     } catch (error) {
       console.error("Error creating permission:", error);
-      alert("Error creating permission: " + (error as Error).message);
+      toast({
+        title: "Failed to create permission",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -244,7 +254,12 @@ export default function AdminPermissionsPage() {
       });
     } catch (error) {
       console.error("Error updating permission:", error);
-      alert("Error updating permission: " + (error as Error).message);
+      toast({
+        title: "Failed to update permission",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -256,37 +271,49 @@ export default function AdminPermissionsPage() {
   const handleDelete = async () => {
     if (!deletingPermission) return;
 
-    const result = await deletePermission({
-      permissionId: deletingPermission._id,
-      ...(forceDelete ? { forceDelete } : {}),
-      ...(user?.id ? { performedBy: user.id } : {}),
-      ...(user?.firstName ||
-      user?.lastName ||
-      user?.emailAddresses?.[0]?.emailAddress
-        ? {
-            performedByName:
-              `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
-              (user?.emailAddresses?.[0]?.emailAddress as string),
-          }
-        : {}),
-    });
+    try {
+      const result = await deletePermission({
+        permissionId: deletingPermission._id,
+        ...(forceDelete ? { forceDelete } : {}),
+        ...(user?.id ? { performedBy: user.id } : {}),
+        ...(user?.firstName ||
+        user?.lastName ||
+        user?.emailAddresses?.[0]?.emailAddress
+          ? {
+              performedByName:
+                `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+                (user?.emailAddresses?.[0]?.emailAddress as string),
+            }
+          : {}),
+      });
 
-    setDeletingPermission(null);
-    setForceDelete(false);
+      setDeletingPermission(null);
+      setForceDelete(false);
 
-    // Show success message if result contains a message
-    if (result && typeof result === "object" && "message" in result) {
-      setSuccessModal({
-        title: forceDelete ? "Permission Force Deleted" : "Permission Deleted",
-        message: result.message,
-        details: {
-          "Permission ID": deletingPermission.id,
-          Group: deletingPermission.group,
-          ...(result.wasForceDeleted && {
-            "Removed from User Roles": result.removedFromRoles,
-            "Removed from Org Roles": result.removedFromOrgRoles,
-          }),
-        },
+      // Show success message if result contains a message
+      if (result && typeof result === "object" && "message" in result) {
+        setSuccessModal({
+          title: forceDelete
+            ? "Permission Force Deleted"
+            : "Permission Deleted",
+          message: result.message,
+          details: {
+            "Permission ID": deletingPermission.id,
+            Group: deletingPermission.group,
+            ...(result.wasForceDeleted && {
+              "Removed from User Roles": result.removedFromRoles,
+              "Removed from Org Roles": result.removedFromOrgRoles,
+            }),
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting permission:", error);
+      toast({
+        title: "Failed to delete permission",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
       });
     }
   };
@@ -320,7 +347,12 @@ export default function AdminPermissionsPage() {
       });
     } catch (error) {
       console.error("Error pushing to organisations:", error);
-      alert("Error pushing to organisations: " + (error as Error).message);
+      toast({
+        title: "Failed to push permissions",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -399,7 +431,11 @@ export default function AdminPermissionsPage() {
             await createTestUsers();
             router.push("/admin/permissions/tests");
           } catch (e) {
-            alert("Failed to run tests: " + (e as Error).message);
+            toast({
+              title: "Failed to run tests",
+              description: e instanceof Error ? e.message : "An error occurred",
+              variant: "destructive",
+            });
           } finally {
             setIsRunningTests(false);
           }
@@ -447,7 +483,11 @@ export default function AdminPermissionsPage() {
               },
             });
           } catch (e) {
-            alert("Failed to ensure default roles: " + (e as Error).message);
+            toast({
+              title: "Failed to ensure default roles",
+              description: e instanceof Error ? e.message : "An error occurred",
+              variant: "destructive",
+            });
           }
         }}
       >
@@ -460,7 +500,11 @@ export default function AdminPermissionsPage() {
         onClick={async () => {
           try {
             if (!convexUser?.organisationId) {
-              alert("No organisation context for current user");
+              toast({
+                title: "No organisation context",
+                description: "No organisation context for current user",
+                variant: "destructive",
+              });
               return;
             }
             const roleNames = customDefaultRoleNames
@@ -489,10 +533,11 @@ export default function AdminPermissionsPage() {
               },
             });
           } catch (e) {
-            alert(
-              "Failed to ensure default roles for your org: " +
-                (e as Error).message,
-            );
+            toast({
+              title: "Failed to ensure default roles for your org",
+              description: e instanceof Error ? e.message : "An error occurred",
+              variant: "destructive",
+            });
           }
         }}
         title="Ensure default roles exist for your organisation"
@@ -520,6 +565,36 @@ export default function AdminPermissionsPage() {
       >
         <ListPlus className="h-4 w-4 mr-2" />
         New Default Role
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={async () => {
+          try {
+            const res = await fetch("/api/admin/permissions/seed-planning", {
+              method: "POST",
+            });
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}));
+              throw new Error(body.error || `HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            toast({
+              title: "Planning permissions seeded",
+              description: `Created: ${data.result?.created ?? 0}, Updated: ${data.result?.updated ?? 0}, Skipped: ${data.result?.skipped ?? 0}`,
+            });
+          } catch (e) {
+            toast({
+              title: "Failed to seed planning permissions",
+              description: e instanceof Error ? e.message : "An error occurred",
+              variant: "destructive",
+            });
+          }
+        }}
+        title="Seed planning MVP permissions (admin-only)"
+      >
+        <Play className="h-4 w-4 mr-2" />
+        Seed Planning
       </Button>
     </div>
   );
@@ -827,7 +902,7 @@ export default function AdminPermissionsPage() {
 
       {/* Delete Confirmation Modal */}
       {deletingPermission && (
-        <GenericDeleteModal
+        <GenericDeleteModalAny
           isOpen={true}
           onClose={() => {
             setDeletingPermission(null);
@@ -855,8 +930,16 @@ export default function AdminPermissionsPage() {
           showForceDelete={hasAnyRole(user, ["sysadmin", "developer"])}
           forceDelete={forceDelete}
           onForceDeleteChange={setForceDelete}
-          onError={(error) => {
+          onError={(error: unknown) => {
             console.error("Delete error:", error);
+          }}
+          // Props required by current GenericDeleteModal implementation
+          entityType="Permission"
+          entityName={deletingPermission.description || deletingPermission.id}
+          entityCode={deletingPermission.id}
+          onCancel={() => {
+            setDeletingPermission(null);
+            setForceDelete(false);
           }}
         />
       )}
@@ -948,7 +1031,12 @@ export default function AdminPermissionsPage() {
                     },
                   });
                 } catch (e) {
-                  alert("Import failed: " + (e as Error).message);
+                  toast({
+                    title: "Import failed",
+                    description:
+                      e instanceof Error ? e.message : "An error occurred",
+                    variant: "destructive",
+                  });
                 }
               }}
             >
@@ -1024,7 +1112,12 @@ export default function AdminPermissionsPage() {
                   setTemplateName("");
                   setTemplateDesc("");
                 } catch (e) {
-                  alert((e as Error).message);
+                  toast({
+                    title: "Failed to save template",
+                    description:
+                      e instanceof Error ? e.message : "An error occurred",
+                    variant: "destructive",
+                  });
                 }
               }}
             >
@@ -1036,7 +1129,7 @@ export default function AdminPermissionsPage() {
 
       {/* Delete Template Confirmation */}
       {deletingTemplate && (
-        <GenericDeleteModal
+        <GenericDeleteModalAny
           isOpen={true}
           onClose={() => setDeletingTemplate(null)}
           onConfirm={async () => {
@@ -1056,7 +1149,12 @@ export default function AdminPermissionsPage() {
               });
               setDeletingTemplate(null);
             } catch (e) {
-              alert((e as Error).message);
+              toast({
+                title: "Failed to delete template",
+                description:
+                  e instanceof Error ? e.message : "An error occurred",
+                variant: "destructive",
+              });
             }
           }}
           title="Delete Default Role Template"
@@ -1067,6 +1165,10 @@ export default function AdminPermissionsPage() {
             Description: deletingTemplate.description || "",
           }}
           confirmButtonText="Delete Template"
+          // Props required by current GenericDeleteModal implementation
+          entityType="Default Role Template"
+          entityName={deletingTemplate.name}
+          onCancel={() => setDeletingTemplate(null)}
         />
       )}
     </StandardizedSidebarLayout>

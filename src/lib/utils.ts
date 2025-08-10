@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { ZodError } from "zod";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -50,4 +51,79 @@ export function hasAnyRole(user: unknown, roles: string[]): boolean {
 export function hasAllRoles(user: unknown, roles: string[]): boolean {
   const userRoles = getUserRoles(user);
   return roles.every((role) => userRoles.includes(role));
+}
+
+// Mutation helper: wraps async actions with success/error toasts
+export async function withToast<T>(
+  action: () => Promise<T>,
+  options: {
+    success?: { title: string; description?: string };
+    error: { title: string; description?: string };
+  },
+  toast: (opts: {
+    title?: string;
+    description?: string;
+    variant?: "default" | "destructive" | "success";
+  }) => any,
+): Promise<T> {
+  try {
+    const result = await action();
+    if (options.success) {
+      toast({ ...options.success, variant: "success" });
+    }
+    return result;
+  } catch (e) {
+    toast({
+      title: options.error.title,
+      description:
+        errorMessageFromUnknown(e) ??
+        options.error.description ??
+        "An error occurred",
+      variant: "destructive",
+    });
+    throw e;
+  }
+}
+
+export function isZodError(error: unknown): error is ZodError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "issues" in (error as any) &&
+    Array.isArray((error as any).issues)
+  );
+}
+
+export function formatZodError(error: ZodError): string {
+  const first = error.issues?.[0];
+  if (!first) return "Validation failed";
+  const path = first.path?.length ? String(first.path.join(".")) + ": " : "";
+  return path + (first.message || "Invalid value");
+}
+
+export function errorMessageFromUnknown(error: unknown): string | undefined {
+  if (isZodError(error)) return formatZodError(error);
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return undefined;
+  }
+}
+
+export function toastError(
+  toast: (opts: {
+    title?: string;
+    description?: string;
+    variant?: "default" | "destructive" | "success";
+  }) => any,
+  error: unknown,
+  title: string = "Error",
+): void {
+  toast({
+    title,
+    description: errorMessageFromUnknown(error),
+    variant: "destructive",
+  });
 }

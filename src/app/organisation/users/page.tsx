@@ -42,6 +42,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { deleteUser } from "@/lib/actions/userActions";
+import { useToast } from "@/hooks/use-toast";
 import { CreateUserForm } from "@/components/domain/CreateUserForm";
 import { EditUserForm } from "@/components/domain/EditUserForm";
 import { DeleteConfirmationModal } from "@/components/domain/DeleteConfirmationModal";
@@ -90,6 +91,7 @@ interface User {
 
 export default function OrganisationUsersPage() {
   const { user } = useUser();
+  const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
@@ -456,9 +458,12 @@ export default function OrganisationUsersPage() {
       // The query will automatically refetch due to Convex reactivity
     } catch (error) {
       console.error("Error toggling user status:", error);
-      alert(
-        error instanceof Error ? error.message : "Failed to update user status",
-      );
+      toast({
+        title: "Failed to update user status",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setTogglingUserId(null);
     }
@@ -475,7 +480,11 @@ export default function OrganisationUsersPage() {
       setDeletingUser(null);
       // The organisationUsers query will automatically refetch due to Convex reactivity
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete user");
+      toast({
+        title: "Failed to delete user",
+        description: err instanceof Error ? err.message : "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsDeleting(false);
     }

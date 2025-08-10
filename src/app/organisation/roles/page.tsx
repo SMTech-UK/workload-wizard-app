@@ -52,6 +52,7 @@ import { useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
+import { useToast } from "@/hooks/use-toast";
 
 interface Role {
   _id: string;
@@ -122,6 +123,8 @@ export default function OrganisationRolesPage() {
     api.permissions.updateRolePermissions,
   );
 
+  const { toast } = useToast();
+
   const handleCreateRole = async () => {
     if (!roleName.trim() || !currentUser?.organisationId) return;
 
@@ -146,8 +149,21 @@ export default function OrganisationRolesPage() {
       setRoleDescription("");
       setSelectedPermissions([]);
       setIsCreateDialogOpen(false);
+
+      toast({
+        title: "Role Created",
+        description: `Role "${roleName.trim()}" has been created successfully.`,
+      });
     } catch (error) {
       console.error("Error creating role:", error);
+      toast({
+        title: "Failed to create role",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred while creating the role.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -185,8 +201,21 @@ export default function OrganisationRolesPage() {
       setRoleDescription("");
       setSelectedPermissions([]);
       setIsEditDialogOpen(false);
+
+      toast({
+        title: "Role Updated",
+        description: `Role "${roleName.trim()}" has been updated successfully.`,
+      });
     } catch (error) {
       console.error("Error updating role:", error);
+      toast({
+        title: "Failed to update role",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred while updating the role.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -203,8 +232,21 @@ export default function OrganisationRolesPage() {
             }
           : {}),
       });
+
+      toast({
+        title: "Role Deleted",
+        description: "Role has been deleted successfully.",
+      });
     } catch (error) {
       console.error("Error deleting role:", error);
+      toast({
+        title: "Failed to delete role",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred while deleting the role.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -229,8 +271,21 @@ export default function OrganisationRolesPage() {
             }
           : {}),
       });
+
+      toast({
+        title: "Permission Updated",
+        description: `Permission has been ${isGranted ? "granted" : "revoked"} successfully.`,
+      });
     } catch (error) {
       console.error("Error updating permission:", error);
+      toast({
+        title: "Failed to update permission",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred while updating the permission.",
+        variant: "destructive",
+      });
     }
   };
 

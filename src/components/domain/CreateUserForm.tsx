@@ -24,6 +24,10 @@ import { createUser } from "@/lib/actions/userActions";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 interface CreateUserFormProps {
   organisationId?: string; // Optional for sysadmin use
@@ -48,6 +52,7 @@ export function CreateUserForm({
   );
   const [selectedRoles, setSelectedRoles] = useState<string[]>(["user"]);
   const [selectedOrgRoleIds, setSelectedOrgRoleIds] = useState<string[]>([]);
+  const { toast } = useToast();
 
   // Get all organisations for sysadmin use
   const organisations = useQuery(api.organisations.list);
@@ -63,6 +68,20 @@ export function CreateUserForm({
       : "skip",
   );
 
+  const Schema = z.object({
+    firstName: z.string().trim().min(1, "First name is required"),
+    lastName: z.string().trim().min(1, "Last name is required"),
+    email: z.string().trim().email("Invalid email"),
+    username: z
+      .string()
+      .trim()
+      .min(3, "Min 3 chars")
+      .max(20, "Max 20 chars")
+      .regex(/^[A-Za-z0-9_-]+$/, "Only letters, numbers, _ or -"),
+    organisationId: z.string().min(1, "Organisation is required"),
+    roles: z.array(z.string()).min(1, "Select at least one role"),
+  });
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
@@ -73,32 +92,48 @@ export function CreateUserForm({
       ? selectedOrganisationId
       : organisationId;
 
-    if (!targetOrganisationId) {
-      setMessage({ type: "error", text: "Please select an organisation" });
+    let data: any;
+    try {
+      data = Schema.parse({
+        email: formData.get("email") as string,
+        firstName: formData.get("firstName") as string,
+        lastName: formData.get("lastName") as string,
+        username: formData.get("username") as string,
+        roles: selectedRoles,
+        organisationId: String(targetOrganisationId || ""),
+      });
+    } catch (err) {
+      toast({
+        title: "Validation error",
+        description:
+          err instanceof Error ? err.message : "Please check the form",
+        variant: "destructive",
+      });
       setIsLoading(false);
       return;
     }
-
-    const data = {
-      email: formData.get("email") as string,
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      username: formData.get("username") as string,
-      password: "", // Will be auto-generated
-      roles: selectedRoles,
-      organisationId: targetOrganisationId,
-      sendEmailInvitation: true, // Always send email invitation
-      organisationalRoleId: undefined as unknown as string, // moved to multi-select below
-    };
+    data.password = ""; // auto-generated server-side
+    data.sendEmailInvitation = true;
+    data.organisationalRoleId = undefined as unknown as string;
 
     try {
       await createUser(data);
+      track("user.created", {
+        organisationId: data.organisationId,
+        roleCount: data.roles?.length,
+      });
+      toast({
+        title: "User created",
+        description: "User created successfully!",
+        variant: "success",
+      });
       setMessage({ type: "success", text: "User created successfully!" });
       onUserCreated();
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
+      toastError(toast, error, "Failed to create user");
       setMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Failed to create user",
