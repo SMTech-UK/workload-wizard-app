@@ -1,4 +1,8 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import {
+  clerkMiddleware,
+  createRouteMatcher,
+  clerkClient,
+} from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
@@ -134,6 +138,23 @@ export default clerkMiddleware(async (auth, req) => {
         } catch (convexErr) {
           // Non-fatal; proceed with claims-only decision
           console.error("Convex onboarding check failed:", convexErr);
+        }
+      }
+
+      // Final fallback: check Clerk live user metadata (session claims may be stale immediately after update)
+      if (!hasCompletedOnboarding) {
+        try {
+          const client = await clerkClient();
+          const liveUser = await client.users.getUser(userId);
+          hasCompletedOnboarding = Boolean(
+            (
+              liveUser as unknown as {
+                publicMetadata?: Record<string, unknown>;
+              }
+            )?.publicMetadata?.onboardingCompleted,
+          );
+        } catch (clerkErr) {
+          console.error("Clerk live metadata check failed:", clerkErr);
         }
       }
 
