@@ -98,7 +98,11 @@ export async function canEditYear(
 export const listForOrganisation = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
-    const user = await getActor(ctx, args.userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", args.userId))
+      .first();
+    if (!user) return [];
     const orgId = user.organisationId as Id<"organisations">;
     // Live (published and not staged) should be visible to all org members
     const canLive = true;
@@ -446,7 +450,11 @@ export const bulkSetStatus = mutation({
 export const getPreferences = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
-    const user = await getActor(ctx, args.userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", args.userId))
+      .first();
+    if (!user) return null;
     const pref = await ctx.db
       .query("user_preferences")
       .withIndex("by_user_org", (q) =>
