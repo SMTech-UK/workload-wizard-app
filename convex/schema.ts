@@ -9,9 +9,19 @@ export default defineSchema({
     endDate: v.string(),
     isActive: v.boolean(),
     staging: v.boolean(),
+    organisationId: v.id("organisations"),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+    isDefaultForOrg: v.boolean(),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  })
+    .index("by_organisation", ["organisationId"]) // filter by org
+    .index("by_org_status", ["organisationId", "status"]) // filter by org + status
+    .index("by_status", ["status"]), // sometimes filter by status alone
 
   // 🏛️ Organisation
   organisations: defineTable({
@@ -49,7 +59,33 @@ export default defineSchema({
     onboardingCompletedAt: v.optional(v.float64()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }).index("by_subject", ["subject"]),
+  })
+    .index("by_subject", ["subject"])
+    .index("by_email", ["email"]),
+
+  // 👤 User Preferences (per user per organisation)
+  user_preferences: defineTable({
+    userId: v.string(), // Clerk subject ID
+    organisationId: v.id("organisations"),
+    selectedAcademicYearId: v.optional(v.id("academic_years")),
+    includeDrafts: v.optional(v.boolean()),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_user", ["userId"]) // list all preferences for a user
+    .index("by_user_org", ["userId", "organisationId"]), // upsert/keyed by pair
+
+  // 👥 User ↔ Organisation memberships (supports multi-org membership)
+  user_organisations: defineTable({
+    userId: v.string(),
+    organisationId: v.id("organisations"),
+    isPrimary: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_user", ["userId"]) // list orgs for a user
+    .index("by_org", ["organisationId"]) // list users for an org
+    .index("by_user_org", ["userId", "organisationId"]), // membership existence check
 
   // 📋 Audit Logs
   audit_logs: defineTable({
@@ -101,14 +137,52 @@ export default defineSchema({
     updatedAt: v.float64(),
   }).index("by_user_org", ["userId", "organisationId"]),
 
+  // 📘 Courses
+  courses: defineTable({
+    code: v.string(),
+    name: v.string(),
+    organisationId: v.id("organisations"),
+    leaderProfileId: v.optional(v.id("lecturer_profiles")),
+    studentCount: v.optional(v.float64()),
+    campuses: v.optional(v.array(v.string())),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_organisation", ["organisationId"]),
+
+  // 📘 Course Years (Y1/Y2/... for a course)
+  course_years: defineTable({
+    courseId: v.id("courses"),
+    yearNumber: v.float64(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_course", ["courseId"]),
+
   // 📚 Module Definitions
   modules: defineTable({
     code: v.string(),
     name: v.string(),
+    credits: v.optional(v.number()),
+    leaderProfileId: v.optional(v.id("lecturer_profiles")),
+    level: v.optional(v.number()),
+    teachingHours: v.optional(v.number()),
+    markingHours: v.optional(v.number()),
+    campuses: v.optional(v.array(v.string())),
     organisationId: v.id("organisations"),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  }).index("by_organisation", ["organisationId"]),
+
+  // 🔗 Course Year <> Module links (junction table)
+  course_year_modules: defineTable({
+    courseYearId: v.id("course_years"),
+    moduleId: v.id("modules"),
+    isCore: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_course_year", ["courseYearId"]) // list modules for a course year
+    .index("by_module", ["moduleId"]) // list years using a module
+    .index("by_course_year_module", ["courseYearId", "moduleId"]), // enforce uniqueness in code
 
   // 🎓 Module Iterations
   module_iterations: defineTable({
@@ -118,7 +192,22 @@ export default defineSchema({
     weeks: v.array(v.number()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  })
+    .index("by_module", ["moduleId"]) // list iterations for a module
+    .index("by_year", ["academicYearId"]) // list iterations for a year
+    .index("by_module_year", ["moduleId", "academicYearId"]), // enforce uniqueness in code
+
+  // 👥 Module Groups (under a specific module iteration)
+  module_groups: defineTable({
+    moduleIterationId: v.id("module_iterations"),
+    name: v.string(),
+    sizePlanned: v.optional(v.float64()),
+    campusId: v.optional(v.string()),
+    dayOfWeek: v.optional(v.string()),
+    weekPattern: v.optional(v.string()),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_iteration", ["moduleIterationId"]),
 
   // 👨‍🏫 Lecturer Profiles
   lecturer_profiles: defineTable({
@@ -128,6 +217,16 @@ export default defineSchema({
     fte: v.float64(),
     maxTeachingHours: v.float64(),
     totalContract: v.float64(),
+    userSubject: v.optional(v.string()), // Optional link to Clerk subject / users.subject
+    role: v.optional(v.string()),
+    teamName: v.optional(v.string()),
+    contractFamily: v.optional(v.string()),
+    prefWorkingLocation: v.optional(v.string()),
+    prefWorkingTime: v.optional(
+      v.union(v.literal("am"), v.literal("pm"), v.literal("all_day")),
+    ),
+    prefSpecialism: v.optional(v.string()),
+    prefNotes: v.optional(v.string()),
     organisationId: v.id("organisations"),
     isActive: v.boolean(),
     createdAt: v.float64(),
@@ -143,6 +242,23 @@ export default defineSchema({
     createdAt: v.float64(),
     updatedAt: v.float64(),
   }),
+
+  // 👥 Group Allocations (lecturer ↔ group for AY)
+  group_allocations: defineTable({
+    groupId: v.id("module_groups"),
+    lecturerId: v.id("lecturer_profiles"),
+    academicYearId: v.id("academic_years"),
+    organisationId: v.id("organisations"),
+    type: v.union(v.literal("teaching"), v.literal("admin")),
+    hoursComputed: v.float64(),
+    hoursOverride: v.optional(v.float64()),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_group", ["groupId"]) // list allocations for a group
+    .index("by_lecturer", ["lecturerId"]) // list allocations for a lecturer
+    .index("by_year", ["academicYearId"]) // list allocations for a year
+    .index("by_org_year", ["organisationId", "academicYearId"]),
 
   // 🧮 Module Allocations
   module_allocations: defineTable({
@@ -162,7 +278,7 @@ export default defineSchema({
     academicYearId: v.id("academic_years"),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  }).index("by_year", ["academicYearId"]),
 
   admin_allocation_categories: defineTable({
     name: v.string(),
@@ -171,6 +287,48 @@ export default defineSchema({
     createdAt: v.float64(),
     updatedAt: v.float64(),
   }),
+
+  // 🏢 Organisation Settings (per-organisation configurable options)
+  organisation_settings: defineTable({
+    organisationId: v.id("organisations"),
+    staffRoleOptions: v.array(v.string()),
+    teamOptions: v.array(v.string()),
+    campusOptions: v.optional(v.array(v.string())),
+    maxClassSizePerGroup: v.optional(v.float64()),
+    baseMaxTeachingAtFTE1: v.float64(),
+    baseTotalContractAtFTE1: v.float64(),
+    // Optional mapping to derive default module hours from credits
+    moduleHoursByCredits: v.optional(
+      v.array(
+        v.object({
+          credits: v.number(),
+          teaching: v.number(),
+          marking: v.number(),
+        }),
+      ),
+    ),
+    roleMaxTeachingRules: v.optional(
+      v.array(
+        v.object({
+          role: v.string(),
+          mode: v.union(v.literal("percent"), v.literal("fixed")),
+          value: v.float64(),
+        }),
+      ),
+    ),
+    contractFamilyOptions: v.optional(v.array(v.string())),
+    familyMaxTeachingRules: v.optional(
+      v.array(
+        v.object({
+          family: v.string(),
+          mode: v.union(v.literal("percent"), v.literal("fixed")),
+          value: v.float64(),
+        }),
+      ),
+    ),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_organisation", ["organisationId"]),
 
   // 🔐 System Permissions Registry
   system_permissions: defineTable({
@@ -229,4 +387,25 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_flag", ["userId", "flagName"]),
+
+  // 🚩 Organisation-level Feature Flag Overrides
+  organisationFlagOverrides: defineTable({
+    organisationId: v.id("organisations"),
+    flagName: v.string(),
+    enabled: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_org", ["organisationId"]) // list overrides for an org
+    .index("by_org_flag", ["organisationId", "flagName"]), // lookup specific flag override
+
+  // 🚩 Global Feature Flag Settings (runtime rollout % etc.)
+  featureFlagSettings: defineTable({
+    flagName: v.string(),
+    rolloutPercentage: v.optional(v.float64()),
+    defaultValueOverride: v.optional(v.boolean()),
+    exposeInUserSettings: v.optional(v.boolean()),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_flag", ["flagName"]),
 });

@@ -209,15 +209,24 @@ export const assignToUser = mutation({
       String(role.organisationId),
     );
 
-    // Validate that the user exists in the organisation
+    // Validate that the user exists and is a member of the organisation
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("subject"), args.userId))
-      .filter((q) => q.eq(q.field("organisationId"), role.organisationId))
+      .withIndex("by_subject", (q) => q.eq("subject", args.userId))
       .first();
 
     if (!user) {
-      throw new Error("User not found in the specified organisation");
+      throw new Error("User not found");
+    }
+
+    const membership = await ctx.db
+      .query("user_organisations")
+      .withIndex("by_user_org", (q) =>
+        q.eq("userId", args.userId).eq("organisationId", role.organisationId),
+      )
+      .first();
+    if (!membership) {
+      throw new Error("User is not a member of the specified organisation");
     }
 
     // First, deactivate any existing role assignments for this user in this organisation
@@ -273,9 +282,16 @@ export const assignMultipleToUser = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
+    if (!Array.isArray(args.roleIds) || args.roleIds.length === 0) {
+      throw new Error("No roles provided");
+    }
+
     // Validate roles and derive organisation; ensure all roles belong to same org
     const roles = await Promise.all(args.roleIds.map((rid) => ctx.db.get(rid)));
-    if (roles.some((r) => !r || !r.isActive)) {
+    if (roles.some((r) => !r)) {
+      throw new Error("One or more roles not found");
+    }
+    if (roles.some((r) => !r!.isActive)) {
       throw new Error("One or more roles invalid or inactive");
     }
     const orgId = roles[0]!.organisationId;

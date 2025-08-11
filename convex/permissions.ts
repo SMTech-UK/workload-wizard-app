@@ -161,6 +161,75 @@ export const getOrganisationPermissions = query({
 });
 
 /**
+ * Compute effective permissions for a user within an organisation.
+ * Combines system defaults for their roles and role-specific overrides.
+ */
+export const getUserEffectivePermissions = query({
+  args: {
+    userId: v.string(),
+    organisationId: v.id("organisations"),
+  },
+  handler: async (ctx, { userId, organisationId }) => {
+    const assignments = await ctx.db
+      .query("user_role_assignments")
+      .withIndex("by_user_org", (q) =>
+        q.eq("userId", userId).eq("organisationId", organisationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+    if (assignments.length === 0)
+      return [] as Array<{
+        id: string;
+        source: string;
+        description: string;
+        group: string;
+      }>;
+
+    const roles = (
+      await Promise.all(assignments.map((a) => ctx.db.get(a.roleId)))
+    ).filter((r): r is Doc<"user_roles"> => Boolean(r && r.isActive));
+
+    const systemPermissions = await ctx.db
+      .query("system_permissions")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    const map = new Map<
+      string,
+      { id: string; source: string; description: string; group: string }
+    >();
+
+    for (const role of roles) {
+      // defaults
+      for (const sp of systemPermissions) {
+        if (sp.defaultRoles.includes(role.name)) {
+          map.set(sp.id, {
+            id: sp.id,
+            source: "system_default",
+            description: sp.description,
+            group: sp.group,
+          });
+        }
+      }
+      // explicit
+      for (const pid of role.permissions) {
+        const sp = systemPermissions.find((p) => p.id === pid);
+        if (sp) {
+          map.set(pid, {
+            id: pid,
+            source: "custom",
+            description: sp.description,
+            group: sp.group,
+          });
+        }
+      }
+    }
+
+    return Array.from(map.values());
+  },
+});
+
+/**
  * Seed default roles and permissions for a new organisation
  */
 export const seedDefaultOrgRolesAndPermissions = mutation({
@@ -549,6 +618,136 @@ export const importSystemPermissions = mutation({
 });
 
 /**
+ * Seed planning MVP permissions for courses/modules/iterations/groups/allocations.
+ */
+export const seedPlanningMvpPermissions = mutation({
+  args: {
+    performedBy: v.optional(v.string()),
+    performedByName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const items = [
+      {
+        id: "courses.view",
+        group: "courses",
+        description: "View courses",
+        defaultRoles: ["Admin", "Manager", "Lecturer", "Viewer"],
+      },
+      {
+        id: "courses.create",
+        group: "courses",
+        description: "Create courses",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "courses.edit",
+        group: "courses",
+        description: "Edit courses",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "courses.delete",
+        group: "courses",
+        description: "Delete courses",
+        defaultRoles: ["Admin"],
+      },
+      {
+        id: "courses.years.add",
+        group: "courses",
+        description: "Add course years",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "modules.view",
+        group: "modules",
+        description: "View modules",
+        defaultRoles: ["Admin", "Manager", "Lecturer", "Viewer"],
+      },
+      {
+        id: "modules.create",
+        group: "modules",
+        description: "Create modules",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "modules.edit",
+        group: "modules",
+        description: "Edit modules",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "modules.delete",
+        group: "modules",
+        description: "Delete modules",
+        defaultRoles: ["Admin"],
+      },
+      {
+        id: "modules.link",
+        group: "modules",
+        description: "Attach module to course year",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "modules.unlink",
+        group: "modules",
+        description: "Detach module from course year",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "iterations.create",
+        group: "iterations",
+        description: "Create module iterations for an academic year",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "groups.view",
+        group: "groups",
+        description: "View groups",
+        defaultRoles: ["Admin", "Manager", "Lecturer", "Viewer"],
+      },
+      {
+        id: "groups.create",
+        group: "groups",
+        description: "Create groups",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "groups.delete",
+        group: "groups",
+        description: "Delete groups",
+        defaultRoles: ["Admin", "Manager"],
+      },
+      {
+        id: "allocations.view",
+        group: "allocations",
+        description: "View allocations totals",
+        defaultRoles: ["Admin", "Manager", "Lecturer"],
+      },
+      {
+        id: "allocations.assign",
+        group: "allocations",
+        description: "Assign lecturer to group",
+        defaultRoles: ["Admin", "Manager"],
+      },
+    ];
+
+    const res = await (ctx as any).runMutation(
+      {
+        path: "permissions/importSystemPermissions",
+      },
+      {
+        items,
+        upsert: true,
+        performedBy: args.performedBy,
+        performedByName: args.performedByName,
+      },
+    );
+
+    return res;
+  },
+});
+
+/**
  * List staged organisation role permission changes for an organisation
  */
 export const getStagedForOrganisation = query({
@@ -906,6 +1105,137 @@ export const deleteSystemPermission = mutation({
       removedFromOrgRoles,
       wasForceDeleted: !!args.forceDelete,
     };
+  },
+});
+
+/** Seed core academic year permissions */
+export const seedAcademicYearPermissions = mutation({
+  args: {
+    upsert: v.optional(v.boolean()),
+    performedBy: v.optional(v.string()),
+    performedByName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const defaults = [
+      {
+        id: "year.view.live",
+        group: "academic_years",
+        description: "View live (published) academic years",
+        defaultRoles: [
+          "Admin",
+          "Organisation Admin",
+          "Manager",
+          "Lecturer",
+          "Viewer",
+        ],
+      },
+      {
+        id: "year.view.staging",
+        group: "academic_years",
+        description: "View staged/draft academic years",
+        defaultRoles: ["Admin", "Organisation Admin", "Manager"],
+      },
+      {
+        id: "year.view.archived",
+        group: "academic_years",
+        description: "View archived academic years",
+        defaultRoles: ["Admin", "Organisation Admin"],
+      },
+      {
+        id: "year.edit.live",
+        group: "academic_years",
+        description:
+          "Edit live (published) academic years (e.g. set default, rename, dates)",
+        defaultRoles: ["Admin", "Organisation Admin"],
+      },
+      {
+        id: "year.edit.staging",
+        group: "academic_years",
+        description:
+          "Edit staged/draft academic years (create, modify before publish)",
+        defaultRoles: ["Admin", "Organisation Admin", "Manager"],
+      },
+      {
+        id: "year.edit.archived",
+        group: "academic_years",
+        description: "Edit archived academic years (e.g. rename, notes)",
+        defaultRoles: ["Admin", "Organisation Admin", "orgadmin"],
+      },
+    ];
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const item of defaults) {
+      const existing = await ctx.db
+        .query("system_permissions")
+        .withIndex("by_permission_id", (q) => q.eq("id", item.id))
+        .first();
+      if (!existing) {
+        await ctx.db.insert("system_permissions", {
+          id: item.id,
+          group: item.group,
+          description: item.description,
+          defaultRoles: item.defaultRoles,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+        created++;
+        if (args.performedBy) {
+          await writeAudit(ctx as MutationCtx, {
+            action: "create",
+            entityType: "permission",
+            entityId: item.id,
+            entityName: item.id,
+            performedBy: args.performedBy,
+            ...(args.performedByName
+              ? { performedByName: args.performedByName }
+              : {}),
+            details: `Academic year permission created: ${item.id}`,
+            metadata: JSON.stringify(item),
+            severity: "info",
+          });
+        }
+        continue;
+      }
+      if (args.upsert ?? true) {
+        const oldValues = {
+          group: existing.group,
+          description: existing.description,
+          defaultRoles: existing.defaultRoles,
+        };
+        await ctx.db.patch(existing._id, {
+          group: item.group,
+          description: item.description,
+          defaultRoles: item.defaultRoles,
+          isActive: true,
+          updatedAt: now,
+        });
+        updated++;
+        if (args.performedBy) {
+          await writeAudit(ctx as MutationCtx, {
+            action: "update",
+            entityType: "permission",
+            entityId: existing.id,
+            entityName: existing.id,
+            performedBy: args.performedBy,
+            ...(args.performedByName
+              ? { performedByName: args.performedByName }
+              : {}),
+            details: `Academic year permission upserted: ${existing.id}`,
+            metadata: JSON.stringify({ oldValues, newValues: item }),
+            severity: "info",
+          });
+        }
+      } else {
+        skipped++;
+      }
+    }
+
+    return { total: defaults.length, created, updated, skipped };
   },
 });
 
@@ -1629,7 +1959,7 @@ export const updateOrganisationRole = mutation({
       throw new Error("Role not found");
     }
 
-    // Authorization: only system admins or members of the same organisation can modify
+    // Authorisation: only system admins or members of the same organisation can modify
     const identity = await ctx.auth.getUserIdentity();
     const subject = args.performedBy ?? identity?.subject;
     if (!subject) throw new Error("Unauthenticated");
@@ -1648,7 +1978,7 @@ export const updateOrganisationRole = mutation({
         String(actor.organisationId) !== String(role.organisationId)
       ) {
         throw new Error(
-          "Unauthorized: Cannot modify roles outside your organisation",
+          "Unauthorised: Cannot modify roles outside your organisation",
         );
       }
     }
@@ -1729,7 +2059,7 @@ export const deleteOrganisationRole = mutation({
       throw new Error("Cannot delete role that has assigned users");
     }
 
-    // Authorization: only system admins or members of the same organisation can delete
+    // Authorisation: only system admins or members of the same organisation can delete
     const identity = await ctx.auth.getUserIdentity();
     const subject = args.performedBy ?? identity?.subject;
     if (!subject) throw new Error("Unauthenticated");
@@ -1748,7 +2078,7 @@ export const deleteOrganisationRole = mutation({
         String(actor.organisationId) !== String(role.organisationId)
       ) {
         throw new Error(
-          "Unauthorized: Cannot delete roles outside your organisation",
+          "Unauthorised: Cannot delete roles outside your organisation",
         );
       }
     }
@@ -1804,7 +2134,7 @@ export const updateRolePermissions = mutation({
       throw new Error("Role not found");
     }
 
-    // Authorization: only system admins or members of the same organisation
+    // Authorisation: only system admins or members of the same organisation
     const identity = await ctx.auth.getUserIdentity();
     const subject = args.performedBy ?? identity?.subject;
     if (!subject) throw new Error("Unauthenticated");
@@ -1823,7 +2153,7 @@ export const updateRolePermissions = mutation({
         String(actor.organisationId) !== String(role.organisationId)
       ) {
         throw new Error(
-          "Unauthorized: Cannot modify roles outside your organisation",
+          "Unauthorised: Cannot modify roles outside your organisation",
         );
       }
     }

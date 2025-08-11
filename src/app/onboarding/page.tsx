@@ -41,7 +41,7 @@ const onboardingSteps = [
     icon: User,
   },
   {
-    id: "organization",
+    id: "organisation",
     title: "Organisation",
     description: "Your institution details",
     icon: Building,
@@ -148,7 +148,7 @@ export default function OnboardingPage() {
       const userLastName = user.lastName || "";
       const userEmail = user.emailAddresses?.[0]?.emailAddress || "";
 
-      // Get organization name from Convex query result
+      // Get organisation name from Convex query result
       const userOrganization = organization?.name || "";
 
       // Pre-populate available data
@@ -242,7 +242,7 @@ export default function OnboardingPage() {
       setFormData((prevData) => ({
         ...prevData,
         ...savedProgress.formData,
-        // Keep pre-populated organization if it exists
+        // Keep pre-populated organisation if it exists
         organization:
           prevData.organization || savedProgress.formData.organization,
       }));
@@ -276,7 +276,7 @@ export default function OnboardingPage() {
           return requiredFields;
         case 1: // Work Information
           const workFields = ["department"];
-          // Only require organization if it's not pre-populated
+          // Only require organisation if it's not pre-populated
           if (!formData.organization) {
             workFields.push("organization");
           }

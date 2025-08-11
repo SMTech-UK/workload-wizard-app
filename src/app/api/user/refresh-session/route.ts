@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
 
     // This endpoint can be used to test session refresh

@@ -59,7 +59,7 @@ export default function PrivacyPolicyPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
           <p className="text-muted-foreground mt-2">
-            Last updated: December 2024
+            Last updated: August 2025
           </p>
         </div>
         <div className="max-w-4xl mx-auto space-y-8">
@@ -352,7 +352,7 @@ export default function PrivacyPolicyPage() {
               </p>
               <div className="space-y-2 text-sm">
                 <p>
-                  <strong>Email:</strong> privacy@workloadwizard.com
+                  <strong>Email:</strong> support@workload-wiz.xyz
                 </p>
                 <p>
                   <strong>Data Protection Officer:</strong>{" "}

@@ -25,10 +25,13 @@ export function FeatureFlagProvider({ children }: FeatureFlagProviderProps) {
     // Only identify user if they've changed or haven't been identified yet
     const currentUserId = user?.id || null;
     if (currentUserId !== lastUserId.current) {
-      console.log("User changed, identifying in PostHog:", {
-        previous: lastUserId.current,
-        current: currentUserId,
-      });
+      if (process.env.NODE_ENV !== "production") {
+        // Reduce noisy logs in prod
+        console.log("User changed, identifying in PostHog:", {
+          previous: lastUserId.current,
+          current: currentUserId,
+        });
+      }
 
       // Identify user in PostHog for feature flags
       identifyUserForFeatureFlags(user);

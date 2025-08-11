@@ -66,6 +66,32 @@ export const create = mutation({
       );
     }
 
+    // Seed default organisation settings
+    try {
+      const now2 = Date.now();
+      await ctx.db.insert("organisation_settings", {
+        organisationId,
+        staffRoleOptions: [
+          "Lecturer",
+          "Senior Lecturer",
+          "Teaching Fellow",
+          "Associate Lecturer",
+          "Professor",
+        ],
+        teamOptions: ["Computing", "Engineering", "Business", "Design"],
+        baseMaxTeachingAtFTE1: 400,
+        baseTotalContractAtFTE1: 550,
+        createdAt: now2,
+        updatedAt: now2,
+      });
+    } catch (err) {
+      console.warn(
+        "Failed to seed organisation settings for organisation",
+        organisationId,
+        err,
+      );
+    }
+
     // Audit create
     try {
       await writeAudit(ctx, {

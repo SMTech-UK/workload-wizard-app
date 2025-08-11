@@ -1,6 +1,9 @@
 "use client";
 
 import posthog from "posthog-js";
+import { track } from "@/lib/analytics";
+import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +82,7 @@ export function EditUserForm({
   const [selectedOrgRoleIds, setSelectedOrgRoleIds] = useState<string[]>([]);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
 
   // Get all organisations for sysadmin use
   const organisations = useQuery(api.organisations.list);
@@ -192,6 +196,7 @@ export function EditUserForm({
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
+      toastError(toast, error, "Failed to update user");
       setMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Failed to update user",
@@ -232,6 +237,10 @@ export function EditUserForm({
         user_id: user.subject,
         is_sysadmin: isSysadmin,
       });
+      track("user.passwordResetInitiated", {
+        userId: user.subject,
+        isSysadmin,
+      });
 
       const result = await response.json();
       setMessage({
@@ -242,6 +251,7 @@ export function EditUserForm({
             : result.message,
       });
     } catch (error) {
+      toastError(toast, error, "Failed to send password reset email");
       setMessage({
         type: "error",
         text:
@@ -322,26 +332,37 @@ export function EditUserForm({
               />
             </div>
 
-            {/* Organisation Selection for Sysadmin */}
+            {/* Organisation Memberships (multi-org) for Sysadmin */}
             {isSysadmin && (
               <div className="space-y-2">
-                <Label htmlFor="organisation">Organisation *</Label>
-                <Select
-                  value={selectedOrganisationId || ""}
-                  onValueChange={setSelectedOrganisationId}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select organisation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {organisations?.map((org) => (
-                      <SelectItem key={org._id} value={org._id}>
-                        {org.name}
-                      </SelectItem>
-                    )) || []}
-                  </SelectContent>
-                </Select>
+                <Label>Organisation Memberships</Label>
+                <div className="grid grid-cols-2 gap-2 max-h-56 overflow-auto border rounded p-2">
+                  {organisations?.map((org) => {
+                    const checked = selectedOrganisationId === org._id;
+                    return (
+                      <label
+                        key={org._id}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4"
+                          checked={checked}
+                          onChange={(e) => {
+                            if (e.target.checked)
+                              setSelectedOrganisationId(org._id);
+                            else setSelectedOrganisationId("");
+                          }}
+                        />
+                        <span>{org.name}</span>
+                      </label>
+                    );
+                  }) || []}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Primary org marks profile scope; memberships saved via
+                  backend.
+                </p>
               </div>
             )}
 

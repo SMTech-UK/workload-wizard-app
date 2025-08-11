@@ -52,7 +52,7 @@ export default function TermsOfServicePage() {
             Terms of Service
           </h1>
           <p className="text-muted-foreground mt-2">
-            Last updated: December 2024
+            Last updated: August 2025
           </p>
         </div>
         <div className="max-w-4xl mx-auto space-y-8">
@@ -215,7 +215,7 @@ export default function TermsOfServicePage() {
               </p>
               <div className="space-y-2 text-sm">
                 <p>
-                  <strong>Email:</strong> support@workloadwizard.com
+                  <strong>Email:</strong> support@workload-wiz.xyz
                 </p>
                 <p>
                   <strong>Support Portal:</strong> Available through your admin

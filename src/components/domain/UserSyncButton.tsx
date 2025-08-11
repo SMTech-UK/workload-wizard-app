@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { syncUsersFromClerk, getSyncStatus } from "@/lib/actions/syncUsers";
 import { RefreshCw, CheckCircle, AlertCircle, Users } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface SyncStatus {
   clerkUserCount: number;
@@ -28,6 +28,7 @@ interface SyncResult {
 }
 
 export function UserSyncButton() {
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
@@ -40,10 +41,12 @@ export function UserSyncButton() {
       await checkSyncStatus();
     } catch (error) {
       console.error("Sync failed:", error);
-      toast.error(
-        "Sync failed",
-        error instanceof Error ? error.message : undefined,
-      );
+      toast({
+        title: "Sync failed",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

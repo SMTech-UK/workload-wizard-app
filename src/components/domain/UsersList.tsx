@@ -74,6 +74,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  PermissionGate,
+  UsersEditGate,
+  UsersDeleteGate,
+  PermissionsManageGate,
+} from "@/components/common/PermissionGate";
+import { handleClientPermissionError } from "@/lib/permission-errors";
 
 interface User {
   id: string;
@@ -403,6 +410,12 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
       setError(
         error instanceof Error ? error.message : "Failed to update user status",
       );
+      toast({
+        title: "Failed to update user status",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setTogglingUserId(null);
     }
@@ -1152,19 +1165,23 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem
-                            onClick={() => openAssignRoles(user)}
-                          >
-                            <UserCog className="mr-2 h-4 w-4" />
-                            <span>Assign Roles</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleEditUser(user)}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            <span>Edit User</span>
-                          </DropdownMenuItem>
+                          <PermissionsManageGate>
+                            <DropdownMenuItem
+                              onClick={() => openAssignRoles(user)}
+                            >
+                              <UserCog className="mr-2 h-4 w-4" />
+                              <span>Assign Roles</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </PermissionsManageGate>
+                          <UsersEditGate>
+                            <DropdownMenuItem
+                              onClick={() => handleEditUser(user)}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              <span>Edit User</span>
+                            </DropdownMenuItem>
+                          </UsersEditGate>
                           <DropdownMenuItem disabled>
                             <Eye className="mr-2 h-4 w-4" />
                             <span>View Details</span>
@@ -1177,34 +1194,38 @@ export const UsersList = forwardRef<UsersListRef>((props, ref) => {
                               >
                                 <LogIn className="mr-2 h-4 w-4" />
                                 <span>Login As</span>
-                              </DropdownMenuItem> */}
+                          </DropdownMenuItem> */}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleToggleUserStatus(user)}
-                            disabled={togglingUserId === user.id}
-                          >
-                            {togglingUserId === user.id ? (
-                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                            ) : user.isActive ? (
-                              <UserX className="mr-2 h-4 w-4" />
-                            ) : (
-                              <UserCheck className="mr-2 h-4 w-4" />
-                            )}
-                            <span>
-                              {user.isActive
-                                ? "Deactivate User"
-                                : "Activate User"}
-                            </span>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteUser(user)}
-                            disabled={user.isActive}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            <span>Delete User</span>
-                          </DropdownMenuItem>
+                          <PermissionGate permission="users.edit">
+                            <DropdownMenuItem
+                              onClick={() => handleToggleUserStatus(user)}
+                              disabled={togglingUserId === user.id}
+                            >
+                              {togglingUserId === user.id ? (
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              ) : user.isActive ? (
+                                <UserX className="mr-2 h-4 w-4" />
+                              ) : (
+                                <UserCheck className="mr-2 h-4 w-4" />
+                              )}
+                              <span>
+                                {user.isActive
+                                  ? "Deactivate User"
+                                  : "Activate User"}
+                              </span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </PermissionGate>
+                          <UsersDeleteGate>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteUser(user)}
+                              disabled={user.isActive}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete User</span>
+                            </DropdownMenuItem>
+                          </UsersDeleteGate>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

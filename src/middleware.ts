@@ -32,7 +32,9 @@ function shouldRateLimit(ip: string): boolean {
 }
 
 const isPublicRoute = createRouteMatcher([
+  "/",
   "/sign-in(.*)",
+  "/landing",
   "/api/webhooks/clerk",
   "/terms",
   "/privacy",
@@ -48,8 +50,11 @@ const isOnboardingRoute = createRouteMatcher([
   "/onboarding-success",
 ]);
 
-// Initialize Convex client for middleware
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+function getConvex(): ConvexHttpClient | null {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!url) return null;
+  return new ConvexHttpClient(url);
+}
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims } = await auth();
@@ -120,6 +125,8 @@ export default clerkMiddleware(async (auth, req) => {
       // Fallback to Convex user record if claims missing or false
       if (!hasCompletedOnboarding) {
         try {
+          const convex = getConvex();
+          if (!convex) throw new Error("Convex URL not configured");
           const user = await convex.query(api.users.getBySubject, {
             subject: userId,
           });
@@ -148,6 +155,9 @@ export default clerkMiddleware(async (auth, req) => {
 
   return NextResponse.next();
 });
+
+// Handle 403 responses by redirecting to unauthorized page
+// Remove extraneous named middleware exports; Clerk's default export handles protection
 
 export const config = {
   matcher: [

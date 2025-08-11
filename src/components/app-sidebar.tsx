@@ -24,6 +24,7 @@ import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
+import { YearSwitcher } from "@/components/common/YearSwitcher";
 // Removed BETA_FEATURES imports - no longer needed
 import {
   Sidebar,
@@ -47,6 +48,12 @@ const getNavigationData = (userRoles?: string[]) => {
       url: "/account",
       icon: User,
     },
+    {
+      title: "Modules",
+      url: "/modules",
+      icon: FileText,
+    },
+    // Staff entries are injected below based on role
   ];
 
   // Add role-specific navigation
@@ -64,12 +71,20 @@ const getNavigationData = (userRoles?: string[]) => {
           url: "/admin",
         },
         {
+          title: "Academic Years",
+          url: "/admin/academic-years",
+        },
+        {
           title: "Users Management",
           url: "/admin/users",
         },
         {
           title: "Organisations",
           url: "/admin/organisations",
+        },
+        {
+          title: "Admin Allocation Categories",
+          url: "/admin/allocations/categories",
         },
         ...// Show Permissions page to sysadmin or developer (support both single and array roles via getUserRoles)
         (userRoles?.some((r) => r === "sysadmin" || r === "developer")
@@ -124,7 +139,12 @@ const getNavigationData = (userRoles?: string[]) => {
   }
 
   // Orgadmin navigation
-  if (userRoles?.includes("orgadmin")) {
+  if (
+    userRoles?.some(
+      (role) =>
+        role === "orgadmin" || role === "sysadmin" || role === "developer",
+    )
+  ) {
     roleNav.push({
       title: "Organisation",
       url: "/organisation",
@@ -142,7 +162,31 @@ const getNavigationData = (userRoles?: string[]) => {
           title: "Settings",
           url: "/organisation/settings",
         },
+        {
+          title: "Academic Years",
+          url: "/admin/academic-years",
+        },
+        {
+          title: "Courses",
+          url: "/courses",
+        },
+        { title: "Modules", url: "/modules" },
+        { title: "Staff", url: "/staff" },
       ],
+    });
+  }
+
+  // For non-admin users, show only Staff -> My Profile
+  const isAdminLike = userRoles?.some(
+    (role) =>
+      role === "orgadmin" || role === "sysadmin" || role === "developer",
+  );
+  if (!isAdminLike) {
+    roleNav.push({
+      title: "Staff",
+      url: "/staff",
+      icon: Users,
+      items: [{ title: "My Profile", url: "/staff/me" }],
     });
   }
 
@@ -237,6 +281,8 @@ const getProjectsData = (userRoles?: string[]) => {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useUser();
   const userRoles = getUserRoles(user);
+  const pathname =
+    typeof window !== "undefined" ? window.location.pathname : "";
 
   // Get role-based navigation data
   const data = getNavigationData(userRoles);
@@ -245,6 +291,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher />
+        <div className="px-2">
+          <YearSwitcher compact />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

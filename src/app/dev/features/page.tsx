@@ -39,6 +39,9 @@ import { usePinkMode } from "@/hooks/usePinkMode";
 import { FeatureFlagToggle } from "@/components/feature-flags/FeatureFlagToggle";
 import { FeatureFlags } from "@/lib/feature-flags/types";
 import { FEATURE_FLAG_CONFIGS } from "@/lib/feature-flags/config";
+import { ConvexHttpClient } from "convex/browser";
+import { api as convexApi } from "@/../convex/_generated/api";
+import { FlagsManageGate } from "@/components/common/PermissionGate";
 
 interface EarlyAccessFeature {
   flagKey: string;
@@ -304,6 +307,124 @@ export default function DevFeaturesPage() {
       subtitle="Developer tools for managing and previewing feature flags"
       headerActions={headerActions}
     >
+      {/* Staging Area for Dev/Admin */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            Staging Area
+          </CardTitle>
+          <CardDescription>
+            Flags marked as staging-only or with 0% rollout. Use this area to
+            opt-in/out while features are not yet ready for general use.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Object.entries(FEATURE_FLAG_CONFIGS)
+              .filter(
+                ([, cfg]) => cfg.stagingOnly || cfg.rolloutPercentage === 0,
+              )
+              .map(([key, cfg]) => {
+                const ea = earlyAccessFeatures.find((f) => f.flagKey === key);
+                const enrolled = ea?.enrolled ?? cfg.defaultValue;
+                return (
+                  <div key={key} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{cfg.name}</h3>
+                          <Badge
+                            variant={getStageBadgeVariant(cfg.stage || "beta")}
+                            className="text-xs"
+                          >
+                            {capitalizeStage(cfg.stage || "beta")}
+                          </Badge>
+                          <Badge
+                            variant={enrolled ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {enrolled ? "Enabled" : "Disabled"}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            <Settings className="h-3 w-3 mr-1" />
+                            Local
+                          </Badge>
+                        </div>
+                        {cfg.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {cfg.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="font-mono">{key}</span>
+                          {typeof cfg.rolloutPercentage === "number" && (
+                            <span>Rollout: {cfg.rolloutPercentage}%</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 ml-4">
+                        <div className="flex items-center gap-2">
+                          {updating === key ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : enrolled ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-gray-400" />
+                          )}
+                          <Switch
+                            checked={!!enrolled}
+                            onCheckedChange={(enabled) =>
+                              toggleFeature(key, !!enabled)
+                            }
+                            disabled={updating === key}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Expose in Account toggle */}
+                    <div className="mt-3 flex items-center justify-between text-sm bg-muted/30 p-2 rounded">
+                      <div className="text-muted-foreground">
+                        Show in Account &gt; Features
+                      </div>
+                      <Switch
+                        onCheckedChange={async (v) => {
+                          if (!user?.id) return;
+                          try {
+                            const client = new ConvexHttpClient(
+                              process.env.NEXT_PUBLIC_CONVEX_URL!,
+                            );
+                            await client.mutation(
+                              convexApi.featureFlags.setFlagSettings,
+                              {
+                                flagName: key,
+                                exposeInUserSettings: Boolean(v),
+                                actorUserId: user.id,
+                              },
+                            );
+                            toast({ title: "Visibility updated" });
+                          } catch (e) {
+                            toast({
+                              title: "Failed to update visibility",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            {Object.entries(FEATURE_FLAG_CONFIGS).filter(
+              ([, cfg]) => cfg.stagingOnly || cfg.rolloutPercentage === 0,
+            ).length === 0 && (
+              <div className="text-sm text-muted-foreground">
+                No staging flags configured.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
       {/* Status Overview */}
       <Card>
         <CardHeader>
@@ -617,76 +738,6 @@ export default function DevFeaturesPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Local Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Code className="h-5 w-5" />
-            Local Feature Flag Configuration
-          </CardTitle>
-          <CardDescription>
-            Feature flags configured locally in the codebase.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {Object.entries(FEATURE_FLAG_CONFIGS).map(([key, config]) => (
-              <div key={key} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{config.name}</h3>
-                      <Badge
-                        variant={config.defaultValue ? "default" : "secondary"}
-                        className="text-xs"
-                      >
-                        Default: {config.defaultValue ? "Enabled" : "Disabled"}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <Settings className="h-3 w-3 mr-1" />
-                        Local Config
-                      </Badge>
-                    </div>
-
-                    {config.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {config.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="font-mono">{key}</span>
-                      <span>Rollout: {config.rolloutPercentage}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* No Features Message */}
-      {!loading &&
-        earlyAccessFeatures.length === 0 &&
-        allPostHogFeatures.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-8">
-              <Crown className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                No Features Available
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                There are currently no features available to display.
-              </p>
-              <Button onClick={refreshFeatures} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Check for Features
-              </Button>
-            </CardContent>
-          </Card>
-        )}
     </StandardizedSidebarLayout>
   );
 }

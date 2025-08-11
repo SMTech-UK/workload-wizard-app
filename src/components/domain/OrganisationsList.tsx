@@ -22,9 +22,10 @@ import {
 } from "@/components/ui/table";
 import { Trash2, RefreshCw, Edit } from "lucide-react";
 import { EditOrganisationForm } from "./EditOrganisationForm";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export function OrganisationsList() {
+  const { toast } = useToast();
   const organisations = useQuery(api.organisations.list);
   const deleteOrganisation = useMutation(api.organisations.remove);
   const [editingOrganisation, setEditingOrganisation] = useState<any>(null);
@@ -49,10 +50,11 @@ export function OrganisationsList() {
     try {
       await deleteOrganisation({ id: id as unknown as Id<"organisations"> });
     } catch (err) {
-      toast.error(
-        "Failed to delete organisation",
-        err instanceof Error ? err.message : undefined,
-      );
+      toast({
+        title: "Failed to delete organisation",
+        description: err instanceof Error ? err.message : "An error occurred",
+        variant: "destructive",
+      });
     }
   };
 

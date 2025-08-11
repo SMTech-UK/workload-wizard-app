@@ -78,11 +78,9 @@ export function StandardizedSidebarLayout({
 
           <div className="flex-1"></div>
 
-          {headerActions && (
-            <div className="flex items-center gap-2 px-4 justify-end">
-              {headerActions}
-            </div>
-          )}
+          <div className="flex items-center gap-3 px-4 justify-end">
+            {headerActions}
+          </div>
         </header>
 
         {(title || subtitle) && (

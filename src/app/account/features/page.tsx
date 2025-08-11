@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAllFeatureFlagConfigs } from "@/lib/feature-flags/config";
+import { ConvexHttpClient } from "convex/browser";
+import { api as convexApi } from "@/../convex/_generated/api";
 import { FeatureFlags } from "@/lib/feature-flags/types";
 
 interface EarlyAccessFeature {
@@ -78,10 +80,31 @@ export default function AccountFeaturesPage() {
       const allConfigs = getAllFeatureFlagConfigs();
       const localOverrides = getLocalFlagOverrides();
 
+      // Fetch server-side settings to know which flags to expose in user settings
+      let settingsMap: Record<
+        string,
+        { exposeInUserSettings?: boolean | null }
+      > = {};
+      try {
+        if (process.env.NEXT_PUBLIC_CONVEX_URL) {
+          const client = new ConvexHttpClient(
+            process.env.NEXT_PUBLIC_CONVEX_URL,
+          );
+          settingsMap = await client.query(
+            convexApi.featureFlags.getAllFlagSettings,
+            {} as any,
+          );
+        }
+      } catch {}
+
       const earlyAccessConfigs: EarlyAccessFeature[] = Object.entries(
         allConfigs,
       )
-        .filter(([_, config]) => config.rolloutPercentage === 0)
+        .filter(([flagKey, config]) => {
+          const setting = settingsMap[flagKey];
+          const expose = setting?.exposeInUserSettings ?? false;
+          return config.rolloutPercentage === 0 && expose;
+        })
         .map(([flagKey, config]) => ({
           flagKey,
           name: formatFeatureName(config.name),

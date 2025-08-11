@@ -4,6 +4,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { requirePermission } from "./permissions";
 import { writeAudit } from "./audit";
 import type { Id, Doc } from "./_generated/dataModel";
+import { requireOrgPermission } from "./permissions";
 
 export const create = mutation({
   args: {
@@ -42,11 +43,11 @@ export const create = mutation({
           actor.systemRoles.some((r: string) =>
             ["admin", "sysadmin", "developer"].includes(r),
           );
-        // Always derive organisation from the actor when not a system role
-        if (!isSystem)
-          derivedOrganisationId = actor.organisationId as Id<"organisations">;
-        // For system actors, allow explicit organisationId if passed; otherwise default to their org
-        if (isSystem && !derivedOrganisationId) {
+        // If explicit organisationId provided, allow assigning user to a different org
+        if (args.organisationId) {
+          derivedOrganisationId = args.organisationId as Id<"organisations">;
+        } else {
+          // Otherwise default to actor's org
           derivedOrganisationId = actor.organisationId as Id<"organisations">;
         }
       }
@@ -123,7 +124,6 @@ export const update = mutation({
     currentUserId: v.string(),
   },
   handler: async (ctx, args) => {
-    // Allow orgadmin to edit users within their own organisation; otherwise require permission
     const actor = await ctx.db
       .query("users")
       .withIndex("by_subject", (q) => q.eq("subject", args.currentUserId))
@@ -134,17 +134,13 @@ export const update = mutation({
       throw new Error("User not found");
     }
 
-    const actorIsOrgAdmin =
-      !!actor &&
-      Array.isArray(actor.systemRoles) &&
-      actor.systemRoles.includes("orgadmin");
-    const sameOrganisation =
-      !!actor &&
-      String(actor.organisationId) === String(targetUser.organisationId);
-
-    if (!(actorIsOrgAdmin && sameOrganisation)) {
-      await requirePermission(ctx, args.currentUserId, "users.edit");
-    }
+    // Enforce granular permission within target user's organisation
+    await requireOrgPermission(
+      ctx,
+      args.currentUserId,
+      "users.edit",
+      String(targetUser.organisationId),
+    );
 
     const { id, currentUserId, ...updates } = args;
 
@@ -267,15 +263,34 @@ export const list = query({
     organisationId: v.optional(v.id("organisations")),
   },
   handler: async (ctx, args) => {
-    let usersQuery = ctx.db.query("users");
-
+    let users: Doc<"users">[] = [];
     if (args.organisationId) {
-      usersQuery = usersQuery.filter((q) =>
-        q.eq(q.field("organisationId"), args.organisationId),
-      );
-    }
+      // Prefer memberships table when present; fall back to legacy field for now
+      const memberships = await ctx.db
+        .query("user_organisations")
+        .withIndex("by_org", (q) =>
+          q.eq("organisationId", args.organisationId as Id<"organisations">),
+        )
+        .collect()
+        .catch(() => [] as any[]);
 
-    const users = await usersQuery.collect();
+      if (Array.isArray(memberships) && memberships.length > 0) {
+        const userIds = memberships.map((m) => m.userId);
+        users = await ctx.db
+          .query("users")
+          .filter((q) =>
+            (q as any).in((q as any).field("subject"), userIds as any),
+          )
+          .collect();
+      } else {
+        users = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("organisationId"), args.organisationId))
+          .collect();
+      }
+    } else {
+      users = await ctx.db.query("users").collect();
+    }
 
     // Get organisation details for each user
     const usersWithOrganisations = await Promise.all(
@@ -344,6 +359,16 @@ export const getBySubject = query({
     return await ctx.db
       .query("users")
       .withIndex("by_subject", (q) => q.eq("subject", args.subject))
+      .first();
+  },
+});
+
+export const getByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
   },
 });
