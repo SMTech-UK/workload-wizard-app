@@ -10,6 +10,8 @@ import { Toaster } from "@/components/ui/toast";
 import { AcademicYearProvider } from "@/components/providers/AcademicYearProvider";
 import { BreadcrumbProvider } from "@/hooks/useBreadcrumbs";
 import FeaturebaseMessenger from "@/components/domain/FeatureBaseWidget";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +29,7 @@ export const metadata: Metadata = {
     template: "%s | Workload Wizard",
   },
   description: "Academic workload planning and allocations",
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({
@@ -55,6 +57,8 @@ export default function RootLayout({
                       {children}
                       <FeaturebaseMessenger />
                       <Toaster />
+                      <Analytics />
+                      <SpeedInsights />
                     </BreadcrumbProvider>
                   </AcademicYearProvider>
                 </PinkModeProvider>
