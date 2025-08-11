@@ -22,7 +22,7 @@ export default function DevToolsPage() {
       toast({
         title: `${label} ok`,
         description: JSON.stringify(res),
-        duration: 2500,
+        // Sonner/toast in this app doesn't accept duration in typings; omit for strict types
       });
     } catch (e: any) {
       toast({

@@ -8,6 +8,7 @@ import { FeatureFlagProvider } from "@/components/providers/FeatureFlagProvider"
 import { PinkModeProvider } from "@/components/providers/PinkModeProvider";
 import { Toaster } from "@/components/ui/toast";
 import { AcademicYearProvider } from "@/components/providers/AcademicYearProvider";
+import { BreadcrumbProvider } from "@/hooks/useBreadcrumbs";
 import FeaturebaseMessenger from "@/components/domain/FeatureBaseWidget";
 
 const geistSans = Geist({
@@ -46,9 +47,11 @@ export default function RootLayout({
               <FeatureFlagProvider>
                 <PinkModeProvider>
                   <AcademicYearProvider>
-                    {children}
-                    <FeaturebaseMessenger />
-                    <Toaster />
+                    <BreadcrumbProvider>
+                      {children}
+                      <FeaturebaseMessenger />
+                      <Toaster />
+                    </BreadcrumbProvider>
                   </AcademicYearProvider>
                 </PinkModeProvider>
               </FeatureFlagProvider>

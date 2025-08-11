@@ -162,6 +162,11 @@ export default defineSchema({
     code: v.string(),
     name: v.string(),
     credits: v.optional(v.number()),
+    leaderProfileId: v.optional(v.id("lecturer_profiles")),
+    level: v.optional(v.number()),
+    teachingHours: v.optional(v.number()),
+    markingHours: v.optional(v.number()),
+    campuses: v.optional(v.array(v.string())),
     organisationId: v.id("organisations"),
     createdAt: v.float64(),
     updatedAt: v.float64(),
@@ -215,7 +220,11 @@ export default defineSchema({
     userSubject: v.optional(v.string()), // Optional link to Clerk subject / users.subject
     role: v.optional(v.string()),
     teamName: v.optional(v.string()),
+    contractFamily: v.optional(v.string()),
     prefWorkingLocation: v.optional(v.string()),
+    prefWorkingTime: v.optional(
+      v.union(v.literal("am"), v.literal("pm"), v.literal("all_day")),
+    ),
     prefSpecialism: v.optional(v.string()),
     prefNotes: v.optional(v.string()),
     organisationId: v.id("organisations"),
@@ -269,7 +278,7 @@ export default defineSchema({
     academicYearId: v.id("academic_years"),
     createdAt: v.float64(),
     updatedAt: v.float64(),
-  }),
+  }).index("by_year", ["academicYearId"]),
 
   admin_allocation_categories: defineTable({
     name: v.string(),
@@ -278,6 +287,48 @@ export default defineSchema({
     createdAt: v.float64(),
     updatedAt: v.float64(),
   }),
+
+  // 🏢 Organisation Settings (per-organisation configurable options)
+  organisation_settings: defineTable({
+    organisationId: v.id("organisations"),
+    staffRoleOptions: v.array(v.string()),
+    teamOptions: v.array(v.string()),
+    campusOptions: v.optional(v.array(v.string())),
+    maxClassSizePerGroup: v.optional(v.float64()),
+    baseMaxTeachingAtFTE1: v.float64(),
+    baseTotalContractAtFTE1: v.float64(),
+    // Optional mapping to derive default module hours from credits
+    moduleHoursByCredits: v.optional(
+      v.array(
+        v.object({
+          credits: v.number(),
+          teaching: v.number(),
+          marking: v.number(),
+        }),
+      ),
+    ),
+    roleMaxTeachingRules: v.optional(
+      v.array(
+        v.object({
+          role: v.string(),
+          mode: v.union(v.literal("percent"), v.literal("fixed")),
+          value: v.float64(),
+        }),
+      ),
+    ),
+    contractFamilyOptions: v.optional(v.array(v.string())),
+    familyMaxTeachingRules: v.optional(
+      v.array(
+        v.object({
+          family: v.string(),
+          mode: v.union(v.literal("percent"), v.literal("fixed")),
+          value: v.float64(),
+        }),
+      ),
+    ),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  }).index("by_organisation", ["organisationId"]),
 
   // 🔐 System Permissions Registry
   system_permissions: defineTable({
@@ -353,6 +404,7 @@ export default defineSchema({
     flagName: v.string(),
     rolloutPercentage: v.optional(v.float64()),
     defaultValueOverride: v.optional(v.boolean()),
+    exposeInUserSettings: v.optional(v.boolean()),
     createdAt: v.float64(),
     updatedAt: v.float64(),
   }).index("by_flag", ["flagName"]),

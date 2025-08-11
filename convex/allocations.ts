@@ -5,7 +5,7 @@ import { writeAudit } from "./audit";
 import { computeHoursFromCredits, computeTotals } from "./allocationsMath";
 import { requireOrgPermission } from "./permissions";
 import { requirePermission } from "./permissions";
-import type { Id } from "./_generated/dataModel";
+// (duplicate Id import removed)
 
 // moved to allocationsMath.ts for unit testing
 
@@ -15,7 +15,7 @@ export const assignLecturer = mutation({
     groupId: v.id("module_groups"),
     lecturerId: v.id("lecturer_profiles"),
     academicYearId: v.id("academic_years"),
-    organisationId: v.id("organisations"),
+    organisationId: v.optional(v.id("organisations")),
     type: v.union(v.literal("teaching"), v.literal("admin")),
     hoursOverride: v.optional(v.number()),
   },
@@ -41,12 +41,15 @@ export const assignLecturer = mutation({
       }
     }
 
+    // Derive organisationId via module
+    const derivedOrgId = (moduleDoc as any)
+      ?.organisationId as Id<"organisations">;
     // Permission: allocations.assign within module's org
     await requireOrgPermission(
       ctx as any,
       identity.subject,
       "allocations.assign",
-      (moduleDoc as any).organisationId,
+      derivedOrgId,
     );
 
     const now = Date.now();
@@ -56,7 +59,7 @@ export const assignLecturer = mutation({
         groupId: args.groupId,
         lecturerId: args.lecturerId,
         academicYearId: args.academicYearId,
-        organisationId: args.organisationId,
+        organisationId: derivedOrgId,
         type: args.type,
         hoursComputed: baseHours,
         ...(typeof args.hoursOverride === "number"

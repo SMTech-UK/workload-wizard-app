@@ -53,6 +53,10 @@ export const create = mutation({
     code: v.string(),
     name: v.string(),
     credits: v.optional(v.number()),
+    leaderProfileId: v.optional(v.id("lecturer_profiles")),
+    level: v.optional(v.number()),
+    teachingHours: v.optional(v.number()),
+    markingHours: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -85,11 +89,40 @@ export const create = mutation({
     if (existing)
       throw new Error("Module code already exists in this organisation");
 
+    // Compute default hours from org settings if not provided and credits present
+    let teachingHours = args.teachingHours;
+    let markingHours = args.markingHours;
+    if (
+      (teachingHours === undefined || markingHours === undefined) &&
+      typeof args.credits === "number"
+    ) {
+      const settings = await ctx.db
+        .query("organisation_settings" as any)
+        .withIndex("by_organisation" as any, (q) =>
+          (q as any).eq("organisationId", actor.organisationId as any),
+        )
+        .first();
+      const mapping = settings?.moduleHoursByCredits as
+        | Array<{ credits: number; teaching: number; marking: number }>
+        | undefined;
+      const match = mapping?.find((m) => m.credits === args.credits);
+      if (match) {
+        teachingHours = teachingHours ?? match.teaching;
+        markingHours = markingHours ?? match.marking;
+      }
+    }
+
     const now = Date.now();
     const id = await (ctx.db as any).insert("modules", {
       code: args.code,
       name: args.name,
       ...(typeof args.credits === "number" ? { credits: args.credits } : {}),
+      ...(args.leaderProfileId
+        ? { leaderProfileId: args.leaderProfileId }
+        : {}),
+      ...(typeof args.level === "number" ? { level: args.level } : {}),
+      ...(typeof teachingHours === "number" ? { teachingHours } : {}),
+      ...(typeof markingHours === "number" ? { markingHours } : {}),
       organisationId: actor.organisationId,
       createdAt: now,
       updatedAt: now,
@@ -119,6 +152,10 @@ export const update = mutation({
     code: v.string(),
     name: v.string(),
     credits: v.optional(v.number()),
+    leaderProfileId: v.optional(v.id("lecturer_profiles")),
+    level: v.optional(v.number()),
+    teachingHours: v.optional(v.number()),
+    markingHours: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -152,6 +189,12 @@ export const update = mutation({
       code: args.code,
       name: args.name,
       ...("credits" in args ? { credits: args.credits } : {}),
+      ...("leaderProfileId" in args && args.leaderProfileId
+        ? { leaderProfileId: args.leaderProfileId }
+        : {}),
+      ...("level" in args ? { level: args.level } : {}),
+      ...("teachingHours" in args ? { teachingHours: args.teachingHours } : {}),
+      ...("markingHours" in args ? { markingHours: args.markingHours } : {}),
       updatedAt: now,
     });
 
@@ -561,5 +604,34 @@ export const getIterationById = query({
   args: { id: v.id("module_iterations") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
+  },
+});
+
+// Update a module iteration
+export const updateIteration = mutation({
+  args: {
+    id: v.id("module_iterations"),
+    totalHours: v.optional(v.number()),
+    weeks: v.optional(v.array(v.number())),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) throw new Error("Unauthenticated");
+    const existing = await ctx.db.get(args.id);
+    if (!existing) throw new Error("Iteration not found");
+    const moduleDoc = await ctx.db.get((existing as any).moduleId);
+    if (!moduleDoc) throw new Error("Module not found");
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "iterations.edit",
+      (moduleDoc as any).organisationId,
+    );
+    const updates: any = { updatedAt: Date.now() };
+    if ("totalHours" in args) updates.totalHours = args.totalHours ?? 0;
+    if ("weeks" in args && Array.isArray(args.weeks))
+      updates.weeks = args.weeks;
+    await ctx.db.patch(args.id, updates);
+    return args.id;
   },
 });

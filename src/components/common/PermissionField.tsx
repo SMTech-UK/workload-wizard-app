@@ -77,14 +77,14 @@ export const PermissionField = forwardRef<HTMLDivElement, PermissionFieldProps>(
     // Clone children and apply permission state
     const enhancedChildren = React.Children.map(children, (child) => {
       if (React.isValidElement(child)) {
-        return React.cloneElement(child, {
+        const props: any = {
           disabled: fieldState.disabled,
-          readOnly: fieldState.readonly,
-          ...(fieldState.helperText && {
-            "aria-describedby": `${permission}-helper`,
-          }),
-          ...child.props,
-        });
+          readOnly: (fieldState as any).readonly,
+          ...((fieldState as any).helperText
+            ? { "aria-describedby": `${permission}-helper` }
+            : {}),
+        };
+        return React.cloneElement(child as any, props);
       }
       return child;
     });

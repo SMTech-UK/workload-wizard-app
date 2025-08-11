@@ -75,8 +75,8 @@ export async function canViewYear(
   if (year.staging || year.status === "draft") {
     return hasOrgPermission(ctx, userId, "year.view.staging", orgId);
   }
-  // live (published and not staged)
-  return hasOrgPermission(ctx, userId, "year.view.live", orgId);
+  // live (published and not staged) — visible to all members of the organisation
+  return true;
 }
 
 export async function canEditYear(
@@ -100,9 +100,8 @@ export const listForOrganisation = query({
   handler: async (ctx, args) => {
     const user = await getActor(ctx, args.userId);
     const orgId = user.organisationId as Id<"organisations">;
-    const canLive =
-      isSystemUser(user) ||
-      (await hasOrgPermission(ctx, args.userId, "year.view.live", orgId));
+    // Live (published and not staged) should be visible to all org members
+    const canLive = true;
     const canStaging =
       isSystemUser(user) ||
       (await hasOrgPermission(ctx, args.userId, "year.view.staging", orgId));
@@ -110,6 +109,7 @@ export const listForOrganisation = query({
       isSystemUser(user) ||
       (await hasOrgPermission(ctx, args.userId, "year.view.archived", orgId));
 
+    // If user has no visibility to any state (should not happen with canLive=true)
     if (!canLive && !canStaging && !canArchived) return [];
 
     const rows = await ctx.db
@@ -155,7 +155,7 @@ export const create = mutation({
     userId: v.string(),
     name: v.string(),
     startDate: v.string(),
-    endDate: v.string(),
+    endDate: v.optional(v.string()),
     status: v.optional(v.union(v.literal("draft"), v.literal("published"))),
     isDefaultForOrg: v.optional(v.boolean()),
   },
@@ -184,10 +184,24 @@ export const create = mutation({
         await ctx.db.patch(row._id, { isDefaultForOrg: false, updatedAt: now });
       }
     }
+    // If endDate not provided, compute as 365 days from startDate (UTC-safe)
+    const computedEndDate = (() => {
+      if (!args.startDate) return undefined;
+      const [y, m, d] = args.startDate.split("-").map((n) => Number(n));
+      if (!y || !m || !d) return undefined;
+      const startUtc = Date.UTC(y, m - 1, d);
+      const endUtc = startUtc + 365 * 24 * 60 * 60 * 1000;
+      const end = new Date(endUtc);
+      const yyyy = end.getUTCFullYear();
+      const mm = String(end.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(end.getUTCDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    })();
+
     const id = await ctx.db.insert("academic_years", {
       name: args.name,
       startDate: args.startDate,
-      endDate: args.endDate,
+      endDate: args.endDate ?? (computedEndDate as string),
       isActive: true,
       staging: true,
       organisationId: user.organisationId,
@@ -385,7 +399,9 @@ export const bulkSetStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const first = await ctx.db.get(args.ids[0]);
+    if (args.ids.length === 0) throw new Error("No ids provided");
+    const firstId = args.ids[0]!;
+    const first = await ctx.db.get(firstId);
     if (!first) throw new Error("Year not found");
     const orgId = first.organisationId as Id<"organisations">;
     // Ensure all ids belong to same org and exist

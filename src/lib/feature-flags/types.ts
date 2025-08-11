@@ -16,6 +16,10 @@ export interface FeatureFlagConfig {
   description: string;
   defaultValue: boolean;
   rolloutPercentage?: number; // 0-100, for gradual rollouts
+  // Optional stage metadata for dev/admin visibility and grouping
+  stage?: "concept" | "alpha" | "beta" | "stable" | "staging";
+  // When true, treat this flag as staging-only (visible in dev/admin staging area)
+  stagingOnly?: boolean;
   enabledFor?: {
     userIds?: string[];
     userEmails?: string[];

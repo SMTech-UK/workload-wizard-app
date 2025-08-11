@@ -275,6 +275,7 @@ export const getFeatureFlagsAdmin = query({
             ? {
                 rolloutPercentage: setting.rolloutPercentage ?? null,
                 defaultValueOverride: setting.defaultValueOverride ?? null,
+                exposeInUserSettings: setting.exposeInUserSettings ?? null,
               }
             : null,
           totalOverrides: userOverrides.length,
@@ -289,6 +290,39 @@ export const getFeatureFlagsAdmin = query({
       ]).size,
       totalOverrides: overrides.length,
     };
+  },
+});
+
+/**
+ * Get all flag settings as a map keyed by flagName
+ */
+export const getAllFlagSettings = query({
+  args: {},
+  handler: async (ctx) => {
+    const settings = await ctx.db.query("featureFlagSettings").collect();
+    const map: Record<
+      string,
+      {
+        rolloutPercentage?: number | null;
+        defaultValueOverride?: boolean | null;
+        exposeInUserSettings?: boolean | null;
+      }
+    > = {};
+    for (const s of settings) {
+      map[s.flagName] = {
+        rolloutPercentage:
+          typeof s.rolloutPercentage === "number" ? s.rolloutPercentage : null,
+        defaultValueOverride:
+          typeof s.defaultValueOverride === "boolean"
+            ? s.defaultValueOverride
+            : null,
+        exposeInUserSettings:
+          typeof s.exposeInUserSettings === "boolean"
+            ? s.exposeInUserSettings
+            : null,
+      };
+    }
+    return map;
   },
 });
 
@@ -430,6 +464,7 @@ export const setFlagSettings = mutation({
     flagName: v.string(),
     rolloutPercentage: v.optional(v.number()),
     defaultValueOverride: v.optional(v.boolean()),
+    exposeInUserSettings: v.optional(v.boolean()),
     actorUserId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -456,16 +491,23 @@ export const setFlagSettings = mutation({
       updates.rolloutPercentage = args.rolloutPercentage;
     if (typeof args.defaultValueOverride !== "undefined")
       updates.defaultValueOverride = args.defaultValueOverride;
+    if (typeof args.exposeInUserSettings !== "undefined")
+      updates.exposeInUserSettings = args.exposeInUserSettings;
     if (existing) {
       await ctx.db.patch(existing._id, updates);
     } else {
-      await ctx.db.insert("featureFlagSettings", {
+      const insertPayload: any = {
         flagName: args.flagName,
-        rolloutPercentage: args.rolloutPercentage,
-        defaultValueOverride: args.defaultValueOverride,
         createdAt: now,
         updatedAt: now,
-      });
+      };
+      if (typeof args.rolloutPercentage !== "undefined")
+        insertPayload.rolloutPercentage = args.rolloutPercentage;
+      if (typeof args.defaultValueOverride !== "undefined")
+        insertPayload.defaultValueOverride = args.defaultValueOverride;
+      if (typeof args.exposeInUserSettings !== "undefined")
+        insertPayload.exposeInUserSettings = args.exposeInUserSettings;
+      await ctx.db.insert("featureFlagSettings", insertPayload);
     }
     try {
       await writeAudit(ctx, {

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditModuleForm } from "@/components/domain/EditModuleForm";
 import { PermissionGate } from "@/components/common/PermissionGate";
+import { useQuery as useConvexQuery } from "convex/react";
 import { GenericDeleteModal } from "@/components/domain/GenericDeleteModal";
 import { useToast } from "@/hooks/use-toast";
 import { Edit, Trash2 } from "lucide-react";
@@ -22,8 +23,38 @@ export default function ModulesPage() {
   const { currentYear } = useAcademicYear();
   const create = useMutation(api.modules.create);
   const deleteModule = useMutation(api.modules.remove);
+  const anyApi = api as any;
+  const me = useConvexQuery(
+    anyApi.users.getBySubject,
+    typeof window !== "undefined"
+      ? { subject: (window as any).Clerk?.user?.id }
+      : "skip",
+  ) as { systemRoles?: string[] } | undefined;
+  const isAdminLike = (me?.systemRoles || []).some(
+    (r) => r === "orgadmin" || r === "sysadmin" || r === "developer",
+  );
 
-  const [form, setForm] = useState({ code: "", name: "", credits: "" });
+  const [form, setForm] = useState({
+    code: "",
+    name: "",
+    credits: "",
+    leaderProfileId: "",
+    level: "",
+    teachingHours: "",
+    markingHours: "",
+  });
+  const orgSettings = useQuery(
+    (api as any).organisationSettings.getForActor,
+  ) as
+    | {
+        moduleHoursByCredits?: Array<{
+          credits: number;
+          teaching: number;
+          marking: number;
+        }>;
+      }
+    | undefined;
+  const lecturers = (useQuery((api as any).staff.listForActor) || []) as any[];
   const codeAvailability = useQuery(
     (api as any).modules.isCodeAvailable,
     form.code.trim() ? ({ code: form.code.trim() } as any) : ("skip" as any),
@@ -50,8 +81,26 @@ export default function ModulesPage() {
         code: form.code.trim(),
         name: form.name.trim(),
         ...(form.credits.trim() ? { credits: Number(form.credits) } : {}),
+        ...(form.leaderProfileId
+          ? { leaderProfileId: form.leaderProfileId as any }
+          : {}),
+        ...(form.level.trim() ? { level: Number(form.level) } : {}),
+        ...(form.teachingHours.trim()
+          ? { teachingHours: Number(form.teachingHours) }
+          : {}),
+        ...(form.markingHours.trim()
+          ? { markingHours: Number(form.markingHours) }
+          : {}),
       });
-      setForm({ code: "", name: "", credits: "" });
+      setForm({
+        code: "",
+        name: "",
+        credits: "",
+        leaderProfileId: "",
+        level: "",
+        teachingHours: "",
+        markingHours: "",
+      });
       toast({
         title: "Module created",
         description: `${form.code.trim()} has been created successfully.`,
@@ -135,66 +184,132 @@ export default function ModulesPage() {
             <CardTitle>Create Module</CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="space-y-3" onSubmit={handleCreateModule}>
-              <div className="space-y-2">
-                <Label htmlFor="code">Code</Label>
-                <Input
-                  id="code"
-                  value={form.code}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, code: e.target.value }))
-                  }
-                  placeholder="MOD101"
-                />
-                {form.code.trim() &&
-                  codeAvailability &&
-                  !codeAvailability.available && (
-                    <p className="text-xs text-destructive">
-                      Module code already exists in your organisation
-                    </p>
-                  )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  placeholder="Introduction to Something"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="credits">Credits (optional)</Label>
-                <Input
-                  id="credits"
-                  type="number"
-                  inputMode="numeric"
-                  value={form.credits}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, credits: e.target.value }))
-                  }
-                  placeholder="20"
-                />
-              </div>
-              <PermissionGate
-                permission="modules.create"
-                fallback={
-                  <Button
-                    className="w-full"
-                    disabled
-                    title="Insufficient permissions"
+            <PermissionGate
+              permission="modules.create"
+              fallback={
+                <div className="text-sm text-muted-foreground">
+                  You don&apos;t have permission to create modules.
+                </div>
+              }
+            >
+              <form className="space-y-3" onSubmit={handleCreateModule}>
+                <div className="space-y-2">
+                  <Label htmlFor="code">Code</Label>
+                  <Input
+                    id="code"
+                    value={form.code}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, code: e.target.value }))
+                    }
+                    placeholder="MOD101"
+                  />
+                  {form.code.trim() &&
+                    codeAvailability &&
+                    !codeAvailability.available && (
+                      <p className="text-xs text-destructive">
+                        Module code already exists in your organisation
+                      </p>
+                    )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
+                    }
+                    placeholder="Introduction to Something"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="leader">Module leader</Label>
+                  <select
+                    id="leader"
+                    className="w-full border rounded h-9 px-3 bg-background"
+                    value={form.leaderProfileId}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        leaderProfileId: e.target.value,
+                      }))
+                    }
                   >
-                    Create
-                  </Button>
-                }
-              >
+                    <option value="">Select leader (optional)</option>
+                    {lecturers?.map((l) => (
+                      <option key={l._id} value={String(l._id)}>
+                        {l.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="level">Level</Label>
+                  <select
+                    id="level"
+                    className="w-full border rounded h-9 px-3 bg-background"
+                    value={form.level}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, level: e.target.value }))
+                    }
+                  >
+                    <option value="">Select level (optional)</option>
+                    {[3, 4, 5, 6, 7].map((lvl) => (
+                      <option key={lvl} value={String(lvl)}>
+                        {lvl}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="credits">Credits (optional)</Label>
+                  <Input
+                    id="credits"
+                    type="number"
+                    inputMode="numeric"
+                    value={form.credits}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, credits: e.target.value }))
+                    }
+                    placeholder="20"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="teachingHours">Teaching hours</Label>
+                    <Input
+                      id="teachingHours"
+                      type="number"
+                      inputMode="numeric"
+                      value={form.teachingHours}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          teachingHours: e.target.value,
+                        }))
+                      }
+                      placeholder="48"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="markingHours">Marking/prep hours</Label>
+                    <Input
+                      id="markingHours"
+                      type="number"
+                      inputMode="numeric"
+                      value={form.markingHours}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, markingHours: e.target.value }))
+                      }
+                      placeholder="48"
+                    />
+                  </div>
+                </div>
                 <Button type="submit" disabled={!canSubmit} className="w-full">
                   Create
                 </Button>
-              </PermissionGate>
-            </form>
+              </form>
+            </PermissionGate>
           </CardContent>
         </Card>
 

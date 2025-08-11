@@ -1,10 +1,12 @@
 import { ReactNode, forwardRef } from "react";
-import { Button, type ButtonProps } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import type { ComponentProps } from "react";
 import { usePermissionManager } from "@/hooks/usePermissionManager";
 import { type PermissionId } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
-interface PermissionButtonProps extends Omit<ButtonProps, "disabled"> {
+interface PermissionButtonProps
+  extends Omit<ComponentProps<typeof Button>, "disabled"> {
   permission: PermissionId;
   organisationId?: string;
   isSystemAction?: boolean;

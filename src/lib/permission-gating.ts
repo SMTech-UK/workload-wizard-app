@@ -80,10 +80,10 @@ export class PermissionGatingUtil {
 
     return {
       disabled: !hasAccess,
-      disabledText: hasAccess
-        ? undefined
-        : disabledText || "Insufficient permissions",
-    };
+      ...(hasAccess
+        ? {}
+        : { disabledText: disabledText || "Insufficient permissions" }),
+    } as { disabled: boolean; disabledText?: string };
   }
 
   /**

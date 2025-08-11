@@ -51,6 +51,7 @@ describe("authz guards", () => {
       userId: "u5",
       sessionClaims: { role: "sysadmin", organisationId: "org1" },
     });
+    (currentUser as any).mockResolvedValue({ publicMetadata: {} });
     await expect(requireOrgPermission("users.view")).resolves.toBe(true);
   });
 

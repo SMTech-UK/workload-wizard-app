@@ -60,7 +60,10 @@ export const resetDemoData = mutation({
           (tbl === "module_iterations" && r.academicYearId)
         ) {
           const year = await ctx.db.get(r.academicYearId);
-          if (year && String(year.organisationId) === String(orgId)) {
+          if (
+            (year as any) &&
+            String((year as any).organisationId) === String(orgId)
+          ) {
             await ctx.db.delete(r._id);
             deleted++;
           }
@@ -69,7 +72,10 @@ export const resetDemoData = mutation({
 
         if (tbl === "course_years") {
           const course = await ctx.db.get(r.courseId);
-          if (course && String(course.organisationId) === String(orgId)) {
+          if (
+            (course as any) &&
+            String((course as any).organisationId) === String(orgId)
+          ) {
             await ctx.db.delete(r._id);
             deleted++;
           }
@@ -79,8 +85,11 @@ export const resetDemoData = mutation({
         if (tbl === "course_year_modules") {
           const cy = await ctx.db.get(r.courseYearId);
           if (!cy) continue;
-          const course = await ctx.db.get(cy.courseId);
-          if (course && String(course.organisationId) === String(orgId)) {
+          const course = await ctx.db.get((cy as any).courseId);
+          if (
+            (course as any) &&
+            String((course as any).organisationId) === String(orgId)
+          ) {
             await ctx.db.delete(r._id);
             deleted++;
           }
@@ -90,8 +99,11 @@ export const resetDemoData = mutation({
         if (tbl === "module_groups") {
           const it = await ctx.db.get(r.moduleIterationId);
           if (!it) continue;
-          const year = await ctx.db.get(it.academicYearId);
-          if (year && String(year.organisationId) === String(orgId)) {
+          const year = await ctx.db.get((it as any).academicYearId);
+          if (
+            (year as any) &&
+            String((year as any).organisationId) === String(orgId)
+          ) {
             await ctx.db.delete(r._id);
             deleted++;
           }
@@ -354,7 +366,9 @@ export const seedDemoData = mutation({
     const groupNames = ["A", "B", "C", "D", "E", "F"];
     const groupIds: Id<"module_groups">[] = [];
     for (let i = 0; i < groupNames.length; i++) {
-      const iterationId = iterationIds[i % Math.min(3, iterationIds.length)];
+      const iterationId = iterationIds[
+        i % Math.min(3, iterationIds.length)
+      ] as Id<"module_iterations">;
       let g = await ctx.db
         .query("module_groups")
         .withIndex("by_iteration", (q) =>
@@ -456,7 +470,7 @@ export const seedDemoData = mutation({
     // 10) Allocations: assign lecturerIds to groups in y2526
     // hoursComputed will be derived in UI, but for seed we set baseline and optional overrides
     for (let i = 0; i < groupIds.length; i++) {
-      const gid = groupIds[i];
+      const gid = groupIds[i]! as Id<"module_groups">;
       const lecturerId = lecturerIds[i % lecturerIds.length];
       const group = await ctx.db.get(gid);
       if (!group) continue;
@@ -555,7 +569,7 @@ export const switchMyRoleInDemoOrg = mutation({
     const subject = identity?.subject;
     if (!subject) throw new Error("Unauthenticated");
 
-    let demoOrg = await ctx.db
+    const demoOrg = await ctx.db
       .query("organisations")
       .filter((q) => q.eq(q.field("code"), DEMO_ORG_CODE))
       .first();
@@ -615,7 +629,7 @@ export const switchMyRoleInDemoOrg = mutation({
         isActive: true,
         updatedAt: now,
       });
-      return { userId: user._id, roleId: role._id, updated: true };
+      return { userId: user!._id, roleId: role._id, updated: true };
     }
     const aid = await ctx.db.insert("user_role_assignments", {
       userId: subject,
@@ -626,6 +640,6 @@ export const switchMyRoleInDemoOrg = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    return { userId: user._id, roleId: role._id, assignmentId: aid };
+    return { userId: user!._id, roleId: role._id, assignmentId: aid };
   },
 });

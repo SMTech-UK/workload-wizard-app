@@ -1,7 +1,7 @@
 import React, { ReactNode, forwardRef } from "react";
 import { usePermissionManager } from "@/hooks/usePermissionManager";
 import { type PermissionId } from "@/lib/permissions";
-import { cn } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface PermissionTableRowProps {
   permission: PermissionId;

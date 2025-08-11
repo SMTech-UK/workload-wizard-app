@@ -42,8 +42,9 @@ import { Separator } from "@/components/ui/separator";
 import { withToast, toastError } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 import { Checkbox } from "@/components/ui/checkbox";
-import GenericDeleteModal from "@/components/domain/GenericDeleteModal";
+import { GenericDeleteModal } from "@/components/domain/GenericDeleteModal";
 import { PermissionGate } from "@/components/common/PermissionGate";
+import { useQuery as useConvexQuery } from "convex/react";
 
 export default function IterationDetailsPage() {
   const params = useParams<{ id: string; iterationId: string }>();
@@ -66,7 +67,7 @@ export default function IterationDetailsPage() {
   );
 
   // Fetch module details
-  const module = useQuery(
+  const moduleData = useQuery(
     api.modules.getById,
     iteration?.moduleId
       ? ({ id: iteration.moduleId as any } as any)
@@ -86,9 +87,13 @@ export default function IterationDetailsPage() {
     (api as any).staff.list,
     user?.id ? ({ userId: user.id } as any) : ("skip" as any),
   );
+  const orgSettings = useConvexQuery(
+    (api as any).organisationSettings.getForActor,
+  ) as { campusOptions?: string[]; maxClassSizePerGroup?: number } | undefined;
 
   // Mutations
   const createGroup = useMutation((api as any).groups.create);
+  const updateIteration = useMutation(api.modules.updateIteration);
   const deleteGroup = useMutation((api as any).groups.remove);
   const assignLecturer = useMutation((api as any).allocations.assignLecturer);
   const removeAllocation = useMutation((api as any).allocations.remove);
@@ -105,6 +110,9 @@ export default function IterationDetailsPage() {
   const [bulkRemoveOpen, setBulkRemoveOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkEditHours, setBulkEditHours] = useState<string>("");
+  const [editIterOpen, setEditIterOpen] = useState(false);
+  const [iterTotalHours, setIterTotalHours] = useState<string>("");
+  const [bulkGroupsOpen, setBulkGroupsOpen] = useState(false);
 
   // Form state for creating groups
   const [newGroupName, setNewGroupName] = useState("");
@@ -121,6 +129,16 @@ export default function IterationDetailsPage() {
       href: `/courses/${courseId}/iterations/${iterationId}`,
     },
   ]);
+
+  // initialise iteration edit fields when opened
+  const openEditIteration = () => {
+    setIterTotalHours(
+      typeof (iteration as any)?.totalHours === "number"
+        ? String((iteration as any).totalHours)
+        : "",
+    );
+    setEditIterOpen(true);
+  };
 
   // Get module teaching hours for preview
   const moduleHours = useQuery(
@@ -197,7 +215,7 @@ export default function IterationDetailsPage() {
     );
   }
 
-  if (!course || !iteration || !module) {
+  if (!course || !iteration || !moduleData) {
     return (
       <StandardizedSidebarLayout
         breadcrumbs={[
@@ -235,7 +253,7 @@ export default function IterationDetailsPage() {
         { label: course.code, href: `/courses/${courseId}` },
         { label: "Iteration" },
       ]}
-      title={`${module.code} - ${module.name} (${currentYear.name})`}
+      title={`${moduleData.code} - ${moduleData.name} (${currentYear.name})`}
     >
       <div className="space-y-6">
         {/* Iteration Overview */}
@@ -262,12 +280,14 @@ export default function IterationDetailsPage() {
               <div>
                 <Label className="text-sm text-muted-foreground">Module</Label>
                 <div className="font-medium">
-                  {module.code} - {module.name}
+                  {moduleData.code} - {moduleData.name}
                 </div>
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground">Credits</Label>
-                <div className="font-medium">{module.credits || "Not set"}</div>
+                <div className="font-medium">
+                  {moduleData.credits || "Not set"}
+                </div>
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground">
@@ -330,7 +350,7 @@ export default function IterationDetailsPage() {
             <div className="flex items-center gap-2">
               <PermissionGate
                 permission="allocations.bulk"
-                organisationId={String(module.organisationId)}
+                organisationId={String(moduleData.organisationId)}
                 disabled={!Object.values(bulkSelected).some(Boolean)}
                 disabledText="Select groups to bulk assign"
               >
@@ -348,7 +368,7 @@ export default function IterationDetailsPage() {
               </PermissionGate>
               <PermissionGate
                 permission="allocations.bulk"
-                organisationId={String(module.organisationId)}
+                organisationId={String(moduleData.organisationId)}
                 disabled={!Object.values(bulkSelected).some(Boolean)}
                 disabledText="Select groups to bulk remove"
               >
@@ -363,7 +383,7 @@ export default function IterationDetailsPage() {
               </PermissionGate>
               <PermissionGate
                 permission="allocations.bulk"
-                organisationId={String(module.organisationId)}
+                organisationId={String(moduleData.organisationId)}
                 disabled={!Object.values(bulkSelected).some(Boolean)}
                 disabledText="Select groups to bulk edit"
               >
@@ -706,7 +726,7 @@ export default function IterationDetailsPage() {
                           groupId: selectedGroupId as any,
                           lecturerId: selectedLecturerId as any,
                           academicYearId: currentYear._id as any,
-                          organisationId: module.organisationId as any,
+                          organisationId: moduleData.organisationId as any,
                           type: "teaching",
                           ...(hoursOverride.trim()
                             ? { hoursOverride: Number(hoursOverride) }
@@ -717,7 +737,7 @@ export default function IterationDetailsPage() {
                           groupId: selectedGroupId,
                           lecturerId: selectedLecturerId,
                           academicYearId: String(currentYear._id),
-                          organisationId: String(module.organisationId),
+                          organisationId: String(moduleData.organisationId),
                           hasOverride: hoursOverride.trim() !== "",
                         });
                         return result;
@@ -1015,6 +1035,104 @@ export default function IterationDetailsPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Edit iteration dialog */}
+        <Dialog open={editIterOpen} onOpenChange={setEditIterOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" onClick={openEditIteration}>
+              Edit iteration
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit iteration</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Total hours</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={iterTotalHours}
+                  onChange={(e) => setIterTotalHours(e.target.value)}
+                  placeholder="e.g. 96"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={async () => {
+                  const val = iterTotalHours.trim();
+                  const num = val === "" ? 0 : Number(val);
+                  if (!Number.isFinite(num) || num < 0 || num > 2000) {
+                    toastError(toast, "Invalid hours", "Enter 0-2000");
+                    return;
+                  }
+                  await withToast(
+                    () =>
+                      updateIteration({
+                        id: iterationId as any,
+                        totalHours: num,
+                      } as any),
+                    {
+                      success: {
+                        title: "Iteration updated",
+                        description: `Total hours set to ${num}`,
+                      },
+                      error: { title: "Failed to update iteration" },
+                    },
+                    toast,
+                  );
+                  setEditIterOpen(false);
+                }}
+              >
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk create groups per campus */}
+        <Dialog open={bulkGroupsOpen} onOpenChange={setBulkGroupsOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setBulkGroupsOpen(true)}
+            >
+              Bulk create groups
+            </Button>
+          </DialogTrigger>
+          <BulkGroupsForm
+            campuses={
+              (moduleData as any)?.campuses || (course as any)?.campuses || []
+            }
+            onClose={() => setBulkGroupsOpen(false)}
+            onCreate={async (defs) => {
+              // defs: Array<{ campus: string; groups: { name: string; sizePlanned?: number }[] }>
+              for (const def of defs) {
+                for (const g of def.groups) {
+                  await withToast(
+                    () =>
+                      createGroup({
+                        moduleIterationId: iterationId as any,
+                        name: g.name,
+                        ...(g.sizePlanned
+                          ? { sizePlanned: g.sizePlanned }
+                          : {}),
+                      } as any),
+                    {
+                      success: { title: "Group created" },
+                      error: { title: "Failed to create group" },
+                    },
+                    toast,
+                  );
+                }
+              }
+              setBulkGroupsOpen(false);
+            }}
+          />
+        </Dialog>
+
         {/* Bulk Remove Confirmation */}
         <GenericDeleteModal
           open={bulkRemoveOpen}
@@ -1048,6 +1166,152 @@ export default function IterationDetailsPage() {
         />
       </div>
     </StandardizedSidebarLayout>
+  );
+}
+
+function BulkGroupsForm({
+  campuses,
+  onClose,
+  onCreate,
+}: {
+  campuses: string[];
+  onClose: () => void;
+  onCreate: (
+    defs: Array<{
+      campus: string;
+      groups: { name: string; sizePlanned?: number }[];
+    }>,
+  ) => Promise<void> | void;
+}) {
+  const anyApi = api as any;
+  const settings = useQuery(anyApi.organisationSettings.getForActor) as
+    | { campusOptions?: string[]; maxClassSizePerGroup?: number }
+    | undefined;
+  const [entries, setEntries] = useState<
+    Array<{ campus: string; students: string }>
+  >((campuses || []).map((c) => ({ campus: c, students: "" })));
+  const [maxSize, setMaxSize] = useState<string>(
+    settings?.maxClassSizePerGroup
+      ? String(settings.maxClassSizePerGroup)
+      : "25",
+  );
+
+  const parsed = entries
+    .map((e) => ({ campus: e.campus, students: Number(e.students || 0) }))
+    .filter((e) => e.campus && Number.isFinite(e.students) && e.students > 0);
+  const max = Number(maxSize || 0);
+
+  const plan = parsed.map((e) => {
+    const groupsNeeded = max > 0 ? Math.ceil(e.students / max) : 0;
+    const sizes: number[] = [];
+    if (groupsNeeded > 0) {
+      const base = Math.floor(e.students / groupsNeeded);
+      let remainder = e.students - base * groupsNeeded;
+      for (let i = 0; i < groupsNeeded; i++) {
+        sizes.push(base + (remainder > 0 ? 1 : 0));
+        if (remainder > 0) remainder--;
+      }
+    }
+    return {
+      campus: e.campus,
+      groups: sizes.map((sz, idx) => ({
+        name: `${e.campus} G${idx + 1}`,
+        sizePlanned: sz,
+      })),
+    };
+  });
+
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Bulk create groups per campus</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Max class size</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={maxSize}
+            onChange={(e) => setMaxSize(e.target.value)}
+            placeholder="e.g. 25"
+          />
+          <p className="text-xs text-muted-foreground">
+            Default from org settings: {settings?.maxClassSizePerGroup ?? 25}
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label>Students per campus</Label>
+          <div className="space-y-2">
+            {(settings?.campusOptions || campuses || []).map((c) => (
+              <div key={c} className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-7 text-sm">{c}</div>
+                <div className="col-span-5">
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    value={entries.find((e) => e.campus === c)?.students || ""}
+                    onChange={(e) =>
+                      setEntries((prev) => {
+                        const next = [...prev];
+                        const i = next.findIndex((x) => x.campus === c);
+                        if (i >= 0)
+                          next[i] = { campus: c, students: e.target.value };
+                        else next.push({ campus: c, students: e.target.value });
+                        return next;
+                      })
+                    }
+                    placeholder="e.g. 120"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Plan preview</Label>
+          <div className="space-y-2 text-sm">
+            {plan.length === 0 || max <= 0 ? (
+              <div className="text-muted-foreground">
+                Enter student numbers and a valid max size to see plan.
+              </div>
+            ) : (
+              plan.map((p) => (
+                <div key={p.campus} className="rounded border p-2">
+                  <div className="font-medium">{p.campus}</div>
+                  {p.groups.length === 0 ? (
+                    <div className="text-muted-foreground">
+                      No groups needed
+                    </div>
+                  ) : (
+                    <ul className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {p.groups.map((g, idx) => (
+                        <li key={idx} className="rounded bg-muted px-2 py-1">
+                          {g.name} — {g.sizePlanned} students
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          disabled={plan.every((p) => p.groups.length === 0)}
+          onClick={async () => {
+            await onCreate(plan);
+          }}
+        >
+          Create groups
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 }
 

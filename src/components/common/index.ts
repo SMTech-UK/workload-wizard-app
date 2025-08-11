@@ -1,6 +1,6 @@
 // Permission-related components and utilities
 export { PermissionGate } from "./PermissionGate";
-export { PermissionButton } from "../domain/PermissionButton";
+export { PermissionButton } from "./PermissionButton";
 export { PermissionPageWrapper } from "./PermissionPageWrapper";
 export { PermissionGatingExample } from "./PermissionGatingExample";
 
@@ -15,12 +15,12 @@ export {
 } from "./PermissionGate";
 
 export {
-  CreateUserButton,
-  EditUserButton,
-  DeleteUserButton,
-  ManagePermissionsButton,
-  ManageFlagsButton,
-} from "../domain/PermissionButton";
+  UsersViewButton as CreateUserButton,
+  UsersEditButton as EditUserButton,
+  UsersDeleteButton as DeleteUserButton,
+  PermissionsManageButton as ManagePermissionsButton,
+  FlagsManageButton as ManageFlagsButton,
+} from "./PermissionButton";
 
 export {
   UsersPageWrapper,

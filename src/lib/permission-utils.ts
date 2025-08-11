@@ -139,9 +139,9 @@ export class PermissionGatingUtil {
 
     return {
       disabled: !hasAccess,
-      disabledText: hasAccess ? undefined : disabledText,
-      tooltip: hasAccess ? undefined : disabledText,
-    };
+      ...(hasAccess ? {} : { disabledText }),
+      ...(hasAccess ? {} : { tooltip: disabledText }),
+    } as { disabled: boolean; disabledText?: string; tooltip?: string };
   }
 
   /**
@@ -166,10 +166,14 @@ export class PermissionGatingUtil {
 
     return {
       canPerform: hasAccess,
-      errorMessage: hasAccess
-        ? undefined
-        : `You don't have permission to ${actionName}`,
+      ...(hasAccess
+        ? {}
+        : { errorMessage: `You don't have permission to ${actionName}` }),
       scope,
+    } as {
+      canPerform: boolean;
+      errorMessage?: string;
+      scope: "system" | "org";
     };
   }
 

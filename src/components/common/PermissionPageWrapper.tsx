@@ -25,14 +25,11 @@ export function PermissionPageWrapper({
   showToastOnDenied = true,
   loadingFallback = null,
 }: PermissionPageWrapperProps) {
-  const permissions = usePermissions(organisationId);
+  const permissions = usePermissions(organisationId as string | undefined);
   const router = useRouter();
   const { toast } = useToast();
 
-  // Check if we're still loading user data
-  if (!permissions.userRole && loadingFallback) {
-    return <>{loadingFallback}</>;
-  }
+  // Defer conditional returns until after hooks
 
   // Check permission
   const hasAccess = permissions.hasPermission(permission, isSystemAction);
@@ -55,22 +52,21 @@ export function PermissionPageWrapper({
     }
   }, [hasAccess, showToastOnDenied, redirectOnDenied, router, toast]);
 
-  // If no access and not redirecting, show fallback
-  if (!hasAccess && !redirectOnDenied) {
-    return <>{fallback}</>;
-  }
-
-  // If redirecting, show loading state
-  if (!hasAccess && redirectOnDenied) {
-    return (
+  const loadingOrFallback =
+    !permissions.userRole && loadingFallback ? (
+      <>{loadingFallback}</>
+    ) : !hasAccess && !redirectOnDenied ? (
+      <>{fallback}</>
+    ) : !hasAccess && redirectOnDenied ? (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p>Redirecting...</p>
         </div>
       </div>
-    );
-  }
+    ) : null;
+
+  if (loadingOrFallback) return loadingOrFallback;
 
   // User has access, render children
   return <>{children}</>;
@@ -85,7 +81,7 @@ export function UsersPageWrapper({
   return (
     <PermissionPageWrapper
       permission="users.view"
-      organisationId={organisationId}
+      {...(organisationId ? { organisationId } : {})}
       {...props}
     >
       {children}
@@ -101,7 +97,7 @@ export function AdminPageWrapper({
   return (
     <PermissionPageWrapper
       permission="permissions.manage"
-      organisationId={organisationId}
+      {...(organisationId ? { organisationId } : {})}
       {...props}
     >
       {children}

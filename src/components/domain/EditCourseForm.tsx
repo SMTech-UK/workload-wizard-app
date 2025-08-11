@@ -38,10 +38,6 @@ export function EditCourseForm({
 }: EditCourseFormProps) {
   const { toast } = useToast();
   const updateCourse = useMutation(api.courses.update);
-  const codeAvailability = useQuery((api as any).courses.isCodeAvailable, {
-    code: form.code,
-    excludeId: course._id as any,
-  } as any) as { available: boolean } | undefined;
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
     code: course.code,
@@ -49,6 +45,10 @@ export function EditCourseForm({
     studentCount: course.studentCount?.toString() || "",
     campuses: course.campuses?.join(", ") || "",
   });
+  const codeAvailability = useQuery((api as any).courses.isCodeAvailable, {
+    code: form.code,
+    excludeId: course._id as any,
+  } as any) as { available: boolean } | undefined;
 
   const canSubmit =
     form.code.trim().length > 0 &&
@@ -164,19 +164,60 @@ export function EditCourseForm({
               />
             </div>
 
+            {/* Campuses chip multi-select */}
             <div className="space-y-2">
-              <Label htmlFor="campuses">Campuses</Label>
-              <Input
-                id="campuses"
-                value={form.campuses}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, campuses: e.target.value }))
-                }
-                placeholder="Main Campus, City Centre"
-              />
-              <p className="text-xs text-muted-foreground">
-                Separate multiple campuses with commas
-              </p>
+              <Label>Campuses</Label>
+              <div className="flex flex-wrap gap-2">
+                {(form.campuses || "")
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+                  .map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => {
+                        const list = (form.campuses || "")
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                          .filter((x) => x !== c);
+                        setForm((f) => ({ ...f, campuses: list.join(", ") }));
+                      }}
+                      className="px-2 py-1 rounded-full text-xs bg-muted hover:bg-muted/70"
+                      title="Click to remove"
+                    >
+                      {c} ×
+                    </button>
+                  ))}
+              </div>
+              <div className="flex gap-2">
+                <select
+                  className="h-9 rounded-md border px-2 bg-background"
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) return;
+                    const list = (form.campuses || "")
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                    if (!list.includes(val)) list.push(val);
+                    setForm((f) => ({ ...f, campuses: list.join(", ") }));
+                    e.currentTarget.value = "";
+                  }}
+                >
+                  <option value="">Add campus…</option>
+                  {(
+                    (useQuery as any)(api.organisationSettings.getForActor) ||
+                    {}
+                  )?.campusOptions?.map((c: string) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">

@@ -89,7 +89,28 @@ export default function AcademicYearsAdminPage() {
                   type="date"
                   value={form.startDate}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, startDate: e.target.value }))
+                    setForm((f) => {
+                      const start = e.target.value;
+                      let end = f.endDate;
+                      if (start) {
+                        const [y, m, d] = start
+                          .split("-")
+                          .map((n) => Number(n));
+                        if (y && m && d) {
+                          const startUtc = Date.UTC(y, m - 1, d);
+                          const endUtc = startUtc + 365 * 24 * 60 * 60 * 1000;
+                          const date = new Date(endUtc);
+                          const yyyy = date.getUTCFullYear();
+                          const mm = String(date.getUTCMonth() + 1).padStart(
+                            2,
+                            "0",
+                          );
+                          const dd = String(date.getUTCDate()).padStart(2, "0");
+                          end = `${yyyy}-${mm}-${dd}`;
+                        }
+                      }
+                      return { ...f, startDate: start, endDate: end };
+                    })
                   }
                 />
               </div>

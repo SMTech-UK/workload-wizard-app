@@ -90,8 +90,12 @@ export function useBreadcrumbs() {
 // Helper hook for setting page-specific breadcrumbs
 export function usePageBreadcrumbs(breadcrumbs: BreadcrumbItem[]) {
   const { setBreadcrumbs } = useBreadcrumbs();
+  // Stabilise updates to avoid infinite render loops when callers
+  // pass a new array literal each render
+  const serialized = JSON.stringify(breadcrumbs);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-  }, [breadcrumbs, setBreadcrumbs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serialized]);
 }

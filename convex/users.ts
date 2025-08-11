@@ -268,7 +268,9 @@ export const list = query({
       // Prefer memberships table when present; fall back to legacy field for now
       const memberships = await ctx.db
         .query("user_organisations")
-        .withIndex("by_org", (q) => q.eq("organisationId", args.organisationId))
+        .withIndex("by_org", (q) =>
+          q.eq("organisationId", args.organisationId as Id<"organisations">),
+        )
         .collect()
         .catch(() => [] as any[]);
 
@@ -276,7 +278,9 @@ export const list = query({
         const userIds = memberships.map((m) => m.userId);
         users = await ctx.db
           .query("users")
-          .filter((q) => q.in(q.field("subject"), userIds))
+          .filter((q) =>
+            (q as any).in((q as any).field("subject"), userIds as any),
+          )
           .collect();
       } else {
         users = await ctx.db

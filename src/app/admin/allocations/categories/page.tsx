@@ -34,8 +34,7 @@ export default function AdminAllocationCategoriesPage() {
     });
   };
 
-  const handleReset = () =>
-    setForm({ id: undefined, name: "", description: "" });
+  const handleReset = () => setForm({ name: "", description: "" });
 
   const Schema = z.object({
     id: z.string().optional(),
@@ -58,7 +57,9 @@ export default function AdminAllocationCategoriesPage() {
       const first = parsed.error.issues[0];
       toast({
         title: "Validation error",
-        description: `${first.path.join(".")}: ${first.message}`,
+        description: first
+          ? `${first.path.join(".")}: ${first.message}`
+          : "Invalid form",
         variant: "destructive",
       });
       return;

@@ -366,6 +366,7 @@ function ModuleIterationAndGroupsAndAllocations({
   const { currentYear } = useAcademicYear();
   const { toast } = useToast();
   const { user } = useUser();
+  const params = useParams();
   const iteration = useQuery(
     api.modules.getIterationForYear,
     currentYear?._id
@@ -456,7 +457,7 @@ function ModuleIterationAndGroupsAndAllocations({
           </span>
           {/* Link to dedicated iteration details page */}
           <Link
-            href={`/courses/${String((useParams() as any)?.id)}/iterations/${String((iteration as any)?._id)}`}
+            href={`/courses/${String((params as any)?.id)}/iterations/${String((iteration as any)?._id)}`}
             className="text-xs underline"
           >
             View details
@@ -712,9 +713,6 @@ function ModuleIterationAndGroupsAndAllocations({
                           groupId: selectedGroupId as any,
                           lecturerId: selectedLecturerId as any,
                           academicYearId: (currentYear as any)._id,
-                          organisationId:
-                            (groups as any[])[0]?.organisationId ||
-                            (iteration as any)?.organisationId,
                           type: "teaching",
                           ...(hoursOverride.trim()
                             ? { hoursOverride: Number(hoursOverride) }

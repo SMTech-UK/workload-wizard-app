@@ -64,23 +64,26 @@ export function OrganisationForm() {
       name: formData.get("name") as string,
       code: formData.get("code") as string,
     };
-    const optional = {
-      ...((formData.get("contactEmail") as string)
-        ? { contactEmail: formData.get("contactEmail") as string }
-        : {}),
-      ...((formData.get("contactPhone") as string)
-        ? { contactPhone: formData.get("contactPhone") as string }
-        : {}),
-      ...((formData.get("domain") as string)
-        ? { domain: formData.get("domain") as string }
-        : {}),
-      ...((formData.get("website") as string)
-        ? { website: formData.get("website") as string }
-        : {}),
-    } as Partial<OrganisationFormData>;
-    let data: OrganisationFormData;
+    const optional: Partial<OrganisationFormData> = {};
+    const ce = formData.get("contactEmail") as string | null;
+    const cp = formData.get("contactPhone") as string | null;
+    const dm = formData.get("domain") as string | null;
+    const ws = formData.get("website") as string | null;
+    if (ce) optional.contactEmail = ce;
+    if (cp) optional.contactPhone = cp;
+    if (dm) optional.domain = dm;
+    if (ws) optional.website = ws;
+    let data: OrganisationFormData | null = null;
     try {
-      data = Schema.parse({ ...dataBase, ...optional });
+      const parsed = Schema.parse({ ...dataBase, ...optional });
+      data = {
+        name: parsed.name,
+        code: parsed.code,
+        ...(parsed.contactEmail ? { contactEmail: parsed.contactEmail } : {}),
+        ...(parsed.contactPhone ? { contactPhone: parsed.contactPhone } : {}),
+        ...(parsed.domain ? { domain: parsed.domain } : {}),
+        ...(parsed.website ? { website: parsed.website } : {}),
+      } satisfies OrganisationFormData;
     } catch (err) {
       toast({
         title: "Validation error",
@@ -95,7 +98,7 @@ export function OrganisationForm() {
 
     try {
       await withToast(
-        () => createOrganisation(data),
+        () => createOrganisation(data as OrganisationFormData),
         {
           success: {
             title: "Organisation created",
@@ -105,7 +108,9 @@ export function OrganisationForm() {
         },
         toast,
       );
-      track("organisation.created", { code: data.code, name: data.name });
+      if (data) {
+        track("organisation.created", { code: data.code, name: data.name });
+      }
       (event.target as HTMLFormElement).reset();
     } finally {
       setIsLoading(false);

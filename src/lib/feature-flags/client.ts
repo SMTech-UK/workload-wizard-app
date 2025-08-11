@@ -652,13 +652,44 @@ export async function getEarlyAccessFeatures(): Promise<
     name: string;
     description?: string;
     documentationUrl?: string;
-    stage: string;
+    stage: "staging" | "concept" | "alpha" | "beta" | "stable" | string;
     enrolled?: boolean;
   }>
 > {
+  // If PostHog isn't configured, still expose local early access features
   if (!isPostHogConfigured()) {
-    console.warn("PostHog not configured for early access features");
-    return [];
+    console.warn(
+      "PostHog not configured for early access features - returning local staging features only",
+    );
+    const localEarlyAccessFeatures = (Object.values(FeatureFlags) as string[])
+      .filter((flagKey) => {
+        const config = getFeatureFlagConfig(flagKey as FeatureFlags);
+        // Treat 0% rollout as early access; include stagingOnly flags explicitly
+        return (
+          !!config &&
+          (config.rolloutPercentage === 0 || config.stagingOnly === true)
+        );
+      })
+      .map((flagKey: string) => {
+        const config = getFeatureFlagConfig(flagKey as FeatureFlags);
+        const localOverrides = getLocalFlagOverrides();
+        const isEnabled = Object.prototype.hasOwnProperty.call(
+          localOverrides,
+          flagKey,
+        )
+          ? !!localOverrides[flagKey]
+          : !!config?.defaultValue;
+        return {
+          flagKey,
+          name: config?.description || flagKey,
+          description:
+            config?.description || `Early access feature: ${flagKey}`,
+          documentationUrl: "",
+          stage: String(config?.stage || "beta"),
+          enrolled: isEnabled,
+        };
+      });
+    return localEarlyAccessFeatures;
   }
 
   return new Promise(async (resolve) => {
@@ -702,14 +733,20 @@ export async function getEarlyAccessFeatures(): Promise<
               });
 
             // Then, add our locally configured feature flags that should be treated as early access
-            const localEarlyAccessFeatures = Object.values(FeatureFlags)
+            const localEarlyAccessFeatures = (
+              Object.values(FeatureFlags) as string[]
+            )
               .filter((flagKey) => {
                 // Only include flags that are configured as early access features
-                const config = getFeatureFlagConfig(flagKey);
-                return config && config.rolloutPercentage === 0; // 0% rollout indicates early access
+                const config = getFeatureFlagConfig(flagKey as FeatureFlags);
+                return (
+                  !!config &&
+                  (config.rolloutPercentage === 0 ||
+                    config.stagingOnly === true)
+                ); // 0% rollout or explicit stagingOnly indicates early access
               })
-              .map((flagKey) => {
-                const config = getFeatureFlagConfig(flagKey);
+              .map((flagKey: string) => {
+                const config = getFeatureFlagConfig(flagKey as FeatureFlags);
 
                 // Check local override first, then PostHog
                 const localOverrides = getLocalFlagOverrides();
@@ -741,7 +778,7 @@ export async function getEarlyAccessFeatures(): Promise<
                 } = {
                   flagKey: flagKey,
                   name: config?.description || flagKey,
-                  stage: "beta",
+                  stage: String(config?.stage || "beta"),
                 };
                 if (config?.description) obj.description = config.description;
                 obj.enrolled = !!isEnabled;
@@ -782,13 +819,19 @@ export async function getEarlyAccessFeatures(): Promise<
           } catch (error) {
             console.warn("Error processing early access features:", error);
             // Fall back to just local features if PostHog processing fails
-            const localEarlyAccessFeatures = Object.values(FeatureFlags)
+            const localEarlyAccessFeatures = (
+              Object.values(FeatureFlags) as string[]
+            )
               .filter((flagKey) => {
-                const config = getFeatureFlagConfig(flagKey);
-                return config && config.rolloutPercentage === 0;
+                const config = getFeatureFlagConfig(flagKey as FeatureFlags);
+                return (
+                  !!config &&
+                  (config.rolloutPercentage === 0 ||
+                    config.stagingOnly === true)
+                );
               })
-              .map((flagKey) => {
-                const config = getFeatureFlagConfig(flagKey);
+              .map((flagKey: string) => {
+                const config = getFeatureFlagConfig(flagKey as FeatureFlags);
                 const isEnabled = posthog.isFeatureEnabled(flagKey);
 
                 return {
@@ -797,7 +840,7 @@ export async function getEarlyAccessFeatures(): Promise<
                   description:
                     config?.description || `Early access feature: ${flagKey}`,
                   documentationUrl: undefined,
-                  stage: "beta" as const,
+                  stage: (config?.stage || "beta") as any,
                   enrolled: isEnabled || false,
                 };
               });
@@ -829,13 +872,16 @@ export async function getEarlyAccessFeatures(): Promise<
     } catch (error) {
       console.warn("Failed to get PostHog early access features:", error);
       // Fall back to just local features if PostHog is completely unavailable
-      const localEarlyAccessFeatures = Object.values(FeatureFlags)
+      const localEarlyAccessFeatures = (Object.values(FeatureFlags) as string[])
         .filter((flagKey) => {
-          const config = getFeatureFlagConfig(flagKey);
-          return config && config.rolloutPercentage === 0;
+          const config = getFeatureFlagConfig(flagKey as FeatureFlags);
+          return (
+            !!config &&
+            (config.rolloutPercentage === 0 || config.stagingOnly === true)
+          );
         })
-        .map((flagKey) => {
-          const config = getFeatureFlagConfig(flagKey);
+        .map((flagKey: string) => {
+          const config = getFeatureFlagConfig(flagKey as FeatureFlags);
 
           return {
             flagKey: flagKey,
@@ -843,7 +889,7 @@ export async function getEarlyAccessFeatures(): Promise<
             description:
               config?.description || `Early access feature: ${flagKey}`,
             documentationUrl: undefined,
-            stage: "beta" as const,
+            stage: String(config?.stage || "beta"),
             enrolled: false, // Default to false if PostHog is unavailable
           };
         });

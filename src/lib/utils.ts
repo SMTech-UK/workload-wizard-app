@@ -73,12 +73,11 @@ export async function withToast<T>(
     }
     return result;
   } catch (e) {
+    const desc =
+      errorMessageFromUnknown(e) ?? options.error.description ?? undefined;
     toast({
       title: options.error.title,
-      description:
-        errorMessageFromUnknown(e) ??
-        options.error.description ??
-        "An error occurred",
+      ...(desc ? { description: desc } : {}),
       variant: "destructive",
     });
     throw e;
@@ -121,9 +120,10 @@ export function toastError(
   error: unknown,
   title: string = "Error",
 ): void {
+  const desc = errorMessageFromUnknown(error);
   toast({
     title,
-    description: errorMessageFromUnknown(error),
+    ...(desc ? { description: desc } : {}),
     variant: "destructive",
   });
 }

@@ -22,6 +22,7 @@ import type * as devTools from "../devTools.js";
 import type * as featureFlags from "../featureFlags.js";
 import type * as groups from "../groups.js";
 import type * as modules from "../modules.js";
+import type * as organisationSettings from "../organisationSettings.js";
 import type * as organisationalRoles from "../organisationalRoles.js";
 import type * as organisations from "../organisations.js";
 import type * as permissions from "../permissions.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   featureFlags: typeof featureFlags;
   groups: typeof groups;
   modules: typeof modules;
+  organisationSettings: typeof organisationSettings;
   organisationalRoles: typeof organisationalRoles;
   organisations: typeof organisations;
   permissions: typeof permissions;

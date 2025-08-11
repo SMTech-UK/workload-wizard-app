@@ -79,7 +79,7 @@ export function PermissionGatingExample({
             />
             {fieldState.disabled && (
               <p className="text-sm text-muted-foreground">
-                You don't have permission to edit users
+                You don&apos;t have permission to edit users
               </p>
             )}
           </div>

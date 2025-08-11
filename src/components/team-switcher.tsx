@@ -1,6 +1,7 @@
 "use client";
 
 import { WandSparkles } from "lucide-react";
+import { getEnv } from "@/lib/env";
 
 import {
   SidebarMenu,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 
 export function TeamSwitcher() {
+  const { NEXT_PUBLIC_APP_VERSION } = getEnv();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -25,7 +27,7 @@ export function TeamSwitcher() {
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">WorkloadWizard</span>
             <span className="truncate text-xs text-muted-foreground">
-              v0.3.0
+              {NEXT_PUBLIC_APP_VERSION ?? "v0.0.0"}
             </span>
           </div>
         </SidebarMenuButton>

@@ -6,6 +6,8 @@ import { api } from "../../../../convex/_generated/api";
 import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Edit,
@@ -17,6 +19,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useState } from "react";
+import { useAcademicYear } from "@/components/providers/AcademicYearProvider";
 import { useUser } from "@clerk/nextjs";
 import { EditStaffForm } from "@/components/domain/EditStaffForm";
 import { PermissionGate } from "@/components/common/PermissionGate";
@@ -38,6 +41,7 @@ export default function StaffProfilePage() {
     profileId ? ({ profileId: profileId as any } as any) : ("skip" as any),
   );
 
+  const { currentYear } = useAcademicYear();
   const adminAllocations = useQuery(
     (api as any).allocations.listAdminAllocations,
     profileId && (currentYear as any)?._id
@@ -71,6 +75,7 @@ export default function StaffProfilePage() {
 
   const editMutation = useMutation(api.staff.edit);
   const deactivateMutation = useMutation(api.staff.edit);
+  const updateUserAvatarMutation = useMutation(api.users.updateUserAvatar);
 
   const handleEdit = async (formData: any) => {
     try {
@@ -119,8 +124,7 @@ export default function StaffProfilePage() {
     if (!clerkUser?.subject || !clerkUser?.pictureUrl) return;
     try {
       // call users.updateUserAvatar to sync from Clerk
-      const updateAvatar = useMutation(api.users.updateUserAvatar);
-      await updateAvatar({
+      await updateUserAvatarMutation({
         subject: clerkUser.subject,
         pictureUrl: clerkUser.pictureUrl,
       } as any);
@@ -290,6 +294,16 @@ export default function StaffProfilePage() {
             <div>Max Teaching: {profile.maxTeachingHours}h</div>
             <div>Total Contract: {profile.totalContract}h</div>
             <div>Pref Location: {profile.prefWorkingLocation || "—"}</div>
+            <div>
+              Pref Working Time:{" "}
+              {profile.prefWorkingTime === "am"
+                ? "AM"
+                : profile.prefWorkingTime === "pm"
+                  ? "PM"
+                  : profile.prefWorkingTime === "all_day"
+                    ? "All day"
+                    : "—"}
+            </div>
             <div>Specialism: {profile.prefSpecialism || "—"}</div>
             <div>Notes: {profile.prefNotes || "—"}</div>
           </CardContent>

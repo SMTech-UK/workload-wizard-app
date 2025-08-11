@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
-export function YearSwitcher() {
+export function YearSwitcher({ compact = false }: { compact?: boolean } = {}) {
   const {
     years,
     currentYearId,
@@ -27,8 +27,8 @@ export function YearSwitcher() {
   const hasYears = years && years.length > 0;
 
   return (
-    <div className="flex items-center gap-3">
-      {isManagement && (
+    <div className={compact ? "w-full" : "flex items-center gap-3"}>
+      {!compact && isManagement && (
         <div className="flex items-center gap-2 pr-2 border-r">
           <Switch
             id="toggle-drafts"
@@ -44,13 +44,13 @@ export function YearSwitcher() {
         </div>
       )}
 
-      <div className="min-w-56">
+      <div className={compact ? "w-full" : "min-w-56"}>
         <Select
           value={currentYearId ?? ""}
           onValueChange={setCurrentYearId}
           disabled={!hasYears}
         >
-          <SelectTrigger className="w-56">
+          <SelectTrigger className={compact ? "w-full h-8 text-xs" : "w-56"}>
             <SelectValue
               placeholder={hasYears ? "Select academic year" : "No years"}
             />
@@ -67,7 +67,7 @@ export function YearSwitcher() {
         </Select>
       </div>
 
-      {isManagement && currentYearId && (
+      {!compact && isManagement && currentYearId && (
         <Button
           variant="outline"
           size="sm"

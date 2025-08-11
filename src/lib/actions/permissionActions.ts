@@ -8,12 +8,8 @@ export async function withOrgPermission<T>(
   permissionId: PermissionId,
   organisationId?: string,
 ): Promise<T> {
-  try {
-    await requireOrgPermission(permissionId, organisationId);
-    return await action();
-  } catch (error) {
-    handlePermissionError(error as Error);
-  }
+  await requireOrgPermission(permissionId, organisationId);
+  return await action();
 }
 
 // Wrapper for server actions that require system permissions
@@ -21,12 +17,8 @@ export async function withSystemPermission<T>(
   action: () => Promise<T>,
   permissionId: PermissionId,
 ): Promise<T> {
-  try {
-    await requireSystemPermission(permissionId);
-    return await action();
-  } catch (error) {
-    handlePermissionError(error as Error);
-  }
+  await requireSystemPermission(permissionId);
+  return await action();
 }
 
 // Higher-order function that creates permission-checked actions
@@ -36,15 +28,11 @@ export function createPermissionAction<T extends any[], R>(
   isSystemAction = false,
 ) {
   return async (...args: T): Promise<R> => {
-    try {
-      if (isSystemAction) {
-        await requireSystemPermission(permissionId);
-      } else {
-        await requireOrgPermission(permissionId);
-      }
-      return await action(...args);
-    } catch (error) {
-      handlePermissionError(error as Error);
+    if (isSystemAction) {
+      await requireSystemPermission(permissionId);
+    } else {
+      await requireOrgPermission(permissionId);
     }
+    return await action(...args);
   };
 }

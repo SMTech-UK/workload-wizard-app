@@ -446,9 +446,16 @@ export default function FlagsAdminPage() {
                       existingDefaultOverride={
                         settings?.defaultValueOverride ?? undefined
                       }
+                      existingExposeInUserSettings={
+                        settings?.exposeInUserSettings ?? undefined
+                      }
                       busy={busy}
                       setBusy={setBusy}
-                      onSave={async (rollout, defOverride) => {
+                      onSave={async (
+                        rollout,
+                        defOverride,
+                        exposeInUserSettings,
+                      ) => {
                         if (!user?.id) return;
                         setBusy(`${flagName}:settings`);
                         try {
@@ -465,16 +472,17 @@ export default function FlagsAdminPage() {
                             api.featureFlags.setFlagSettings,
                             {
                               flagName,
-                              rolloutPercentage:
-                                typeof rollout === "number"
-                                  ? rollout
-                                  : undefined,
-                              defaultValueOverride:
-                                typeof defOverride === "boolean"
-                                  ? defOverride
-                                  : undefined,
+                              ...(typeof rollout === "number"
+                                ? { rolloutPercentage: rollout }
+                                : {}),
+                              ...(typeof defOverride === "boolean"
+                                ? { defaultValueOverride: defOverride }
+                                : {}),
+                              ...(typeof exposeInUserSettings === "boolean"
+                                ? { exposeInUserSettings }
+                                : {}),
                               actorUserId: user.id,
-                            },
+                            } as any,
                           );
                           toast({
                             title: "Settings saved",
@@ -591,6 +599,7 @@ function FlagSettingsRow({
   defaultValue,
   existingRollout,
   existingDefaultOverride,
+  existingExposeInUserSettings,
   busy,
   setBusy,
   onSave,
@@ -599,9 +608,14 @@ function FlagSettingsRow({
   defaultValue: boolean;
   existingRollout?: number;
   existingDefaultOverride?: boolean;
+  existingExposeInUserSettings?: boolean;
   busy: string | null;
   setBusy: (v: string | null) => void;
-  onSave: (rollout?: number, defaultOverride?: boolean) => Promise<void>;
+  onSave: (
+    rollout?: number,
+    defaultOverride?: boolean,
+    exposeInUserSettings?: boolean,
+  ) => Promise<void>;
 }) {
   const [rollout, setRollout] = useState<string>(
     typeof existingRollout === "number" ? String(existingRollout) : "",
@@ -614,6 +628,11 @@ function FlagSettingsRow({
         ? "true"
         : "false"
       : "inherit",
+  );
+  const [exposeInUserSettings, setExposeInUserSettings] = useState<boolean>(
+    typeof existingExposeInUserSettings === "boolean"
+      ? existingExposeInUserSettings
+      : false,
   );
 
   return (
@@ -648,6 +667,16 @@ function FlagSettingsRow({
           <option value="false">Disabled</option>
         </select>
       </div>
+      <div className="flex items-center gap-2">
+        <Label htmlFor={`${flagName}-expose`} className="text-xs">
+          Show in Account
+        </Label>
+        <UISwitch
+          id={`${flagName}-expose`}
+          checked={exposeInUserSettings}
+          onCheckedChange={(v) => setExposeInUserSettings(Boolean(v))}
+        />
+      </div>
       <Button
         variant="outline"
         size="sm"
@@ -660,7 +689,7 @@ function FlagSettingsRow({
             defaultOverride === "inherit"
               ? undefined
               : defaultOverride === "true";
-          await onSave(r, d);
+          await onSave(r, d, exposeInUserSettings);
         }}
         disabled={busy === `${flagName}:settings`}
       >

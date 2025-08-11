@@ -21,11 +21,8 @@ import {
   DeleteUserButton,
   AdminPageWrapper,
 } from "./index";
-import {
-  usePermissions,
-  useUserActions,
-  useAdminActions,
-} from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useUserActions, useAdminActions } from "@/hooks/usePermissionActions";
 import { usePermissionActions } from "@/hooks/usePermissionActions";
 
 export function PermissionExamples() {

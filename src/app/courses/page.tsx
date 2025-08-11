@@ -34,7 +34,7 @@ export default function CoursesPage() {
 
   const createCourse = useMutation(api.courses.create);
   const deleteCourse = useMutation(api.courses.remove);
-  const [form, setForm] = useState({ code: "", name: "" });
+  const [form, setForm] = useState({ code: "", name: "", campuses: "" });
   const codeAvailability = useQuery(
     (api as any).courses.isCodeAvailable,
     form.code.trim() ? ({ code: form.code.trim() } as any) : ("skip" as any),
@@ -60,8 +60,16 @@ export default function CoursesPage() {
       await createCourse({
         code: form.code.trim(),
         name: form.name.trim(),
+        ...(form.campuses.trim()
+          ? {
+              campuses: form.campuses
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean),
+            }
+          : {}),
       } as any);
-      setForm({ code: "", name: "" });
+      setForm({ code: "", name: "", campuses: "" });
       toast({
         title: "Course created",
         description: `${form.code.trim()} has been created successfully.`,
@@ -174,6 +182,61 @@ export default function CoursesPage() {
                   }
                   placeholder="Computer Science"
                 />
+              </div>
+              {/* Campuses chip multi-select */}
+              <div className="space-y-2">
+                <Label>Campuses (optional)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {(form.campuses || "")
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                    .map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          const list = (form.campuses || "")
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean)
+                            .filter((x) => x !== c);
+                          setForm((f) => ({ ...f, campuses: list.join(", ") }));
+                        }}
+                        className="px-2 py-1 rounded-full text-xs bg-muted hover:bg-muted/70"
+                        title="Click to remove"
+                      >
+                        {c} ×
+                      </button>
+                    ))}
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    className="h-9 rounded-md border px-2 bg-background"
+                    value=""
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const list = (form.campuses || "")
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      if (!list.includes(val)) list.push(val);
+                      setForm((f) => ({ ...f, campuses: list.join(", ") }));
+                      e.currentTarget.value = "";
+                    }}
+                  >
+                    <option value="">Add campus…</option>
+                    {(
+                      (useQuery as any)(api.organisationSettings.getForActor) ||
+                      {}
+                    )?.campusOptions?.map((c: string) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <PermissionGate
                 permission="courses.create"

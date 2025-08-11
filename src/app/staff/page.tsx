@@ -16,14 +16,30 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CreateLecturerForm } from "@/components/domain/CreateLecturerForm";
 
 export default function StaffCapacityPage() {
   const { currentYear } = useAcademicYear();
   const { user } = useUser();
+  const anyApi = api as any;
+  const convexUser = useQuery(
+    anyApi.users.getBySubject,
+    user?.id ? { subject: user.id } : "skip",
+  ) as { systemRoles?: string[] } | undefined;
+  const isAdminLike = (convexUser?.systemRoles || []).some(
+    (r) => r === "orgadmin" || r === "sysadmin" || r === "developer",
+  );
 
   const profiles = useQuery(
     (api as any).staff.list,
-    user?.id ? ({ userId: user.id } as any) : ("skip" as any),
+    user?.id && isAdminLike ? ({ userId: user.id } as any) : ("skip" as any),
   ) as Array<any> | undefined;
 
   // Filters
@@ -34,6 +50,7 @@ export default function StaffCapacityPage() {
   const [capacityMode, setCapacityMode] = useState<"teaching" | "total">(
     "teaching",
   );
+  const [openCreate, setOpenCreate] = useState(false);
 
   return (
     <StandardizedSidebarLayout
@@ -50,70 +67,94 @@ export default function StaffCapacityPage() {
     >
       <div className="space-y-4">
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-3 md:items-end border rounded-md p-3">
-          <div className="flex-1 space-y-1">
-            <Label htmlFor="search">Search</Label>
-            <Input
-              id="search"
-              placeholder="Name or email"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        {isAdminLike && (
+          <div className="flex flex-col md:flex-row gap-3 md:items-end border rounded-md p-3">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="search">Search</Label>
+              <Input
+                id="search"
+                placeholder="Name or email"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="w-40 space-y-1">
+              <Label>Contract</Label>
+              <Select value={contract} onValueChange={setContract}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any</SelectItem>
+                  <SelectItem value="FT">Full Time</SelectItem>
+                  <SelectItem value="PT">Part Time</SelectItem>
+                  <SelectItem value="Bank">Bank</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-44 space-y-1">
+              <Label>Capacity Mode</Label>
+              <Select
+                value={capacityMode}
+                onValueChange={(v) => setCapacityMode(v as any)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teaching">Teaching</SelectItem>
+                  <SelectItem value="total">Total</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 mt-1 md:mt-0">
+              <label className="text-sm inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={activeOnly}
+                  onChange={(e) => setActiveOnly(e.target.checked)}
+                />{" "}
+                Active only
+              </label>
+              <label className="text-sm inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={overCapacityOnly}
+                  onChange={(e) => setOverCapacityOnly(e.target.checked)}
+                />{" "}
+                Over capacity
+              </label>
+            </div>
+            <div className="md:ml-auto">
+              <Button onClick={() => setOpenCreate(true)}>
+                Create lecturer
+              </Button>
+            </div>
           </div>
-          <div className="w-40 space-y-1">
-            <Label>Contract</Label>
-            <Select value={contract} onValueChange={setContract}>
-              <SelectTrigger>
-                <SelectValue placeholder="Any" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Any</SelectItem>
-                <SelectItem value="FT">Full Time</SelectItem>
-                <SelectItem value="PT">Part Time</SelectItem>
-                <SelectItem value="Bank">Bank</SelectItem>
-              </SelectContent>
-            </Select>
+        )}
+        {isAdminLike && (
+          <Dialog open={openCreate} onOpenChange={setOpenCreate}>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Create Lecturer</DialogTitle>
+              </DialogHeader>
+              <div className="max-h-[80vh] overflow-y-auto px-1">
+                <CreateLecturerForm onSuccess={() => setOpenCreate(false)} />
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+        {!isAdminLike && (
+          <div className="text-sm text-muted-foreground">
+            View your profile from the sidebar (Staff → My Profile).
           </div>
-          <div className="w-44 space-y-1">
-            <Label>Capacity Mode</Label>
-            <Select
-              value={capacityMode}
-              onValueChange={(v) => setCapacityMode(v as any)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="teaching">Teaching</SelectItem>
-                <SelectItem value="total">Total</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2 mt-1 md:mt-0">
-            <label className="text-sm inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={activeOnly}
-                onChange={(e) => setActiveOnly(e.target.checked)}
-              />{" "}
-              Active only
-            </label>
-            <label className="text-sm inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={overCapacityOnly}
-                onChange={(e) => setOverCapacityOnly(e.target.checked)}
-              />{" "}
-              Over capacity
-            </label>
-          </div>
-        </div>
-        {(!Array.isArray(profiles) || profiles.length === 0) && (
+        )}
+        {isAdminLike && (!Array.isArray(profiles) || profiles.length === 0) && (
           <div className="text-sm text-muted-foreground">
             No lecturer profiles yet.
           </div>
         )}
-        {Array.isArray(profiles) && profiles.length > 0 && (
+        {isAdminLike && Array.isArray(profiles) && profiles.length > 0 && (
           <ul className="divide-y border rounded-md">
             {profiles.map((p) => (
               <StaffRow

@@ -8,13 +8,17 @@ export const create = mutation({
   args: {
     fullName: v.string(),
     email: v.string(),
-    contract: v.string(), // 'FT', 'PT', 'Bank'
+    contract: v.string(), // 'FT', 'PT'
     fte: v.float64(),
     maxTeachingHours: v.float64(),
     totalContract: v.float64(),
     role: v.optional(v.string()),
     teamName: v.optional(v.string()),
+    contractFamily: v.optional(v.string()),
     prefWorkingLocation: v.optional(v.string()),
+    prefWorkingTime: v.optional(
+      v.union(v.literal("am"), v.literal("pm"), v.literal("all_day")),
+    ),
     prefSpecialism: v.optional(v.string()),
     prefNotes: v.optional(v.string()),
     userId: v.string(), // Current user ID for permission check
@@ -46,8 +50,12 @@ export const create = mutation({
       totalContract: args.totalContract,
       ...(args.role ? { role: args.role } : {}),
       ...(args.teamName ? { teamName: args.teamName } : {}),
+      ...(args.contractFamily ? { contractFamily: args.contractFamily } : {}),
       ...(args.prefWorkingLocation
         ? { prefWorkingLocation: args.prefWorkingLocation }
+        : {}),
+      ...(args.prefWorkingTime
+        ? { prefWorkingTime: args.prefWorkingTime }
         : {}),
       ...(args.prefSpecialism ? { prefSpecialism: args.prefSpecialism } : {}),
       ...(args.prefNotes ? { prefNotes: args.prefNotes } : {}),
@@ -93,7 +101,11 @@ export const edit = mutation({
     userSubject: v.optional(v.string()), // link to users.subject
     role: v.optional(v.string()),
     teamName: v.optional(v.string()),
+    contractFamily: v.optional(v.string()),
     prefWorkingLocation: v.optional(v.string()),
+    prefWorkingTime: v.optional(
+      v.union(v.literal("am"), v.literal("pm"), v.literal("all_day")),
+    ),
     prefSpecialism: v.optional(v.string()),
     prefNotes: v.optional(v.string()),
     userId: v.string(), // Current user ID for permission check
@@ -121,7 +133,9 @@ export const edit = mutation({
       isActive?: boolean;
       role?: string;
       teamName?: string;
+      contractFamily?: string;
       prefWorkingLocation?: string;
+      prefWorkingTime?: "am" | "pm" | "all_day";
       prefSpecialism?: string;
       prefNotes?: string;
       updatedAt: number;
@@ -140,6 +154,8 @@ export const edit = mutation({
     if (args.teamName !== undefined) updates.teamName = args.teamName;
     if (args.prefWorkingLocation !== undefined)
       updates.prefWorkingLocation = args.prefWorkingLocation;
+    if (args.prefWorkingTime !== undefined)
+      updates.prefWorkingTime = args.prefWorkingTime as any;
     if (args.prefSpecialism !== undefined)
       updates.prefSpecialism = args.prefSpecialism;
     if (args.prefNotes !== undefined) updates.prefNotes = args.prefNotes;
@@ -172,6 +188,27 @@ export const list = query({
       .first();
     if (!actor) throw new Error("Actor not found");
 
+    return await ctx.db
+      .query("lecturer_profiles")
+      .withIndex("by_organisation", (q) =>
+        q.eq("organisationId", actor.organisationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+  },
+});
+
+// List lecturer profiles for the current actor (derives organisation from auth)
+export const listForActor = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return [];
+    const actor = await ctx.db
+      .query("users")
+      .withIndex("by_subject", (q) => q.eq("subject", identity.subject))
+      .first();
+    if (!actor) return [];
     return await ctx.db
       .query("lecturer_profiles")
       .withIndex("by_organisation", (q) =>

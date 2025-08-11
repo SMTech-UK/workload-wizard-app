@@ -1,3 +1,5 @@
+"use client";
+
 import { ReactNode } from "react";
 import { usePermissionManager } from "@/hooks/usePermissionManager";
 import { type PermissionId } from "@/lib/permissions";
@@ -94,14 +96,14 @@ export function UsersViewGate({
   return (
     <PermissionGate
       permission="users.view"
-      organisationId={organisationId}
-      fallback={fallback}
-      hide={hide}
-      disabled={disabled}
-      disabledText={disabledText}
-      actionName={actionName}
-      showToast={showToast}
-      redirectOnDeny={redirectOnDeny}
+      {...(organisationId ? { organisationId: organisationId as string } : {})}
+      {...(typeof hide === "boolean" ? { hide } : {})}
+      {...(typeof disabled === "boolean" ? { disabled } : {})}
+      {...(fallback ? { fallback } : {})}
+      {...(disabledText ? { disabledText } : {})}
+      {...(actionName ? { actionName } : {})}
+      {...(showToast ? { showToast } : {})}
+      {...(redirectOnDeny ? { redirectOnDeny } : {})}
     >
       {children}
     </PermissionGate>
@@ -122,14 +124,14 @@ export function UsersCreateGate({
   return (
     <PermissionGate
       permission="users.create"
-      organisationId={organisationId}
-      fallback={fallback}
-      hide={hide}
-      disabled={disabled}
-      disabledText={disabledText}
-      actionName={actionName}
-      showToast={showToast}
-      redirectOnDeny={redirectOnDeny}
+      {...(organisationId ? { organisationId: organisationId as string } : {})}
+      {...(typeof hide === "boolean" ? { hide } : {})}
+      {...(typeof disabled === "boolean" ? { disabled } : {})}
+      {...(fallback ? { fallback } : {})}
+      {...(disabledText ? { disabledText } : {})}
+      {...(actionName ? { actionName } : {})}
+      {...(showToast ? { showToast } : {})}
+      {...(redirectOnDeny ? { redirectOnDeny } : {})}
     >
       {children}
     </PermissionGate>
@@ -150,14 +152,14 @@ export function UsersEditGate({
   return (
     <PermissionGate
       permission="users.edit"
-      organisationId={organisationId}
-      fallback={fallback}
-      hide={hide}
-      disabled={disabled}
-      disabledText={disabledText}
-      actionName={actionName}
-      showToast={showToast}
-      redirectOnDeny={redirectOnDeny}
+      {...(organisationId ? { organisationId: organisationId as string } : {})}
+      {...(typeof hide === "boolean" ? { hide } : {})}
+      {...(typeof disabled === "boolean" ? { disabled } : {})}
+      {...(fallback ? { fallback } : {})}
+      {...(disabledText ? { disabledText } : {})}
+      {...(actionName ? { actionName } : {})}
+      {...(showToast ? { showToast } : {})}
+      {...(redirectOnDeny ? { redirectOnDeny } : {})}
     >
       {children}
     </PermissionGate>
@@ -178,14 +180,14 @@ export function UsersDeleteGate({
   return (
     <PermissionGate
       permission="users.delete"
-      organisationId={organisationId}
-      fallback={fallback}
-      hide={hide}
-      disabled={disabled}
-      disabledText={disabledText}
-      actionName={actionName}
-      showToast={showToast}
-      redirectOnDeny={redirectOnDeny}
+      {...(organisationId ? { organisationId: organisationId as string } : {})}
+      {...(typeof hide === "boolean" ? { hide } : {})}
+      {...(typeof disabled === "boolean" ? { disabled } : {})}
+      {...(fallback ? { fallback } : {})}
+      {...(disabledText ? { disabledText } : {})}
+      {...(actionName ? { actionName } : {})}
+      {...(showToast ? { showToast } : {})}
+      {...(redirectOnDeny ? { redirectOnDeny } : {})}
     >
       {children}
     </PermissionGate>
@@ -206,14 +208,14 @@ export function PermissionsManageGate({
   return (
     <PermissionGate
       permission="permissions.manage"
-      organisationId={organisationId}
-      fallback={fallback}
-      hide={hide}
-      disabled={disabled}
-      disabledText={disabledText}
-      actionName={actionName}
-      showToast={showToast}
-      redirectOnDeny={redirectOnDeny}
+      {...(organisationId ? { organisationId: organisationId as string } : {})}
+      {...(typeof hide === "boolean" ? { hide } : {})}
+      {...(typeof disabled === "boolean" ? { disabled } : {})}
+      {...(fallback ? { fallback } : {})}
+      {...(disabledText ? { disabledText } : {})}
+      {...(actionName ? { actionName } : {})}
+      {...(showToast ? { showToast } : {})}
+      {...(redirectOnDeny ? { redirectOnDeny } : {})}
     >
       {children}
     </PermissionGate>
@@ -234,14 +236,14 @@ export function FlagsManageGate({
   return (
     <PermissionGate
       permission="flags.manage"
-      organisationId={organisationId}
-      fallback={fallback}
-      hide={hide}
-      disabled={disabled}
-      disabledText={disabledText}
-      actionName={actionName}
-      showToast={showToast}
-      redirectOnDeny={redirectOnDeny}
+      {...(organisationId ? { organisationId: organisationId as string } : {})}
+      {...(typeof hide === "boolean" ? { hide } : {})}
+      {...(typeof disabled === "boolean" ? { disabled } : {})}
+      {...(fallback ? { fallback } : {})}
+      {...(disabledText ? { disabledText } : {})}
+      {...(actionName ? { actionName } : {})}
+      {...(showToast ? { showToast } : {})}
+      {...(redirectOnDeny ? { redirectOnDeny } : {})}
     >
       {children}
     </PermissionGate>
@@ -262,13 +264,13 @@ export function OrganisationsManageGate({
     <PermissionGate
       permission="organisations.manage"
       isSystemAction={true}
-      fallback={fallback}
-      hide={hide}
-      disabled={disabled}
-      disabledText={disabledText}
-      actionName={actionName}
-      showToast={showToast}
-      redirectOnDeny={redirectOnDeny}
+      {...(typeof hide === "boolean" ? { hide } : {})}
+      {...(typeof disabled === "boolean" ? { disabled } : {})}
+      {...(fallback ? { fallback } : {})}
+      {...(disabledText ? { disabledText } : {})}
+      {...(actionName ? { actionName } : {})}
+      {...(showToast ? { showToast } : {})}
+      {...(redirectOnDeny ? { redirectOnDeny } : {})}
     >
       {children}
     </PermissionGate>
@@ -289,14 +291,14 @@ export function AuditViewGate({
   return (
     <PermissionGate
       permission="audit.view"
-      organisationId={organisationId}
-      fallback={fallback}
-      hide={hide}
-      disabled={disabled}
-      disabledText={disabledText}
-      actionName={actionName}
-      showToast={showToast}
-      redirectOnDeny={redirectOnDeny}
+      {...(organisationId ? { organisationId: organisationId as string } : {})}
+      {...(typeof hide === "boolean" ? { hide } : {})}
+      {...(typeof disabled === "boolean" ? { disabled } : {})}
+      {...(fallback ? { fallback } : {})}
+      {...(disabledText ? { disabledText } : {})}
+      {...(actionName ? { actionName } : {})}
+      {...(showToast ? { showToast } : {})}
+      {...(redirectOnDeny ? { redirectOnDeny } : {})}
     >
       {children}
     </PermissionGate>

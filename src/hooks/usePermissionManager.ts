@@ -15,17 +15,16 @@ export function usePermissionManager(organisationId?: string) {
   // Create toast handler for permission manager
   const toastHandler = useCallback(
     (message: string, variant: "error" | "warning" | "info") => {
-      switch (variant) {
-        case "error":
-          toast.error("Access Denied", message);
-          break;
-        case "warning":
-          toast.warning("Permission Warning", message);
-          break;
-        case "info":
-          toast.info("Permission Info", message);
-          break;
-      }
+      const titleMap = {
+        error: "Access Denied",
+        warning: "Permission Warning",
+        info: "Permission Info",
+      } as const;
+      toast({
+        title: titleMap[variant],
+        description: message,
+        variant: variant === "error" ? "destructive" : "default",
+      });
     },
     [toast],
   );
