@@ -78,13 +78,13 @@ export function AcademicYearProvider({
   // Fetch academic years for organisation, server decides visibility based on permissions
   const allYears = (useQuery(
     apiAny.academicYears.listForOrganisation,
-    user?.id ? { userId: user.id } : "skip",
+    convexUser ? { userId: user!.id } : "skip",
   ) || []) as AcademicYear[];
 
   // Load server preferences (selected year + includeDrafts)
   const preferences = useQuery(
     apiAny.academicYears.getPreferences,
-    user?.id ? { userId: user.id } : "skip",
+    convexUser ? { userId: user!.id } : "skip",
   ) as
     | {
         _id: string;
