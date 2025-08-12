@@ -704,7 +704,11 @@ export function AuditLogsViewer() {
                     </TableHeader>
                     <TableBody>
                       {filteredLogs.map((log) => (
-                        <TableRow key={log._id} className="hover:bg-gray-50">
+                        <TableRow
+                          data-testid="audit-row"
+                          key={log._id}
+                          className="hover:bg-gray-50"
+                        >
                           <TableCell className="font-mono text-sm">
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3 text-gray-400" />

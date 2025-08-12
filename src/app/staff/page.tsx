@@ -98,7 +98,7 @@ export default function StaffCapacityPage() {
                 value={capacityMode}
                 onValueChange={(v) => setCapacityMode(v as any)}
               >
-                <SelectTrigger>
+                <SelectTrigger data-testid="capacity-mode-trigger">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -110,6 +110,7 @@ export default function StaffCapacityPage() {
             <div className="flex items-center gap-2 mt-1 md:mt-0">
               <label className="text-sm inline-flex items-center gap-2">
                 <input
+                  data-testid="active-only-checkbox"
                   type="checkbox"
                   checked={activeOnly}
                   onChange={(e) => setActiveOnly(e.target.checked)}
@@ -118,6 +119,7 @@ export default function StaffCapacityPage() {
               </label>
               <label className="text-sm inline-flex items-center gap-2">
                 <input
+                  data-testid="over-capacity-checkbox"
                   type="checkbox"
                   checked={overCapacityOnly}
                   onChange={(e) => setOverCapacityOnly(e.target.checked)}
@@ -314,9 +316,11 @@ function StaffRow({
           </div>
         </div>
         <div className="text-right min-w-40">
-          <div>Teaching: {teaching}h</div>
-          <div>Admin: {admin}h</div>
-          <div className="font-medium">Total: {total}h</div>
+          <div data-testid="staff-teaching">Teaching: {teaching}h</div>
+          <div data-testid="staff-admin">Admin: {admin}h</div>
+          <div data-testid="staff-total" className="font-medium">
+            Total: {total}h
+          </div>
         </div>
       </a>
     </li>

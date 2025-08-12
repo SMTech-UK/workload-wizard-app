@@ -1,0 +1,87 @@
+# Page snapshot
+
+```yaml
+- list:
+    - listitem:
+        - button "WorkloadWizard v0.4.0"
+- combobox: AY-1754989576530
+- text: Navigation
+- list:
+    - listitem:
+        - button "Dashboard"
+    - listitem:
+        - button "Account"
+    - listitem:
+        - button "Modules"
+    - listitem:
+        - button "Admin"
+    - listitem:
+        - button "Dev Tools"
+    - listitem:
+        - button "Organisation"
+- text: Quick Access
+- list:
+    - listitem:
+        - link "User Management":
+            - /url: /admin/users
+        - button "More"
+    - listitem:
+        - link "Organisation Setup":
+            - /url: /admin/organisations
+        - button "More"
+    - listitem:
+        - link "Audit & Compliance":
+            - /url: /admin/audit-logs
+        - button "More"
+    - listitem:
+        - link "Database Tools":
+            - /url: /dev/database
+        - button "More"
+    - listitem:
+        - link "API Testing":
+            - /url: /dev/api
+        - button "More"
+    - listitem:
+        - link "Debug Console":
+            - /url: /dev/debug
+        - button "More"
+    - listitem:
+        - button "More"
+- list:
+    - listitem:
+        - button "Sam McNab Sam McNab sam@sammcnab.co.uk":
+            - img "Sam McNab"
+            - text: Sam McNab sam@sammcnab.co.uk
+- button "Toggle Sidebar"
+- main:
+    - button "Toggle Sidebar"
+    - navigation "breadcrumb":
+        - list:
+            - listitem:
+                - link "Dashboard":
+                    - /url: /dashboard
+            - listitem:
+                - link "Staff" [disabled]
+    - heading "Staff capacity" [level=1]
+    - paragraph: "Academic Year: AY-1754989576530"
+    - text: Search
+    - textbox "Search"
+    - text: Contract
+    - combobox: Any
+    - text: Capacity Mode
+    - combobox: Teaching
+    - checkbox "Active only"
+    - text: Active only
+    - checkbox "Over capacity"
+    - text: Over capacity
+    - button "Create lecturer"
+    - list:
+        - listitem:
+            - 'link "Sam McNab mcnasam@uwl.ac.uk FT • FTE 1 • Max Teach 1200h • Total 1498h Teaching 0/1200h (0%) Total 0/1498h (0%) Teaching: 0h Admin: 0h Total: 0h"':
+                - /url: /staff/jn79k6mhy2ey7ywaqmpzcvekbh7nffky
+        - listitem:
+            - 'link "Antony Newman newmant@uwl.ac.uk FT • FTE 1 • Max Teach 1200h • Total 1498h Teaching 0/1200h (0%) Total 0/1498h (0%) Teaching: 0h Admin: 0h Total: 0h"':
+                - /url: /staff/jn75nem0hyxgsnthqng0a0xj2x7nf2df
+- region "Notifications alt+T"
+- alert
+```

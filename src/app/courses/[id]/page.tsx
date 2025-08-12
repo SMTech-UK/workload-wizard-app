@@ -135,6 +135,7 @@ export default function CourseDetailPage() {
               })()}
             </div>
             <Button
+              data-testid="add-year-btn"
               disabled={!canAdd || isAddingYear}
               onClick={async () => {
                 const yearNumber = Number(yearInput);
@@ -220,7 +221,7 @@ function CourseYearModules({ yearId }: { yearId: string }) {
         <div className="w-64">
           <Label>Attach Module</Label>
           <Select value={selected} onValueChange={setSelected}>
-            <SelectTrigger>
+            <SelectTrigger data-testid="attach-module-trigger">
               <SelectValue placeholder="Select module" />
             </SelectTrigger>
             <SelectContent>
@@ -251,6 +252,7 @@ function CourseYearModules({ yearId }: { yearId: string }) {
           </button>
         </div>
         <Button
+          data-testid="attach-module-btn"
           disabled={
             !selected ||
             (attached || []).some(
@@ -463,6 +465,7 @@ function ModuleIterationAndGroupsAndAllocations({
             View details
           </Link>
           <button
+            data-testid="add-group-btn"
             className="text-xs underline"
             disabled={isCreatingGroup}
             onClick={async () => {
@@ -500,7 +503,12 @@ function ModuleIterationAndGroupsAndAllocations({
           {Array.isArray(groups) && groups.length > 0 ? (
             <Dialog open={assignOpen} onOpenChange={handleDialogClose}>
               <DialogTrigger asChild>
-                <button className="text-xs underline">Assign lecturer</button>
+                <button
+                  data-testid="assign-lecturer-btn"
+                  className="text-xs underline"
+                >
+                  Assign lecturer
+                </button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>

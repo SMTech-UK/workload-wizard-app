@@ -34,6 +34,36 @@ export const listByOrganisation = query({
   },
 });
 
+// List courses for the authenticated actor's organisation (no args)
+export const listForActor = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return [];
+    const actor = await ctx.db
+      .query("users" as any)
+      .withIndex("by_subject" as any, (q) =>
+        (q as any).eq("subject", identity.subject),
+      )
+      .first();
+    if (!actor) return [];
+    await requireOrgPermission(
+      ctx as any,
+      identity.subject,
+      "courses.view",
+      actor.organisationId as any,
+    );
+    const courses = await ctx.db
+      .query("courses" as any)
+      .withIndex("by_organisation" as any, (q) =>
+        (q as any).eq("organisationId", actor.organisationId as any),
+      )
+      .order("asc")
+      .collect();
+    return courses;
+  },
+});
+
 // Get a single course
 export const getById = query({
   args: { id: v.id("courses") },

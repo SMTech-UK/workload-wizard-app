@@ -20,17 +20,8 @@ import { withToast } from "@/lib/utils";
 export default function CoursesPage() {
   const { user } = useUser();
   const { toast } = useToast();
-  const organisationId = (user?.publicMetadata?.organisationId as string) || "";
-  const courses = useQuery(
-    api.courses.listByOrganisation,
-    organisationId
-      ? ({
-          organisationId: organisationId as string & {
-            __tableName: "organisations";
-          },
-        } as any)
-      : ("skip" as any),
-  );
+  // Derive organisation on the server from the authenticated actor, not from client public metadata
+  const courses = useQuery((api as any).courses.listForActor);
 
   const createCourse = useMutation(api.courses.create);
   const deleteCourse = useMutation(api.courses.remove);
@@ -242,6 +233,7 @@ export default function CoursesPage() {
                 permission="courses.create"
                 fallback={
                   <Button
+                    data-testid="create-course-disabled"
                     className="w-full"
                     disabled
                     title="Insufficient permissions"
@@ -250,7 +242,12 @@ export default function CoursesPage() {
                   </Button>
                 }
               >
-                <Button className="w-full" disabled={!canSubmit} type="submit">
+                <Button
+                  data-testid="create-course"
+                  className="w-full"
+                  disabled={!canSubmit}
+                  type="submit"
+                >
                   Create
                 </Button>
               </PermissionGate>

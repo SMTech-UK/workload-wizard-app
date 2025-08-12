@@ -1,0 +1,351 @@
+# Page snapshot
+
+```yaml
+- list:
+    - listitem:
+        - button "WorkloadWizard v0.4.0"
+- combobox: AY-1754990019923 • default
+- text: Navigation
+- list:
+    - listitem:
+        - button "Dashboard"
+    - listitem:
+        - button "Account"
+    - listitem:
+        - button "Modules"
+    - listitem:
+        - button "Admin"
+    - listitem:
+        - button "Dev Tools"
+    - listitem:
+        - button "Organisation"
+- text: Quick Access
+- list:
+    - listitem:
+        - link "User Management":
+            - /url: /admin/users
+        - button "More"
+    - listitem:
+        - link "Organisation Setup":
+            - /url: /admin/organisations
+        - button "More"
+    - listitem:
+        - link "Audit & Compliance":
+            - /url: /admin/audit-logs
+        - button "More"
+    - listitem:
+        - link "Database Tools":
+            - /url: /dev/database
+        - button "More"
+    - listitem:
+        - link "API Testing":
+            - /url: /dev/api
+        - button "More"
+    - listitem:
+        - link "Debug Console":
+            - /url: /dev/debug
+        - button "More"
+    - listitem:
+        - button "More"
+- list:
+    - listitem:
+        - button "Sam McNab Sam McNab sam@sammcnab.co.uk":
+            - img "Sam McNab"
+            - text: Sam McNab sam@sammcnab.co.uk
+- button "Toggle Sidebar"
+- main:
+    - button "Toggle Sidebar"
+    - navigation "breadcrumb":
+        - list:
+            - listitem:
+                - link "Home":
+                    - /url: /
+            - listitem:
+                - link "Admin":
+                    - /url: /admin
+            - listitem:
+                - link "Audit Logs" [disabled]
+    - button "Export CSV"
+    - button "Export JSON"
+    - button "Settings"
+    - heading "Audit Logs" [level=1]
+    - paragraph: Monitor system activity and user actions
+    - text: Audit Logs Monitor system activity and user actions
+    - button
+    - button
+    - button
+    - textbox "Search logs..."
+    - combobox: Last 24 Hours
+    - button "Filters"
+    - table:
+        - rowgroup:
+            - row "Time Action Entity Performed By Details Severity IP":
+                - cell "Time"
+                - cell "Action"
+                - cell "Entity"
+                - cell "Performed By"
+                - cell "Details"
+                - cell "Severity"
+                - cell "IP"
+                - cell
+        - rowgroup:
+            - row "40m ago Create Module Iteration user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Created iteration for module k57ccb6ypk98kyajbhd35... Info":
+                - cell "40m ago"
+                - cell "Create"
+                - cell "Module Iteration"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Created iteration for module k57ccb6ypk98kyajbhd35..."
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "40m ago Link Course Year Module user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Attached module k57ccb6ypk98kyajbhd35qqmgd7nhxda t... Info":
+                - cell "40m ago"
+                - cell "Link"
+                - cell "Course Year Module"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Attached module k57ccb6ypk98kyajbhd35qqmgd7nhxda t..."
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "40m ago Create Module E2E-MOD1754987720926 E2E Module 1754987720926 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Module created (E2E-MOD1754987720926) Info":
+                - cell "40m ago"
+                - cell "Create"
+                - cell "Module E2E-MOD1754987720926 E2E Module 1754987720926"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Module created (E2E-MOD1754987720926)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "40m ago Create Course Year E2E1754987720925 Y1 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Year 1 added to course E2E1754987720925 Info":
+                - cell "40m ago"
+                - cell "Create"
+                - cell "Course Year E2E1754987720925 Y1"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Year 1 added to course E2E1754987720925"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "40m ago Create Course E2E1754987720925 E2E Course 1754987720926 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Course created (E2E1754987720925) Info":
+                - cell "40m ago"
+                - cell "Create"
+                - cell "Course E2E1754987720925 E2E Course 1754987720926"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Course created (E2E1754987720925)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "40m ago Create Module E2E-M1754987727064 Module 1754987727064 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Module created (E2E-M1754987727064) Info":
+                - cell "40m ago"
+                - cell "Create"
+                - cell "Module E2E-M1754987727064 Module 1754987727064"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Module created (E2E-M1754987727064)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "40m ago Year Status Change Academic Year AY-1754987720978 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Status → published Info":
+                - cell "40m ago"
+                - cell "Year Status Change"
+                - cell "Academic Year AY-1754987720978"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Status → published"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "40m ago Create Course E2E-C1754987720932 Course 1754987720932 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Course created (E2E-C1754987720932) Info":
+                - cell "40m ago"
+                - cell "Create"
+                - cell "Course E2E-C1754987720932 Course 1754987720932"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Course created (E2E-C1754987720932)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "46m ago Create Module Group user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Created group Group E2E Info":
+                - cell "46m ago"
+                - cell "Create"
+                - cell "Module Group"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Created group Group E2E"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "46m ago Create Module Iteration user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Created iteration for module k575q95mfgd1s7whrff8n... Info":
+                - cell "46m ago"
+                - cell "Create"
+                - cell "Module Iteration"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Created iteration for module k575q95mfgd1s7whrff8n..."
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "46m ago Link Course Year Module user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Attached module k575q95mfgd1s7whrff8nj1c917nh2q7 t... Info":
+                - cell "46m ago"
+                - cell "Link"
+                - cell "Course Year Module"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Attached module k575q95mfgd1s7whrff8nj1c917nh2q7 t..."
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "46m ago Create Module E2E-MOD1754987345015 E2E Module 1754987345015 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Module created (E2E-MOD1754987345015) Info":
+                - cell "46m ago"
+                - cell "Create"
+                - cell "Module E2E-MOD1754987345015 E2E Module 1754987345015"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Module created (E2E-MOD1754987345015)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "46m ago Create Course Year E2E1754987345015 Y1 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Year 1 added to course E2E1754987345015 Info":
+                - cell "46m ago"
+                - cell "Create"
+                - cell "Course Year E2E1754987345015 Y1"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Year 1 added to course E2E1754987345015"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "46m ago Create Course E2E1754987345015 E2E Course 1754987345015 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Course created (E2E1754987345015) Info":
+                - cell "46m ago"
+                - cell "Create"
+                - cell "Course E2E1754987345015 E2E Course 1754987345015"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Course created (E2E1754987345015)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "1h ago Create Module E2E-MOD1754985529232 E2E Module 1754985529232 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Module created (E2E-MOD1754985529232) Info":
+                - cell "1h ago"
+                - cell "Create"
+                - cell "Module E2E-MOD1754985529232 E2E Module 1754985529232"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Module created (E2E-MOD1754985529232)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "1h ago Create Course Year E2E1754985529232 Y1 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Year 1 added to course E2E1754985529232 Info":
+                - cell "1h ago"
+                - cell "Create"
+                - cell "Course Year E2E1754985529232 Y1"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Year 1 added to course E2E1754985529232"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "1h ago Create Course E2E1754985529232 E2E Course 1754985529232 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Course created (E2E1754985529232) Info":
+                - cell "1h ago"
+                - cell "Create"
+                - cell "Course E2E1754985529232 E2E Course 1754985529232"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Course created (E2E1754985529232)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "1h ago Create Module E2E-MOD1754985305406 E2E Module 1754985305406 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Module created (E2E-MOD1754985305406) Info":
+                - cell "1h ago"
+                - cell "Create"
+                - cell "Module E2E-MOD1754985305406 E2E Module 1754985305406"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Module created (E2E-MOD1754985305406)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "1h ago Create Course Year E2E1754985305406 Y1 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Year 1 added to course E2E1754985305406 Info":
+                - cell "1h ago"
+                - cell "Create"
+                - cell "Course Year E2E1754985305406 Y1"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Year 1 added to course E2E1754985305406"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "1h ago Create Course E2E1754985305406 E2E Course 1754985305406 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Course created (E2E1754985305406) Info":
+                - cell "1h ago"
+                - cell "Create"
+                - cell "Course E2E1754985305406 E2E Course 1754985305406"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Course created (E2E1754985305406)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "1h ago Create Module E2E-MOD1754985084516 E2E Module 1754985084516 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Module created (E2E-MOD1754985084516) Info":
+                - cell "1h ago"
+                - cell "Create"
+                - cell "Module E2E-MOD1754985084516 E2E Module 1754985084516"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Module created (E2E-MOD1754985084516)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "1h ago Create Course E2E1754985084516 E2E Course 1754985084516 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Course created (E2E1754985084516) Info":
+                - cell "1h ago"
+                - cell "Create"
+                - cell "Course E2E1754985084516 E2E Course 1754985084516"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Course created (E2E1754985084516)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "2h ago Create Module E2E-MOD1 E2E Module 1 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Module created (E2E-MOD1) Info":
+                - cell "2h ago"
+                - cell "Create"
+                - cell "Module E2E-MOD1 E2E Module 1"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Module created (E2E-MOD1)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "2h ago Create Course Year E2E101 Y1 user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Year 1 added to course E2E101 Info":
+                - cell "2h ago"
+                - cell "Create"
+                - cell "Course Year E2E101 Y1"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Year 1 added to course E2E101"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+            - row "2h ago Create Course E2E101 E2E Course user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC Course created (E2E101) Info":
+                - cell "2h ago"
+                - cell "Create"
+                - cell "Course E2E101 E2E Course"
+                - cell "user_30sTLkhOpZmzfjL5W9s6c2AbLzC user_30sTLkhOpZmzfjL5W9s6c2AbLzC"
+                - cell "Course created (E2E101)"
+                - cell "Info"
+                - cell
+                - cell:
+                    - button
+    - text: "Showing 1-25 of 61 logs (more available) Show:"
+    - combobox: "25"
+    - button "First" [disabled]
+    - button "Previous" [disabled]
+    - text: Page 1
+    - button "Next"
+    - button "Last"
+- region "Notifications alt+T"
+- alert
+```

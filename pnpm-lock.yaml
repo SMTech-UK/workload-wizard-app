@@ -138,6 +138,9 @@ importers:
       depcheck:
         specifier: ^1.4.7
         version: 1.4.7
+      dotenv:
+        specifier: ^17.2.1
+        version: 17.2.1
       eslint:
         specifier: ^9
         version: 9.32.0(jiti@2.5.1)
@@ -3574,6 +3577,13 @@ packages:
       {
         integrity: sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==,
       }
+
+  dotenv@17.2.1:
+    resolution:
+      {
+        integrity: sha512-kQhDYKZecqnM0fCnzI5eIv5L4cAe/iRI+HqMbO/hbRdTAeXDG+M9FjipUxNfbARuEg4iHIbhnhs78BCHNbSxEQ==,
+      }
+    engines: { node: ">=12" }
 
   dunder-proto@1.0.1:
     resolution:
@@ -9108,6 +9118,8 @@ snapshots:
     dependencies:
       no-case: 3.0.4
       tslib: 2.4.1
+
+  dotenv@17.2.1: {}
 
   dunder-proto@1.0.1:
     dependencies:

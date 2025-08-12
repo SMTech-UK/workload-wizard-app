@@ -1,0 +1,199 @@
+# Page snapshot
+
+```yaml
+- list:
+    - listitem:
+        - button "WorkloadWizard v0.4.0"
+- combobox: AY-1754990019923 • default
+- text: Navigation
+- list:
+    - listitem:
+        - button "Dashboard"
+    - listitem:
+        - button "Account"
+    - listitem:
+        - button "Modules"
+    - listitem:
+        - button "Admin"
+    - listitem:
+        - button "Dev Tools"
+    - listitem:
+        - button "Organisation"
+- text: Quick Access
+- list:
+    - listitem:
+        - link "User Management":
+            - /url: /admin/users
+        - button "More"
+    - listitem:
+        - link "Organisation Setup":
+            - /url: /admin/organisations
+        - button "More"
+    - listitem:
+        - link "Audit & Compliance":
+            - /url: /admin/audit-logs
+        - button "More"
+    - listitem:
+        - link "Database Tools":
+            - /url: /dev/database
+        - button "More"
+    - listitem:
+        - link "API Testing":
+            - /url: /dev/api
+        - button "More"
+    - listitem:
+        - link "Debug Console":
+            - /url: /dev/debug
+        - button "More"
+    - listitem:
+        - button "More"
+- list:
+    - listitem:
+        - button "Sam McNab Sam McNab sam@sammcnab.co.uk":
+            - img "Sam McNab"
+            - text: Sam McNab sam@sammcnab.co.uk
+- button "Toggle Sidebar"
+- main:
+    - button "Toggle Sidebar"
+    - navigation "breadcrumb":
+        - list:
+            - listitem:
+                - link "Dashboard":
+                    - /url: /dashboard
+            - listitem:
+                - link "Courses" [disabled]
+    - heading "Courses" [level=1]
+    - paragraph: View courses and manage years
+    - text: Create Course Code
+    - textbox "Code"
+    - text: Name
+    - textbox "Name"
+    - text: Campuses (optional)
+    - combobox:
+        - option "Add campus…" [selected]
+    - button "Create" [disabled]
+    - text: All Courses
+    - list:
+        - listitem:
+            - link "TEST — Test Course":
+                - /url: /courses/mn74sm5d4253m3edgxy2rc7ep17na6ya
+            - button
+            - button
+        - listitem:
+            - link "E2E101 — E2E Course":
+                - /url: /courses/mn7enjv9s6kbctzh1rzsf263qh7ng90j
+            - button
+            - button
+        - listitem:
+            - link "E2E1754985084516 — E2E Course 1754985084516":
+                - /url: /courses/mn78vg6njpw7w2m6bbrnpdr2957ngfx8
+            - button
+            - button
+        - listitem:
+            - link "E2E1754985305406 — E2E Course 1754985305406":
+                - /url: /courses/mn79h4jmsm994ssadmn4vy5f357nhfn6
+            - button
+            - button
+        - listitem:
+            - link "E2E1754985529232 — E2E Course 1754985529232":
+                - /url: /courses/mn70bayb81z56emxvmtejw5hd57nh0d8
+            - button
+            - button
+        - listitem:
+            - link "E2E1754987345015 — E2E Course 1754987345015":
+                - /url: /courses/mn75bbjyw387adapbyfjzfxzn17nhznx
+            - button
+            - button
+        - listitem:
+            - link "E2E-C1754987720932 — Course 1754987720932":
+                - /url: /courses/mn740pv5na2c5sj55pkznb825n7ngqzf
+            - button
+            - button
+        - listitem:
+            - link "E2E1754987720925 — E2E Course 1754987720926":
+                - /url: /courses/mn7224xcanyge2zc3s1smjde8n7nh0ew
+            - button
+            - button
+        - listitem:
+            - link "E2E-C1754987895430 — Course 1754987895430":
+                - /url: /courses/mn70g600mrbrbzk6szhsd83hxs7nh9t0
+            - button
+            - button
+        - listitem:
+            - link "E2E1754987895347 — E2E Course 1754987895347":
+                - /url: /courses/mn7dq2yat4m3w32b1ey172pq7s7nhmcq
+            - button
+            - button
+        - listitem:
+            - link "E2E-C1754988511605 — Course 1754988511605":
+                - /url: /courses/mn71p22sv6j2p4d6f45bn4t6mx7ngch8
+            - button
+            - button
+        - listitem:
+            - link "E2E1754988496431 — E2E Course 1754988496431":
+                - /url: /courses/mn72f6baj05rc0wec6wkdeasm97ngyq5
+            - button
+            - button
+        - listitem:
+            - link "PERM-C1754988630664 — Perm Course 1754988630664":
+                - /url: /courses/mn7a8ghkt83wh42hct1yck39k57ngmp9
+            - button
+            - button
+        - listitem:
+            - link "AUD-C1754989052739 — Audit Course 1754989052739":
+                - /url: /courses/mn76bfggt3apgsw5s32jqrr8ds7nhnt5
+            - button
+            - button
+        - listitem:
+            - link "E2E-C1754989084796 — Course 1754989084796":
+                - /url: /courses/mn78rr5cm20jmhsa74f4q26xcx7ngq3d
+            - button
+            - button
+        - listitem:
+            - link "E2E1754989072405 — E2E Course 1754989072405":
+                - /url: /courses/mn71603yrxe7vkb2p42ybney5n7ngxa1
+            - button
+            - button
+        - listitem:
+            - link "PERM-C1754989175574 — Perm Course 1754989175574":
+                - /url: /courses/mn786176atenjg7myzvwc4c6297nhs0z
+            - button
+            - button
+        - listitem:
+            - link "AUD-C1754989576634 — Audit Course 1754989576634":
+                - /url: /courses/mn7f5g753kjb6cq5w7t587te517nheb9
+            - button
+            - button
+        - listitem:
+            - link "E2E-C1754989591041 — Course 1754989591041":
+                - /url: /courses/mn78wd7s8y68xn2mmgw2f11jds7ng181
+            - button
+            - button
+        - listitem:
+            - link "E2E1754989581758 — E2E Course 1754989581758":
+                - /url: /courses/mn7cw2y65jgb6as5hh282f9krs7nh3rg
+            - button
+            - button
+        - listitem:
+            - link "PERM-C1754989713336 — Perm Course 1754989713336":
+                - /url: /courses/mn700s78znb8gsyb2cc6zynqwd7ng8bd
+            - button
+            - button
+        - listitem:
+            - link "AUD-C1754990019924 — Audit Course 1754990019924":
+                - /url: /courses/mn7c351px290kpbbm73hftcvj17ngztt
+            - button
+            - button
+        - listitem:
+            - link "E2E-C1754990047433 — Course 1754990047433":
+                - /url: /courses/mn71gc257r5c7qxbns9gbvn2zh7ngkm1
+            - button
+            - button
+        - listitem:
+            - link "E2E1754990042219 — E2E Course 1754990042219":
+                - /url: /courses/mn701wmqmxh4zt8vzp35y6x2td7nhw87
+            - button
+            - button
+- region "Notifications alt+T"
+- alert
+```
