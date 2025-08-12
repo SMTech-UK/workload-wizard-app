@@ -55,13 +55,18 @@ export async function createUser(data: CreateUserData) {
   }
 
   // If orgadmin, ensure they can only create users in their own organisation
-  if (
-    isOrgAdmin &&
-    currentUserData.publicMetadata?.organisationId !== data.organisationId
-  ) {
-    throw new Error(
-      "Unauthorised: Can only create users in your own organisation",
-    );
+  if (isOrgAdmin) {
+    const actorOrgId = currentUserData.publicMetadata?.organisationId as
+      | string
+      | undefined;
+    if (!actorOrgId) {
+      throw new Error("Unauthorised: User must be assigned to an organisation");
+    }
+    if (data.organisationId && data.organisationId !== actorOrgId) {
+      throw new Error(
+        "Unauthorised: Can only create users in your own organisation",
+      );
+    }
   }
 
   // Ensure user has an organisationId (for orgadmins)
@@ -77,8 +82,17 @@ export async function createUser(data: CreateUserData) {
 
   try {
     // Use provided organisationId or get the first organisation as default
+    // Determine organisation: prefer explicit, else actor's org if orgadmin, else first org
     let organisationId: Id<"organisations"> | undefined =
-      data.organisationId as unknown as Id<"organisations">;
+      (data.organisationId as unknown as Id<"organisations">) || undefined;
+    if (!organisationId) {
+      const actorOrgId = currentUserData.publicMetadata?.organisationId as
+        | string
+        | undefined;
+      if (isOrgAdmin && actorOrgId) {
+        organisationId = actorOrgId as unknown as Id<"organisations">;
+      }
+    }
     if (!organisationId) {
       const organisations = await convex.query(api.organisations.list);
       if ((organisations?.length || 0) === 0) {
@@ -385,7 +399,12 @@ export async function deleteUser(userId: string) {
     }
 
     // Delete from Convex (always required)
-    await convex.mutation(api.users.hardDelete, { userId });
+    // Prefer soft delete to avoid breaking references; fall back to hard delete if not found
+    try {
+      await convex.mutation(api.users.remove, { userId });
+    } catch (e) {
+      await convex.mutation(api.users.hardDelete, { userId });
+    }
 
     // Delete from Clerk only if user exists there
     if (userExistsInClerk) {

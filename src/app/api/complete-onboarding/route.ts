@@ -19,11 +19,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { onboardingData } = body;
 
-    // Update user's onboarding status and profile in Convex
-    await convex.mutation(api.users.completeOnboarding, {
-      subject: user.id,
-      onboardingData: onboardingData,
-    });
+    // Only call Convex if the user exists there; avoid 500s if webhook hasn't created it yet
+    try {
+      const existing = await convex.query(api.users.getBySubject, {
+        subject: user.id,
+      });
+      if (existing) {
+        await convex.mutation(api.users.completeOnboarding, {
+          subject: user.id,
+          onboardingData: onboardingData,
+        });
+      } else {
+        console.warn(
+          "complete-onboarding: Convex user not found; skipping Convex update",
+        );
+      }
+    } catch (convexErr) {
+      console.error("complete-onboarding: Convex call failed", convexErr);
+      // Continue; Clerk will still be updated below
+    }
 
     // Also update Clerk user record for name changes to keep in sync
     const clerk = await clerkClient();
