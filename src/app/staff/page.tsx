@@ -73,6 +73,7 @@ export default function StaffCapacityPage() {
               <Label htmlFor="search">Search</Label>
               <Input
                 id="search"
+                data-testid="staff-search-input"
                 placeholder="Name or email"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -81,7 +82,7 @@ export default function StaffCapacityPage() {
             <div className="w-40 space-y-1">
               <Label>Contract</Label>
               <Select value={contract} onValueChange={setContract}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="contract-select-trigger">
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent>
@@ -157,7 +158,7 @@ export default function StaffCapacityPage() {
           </div>
         )}
         {isAdminLike && Array.isArray(profiles) && profiles.length > 0 && (
-          <ul className="divide-y border rounded-md">
+          <ul className="divide-y border rounded-md" data-testid="staff-list">
             {profiles.map((p) => (
               <StaffRow
                 key={String(p._id)}
@@ -264,7 +265,7 @@ function StaffRow({
         : "bg-red-600";
 
   return (
-    <li className="p-3 text-sm hover:bg-accent/50">
+    <li className="p-3 text-sm hover:bg-accent/50" data-testid="staff-row">
       <a
         href={`/staff/${profile._id}`}
         className="flex items-start justify-between"

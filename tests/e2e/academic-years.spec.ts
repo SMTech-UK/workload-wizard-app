@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test("admin can create and publish academic year", async ({ page }) => {
   const yearName = `AY-${Date.now()}`;

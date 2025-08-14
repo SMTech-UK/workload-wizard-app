@@ -8,7 +8,7 @@ test("golden path sanity", async ({ page }) => {
   if (/sign-in|login/.test(await page.url())) return;
 
   // Click seed and wait a moment for toast
-  const seedBtn = page.getByRole("button", { name: "Seed demo" });
+  const seedBtn = page.getByTestId("seed-demo-btn").first();
   if (await seedBtn.isVisible()) {
     await seedBtn.click();
   }

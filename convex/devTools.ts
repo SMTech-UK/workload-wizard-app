@@ -557,6 +557,75 @@ export const seedDemoData = mutation({
   },
 });
 
+// Dev-only: Create a simple lecturer profile in the DEMO org
+export const createDemoLecturer = mutation({
+  args: {
+    fullName: v.optional(v.string()),
+    email: v.optional(v.string()),
+    contract: v.optional(v.string()), // default 'FT'
+    fte: v.optional(v.float64()), // default 1
+    maxTeachingHours: v.optional(v.float64()), // default 300
+    totalContract: v.optional(v.float64()), // default 1650
+  },
+  handler: async (ctx, args) => {
+    if (!isDevRuntime())
+      throw new Error("createDemoLecturer only allowed in dev");
+
+    const now = Date.now();
+
+    // Ensure DEMO org exists (lightweight upsert)
+    let demoOrg = await ctx.db
+      .query("organisations")
+      .filter((q) => q.eq(q.field("code"), DEMO_ORG_CODE))
+      .first();
+    if (!demoOrg) {
+      const id = await ctx.db.insert("organisations", {
+        name: "OrgA (Demo)",
+        code: DEMO_ORG_CODE,
+        isActive: true,
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      });
+      demoOrg = await ctx.db.get(id);
+    } else if (!demoOrg.isActive || demoOrg.status !== "active") {
+      await ctx.db.patch(demoOrg._id, {
+        isActive: true,
+        status: "active",
+        updatedAt: now,
+      });
+    }
+
+    const fullName = args.fullName ?? `E2E Lecturer ${now}`;
+    const email = args.email ?? `e2e_${now}@example.com`;
+
+    // Idempotent by email within org
+    const existing = await ctx.db
+      .query("lecturer_profiles")
+      .withIndex("by_organisation", (q) =>
+        q.eq("organisationId" as any, demoOrg!._id as any),
+      )
+      .filter((q) => q.eq(q.field("email"), email))
+      .first();
+    if (existing) return { lecturerId: existing._id };
+
+    const lecturerId = await ctx.db.insert("lecturer_profiles", {
+      fullName,
+      email,
+      contract: args.contract ?? "FT",
+      fte: args.fte ?? 1,
+      maxTeachingHours: args.maxTeachingHours ?? 300,
+      totalContract: args.totalContract ?? 1650,
+      organisationId: demoOrg!._id,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { lecturerId };
+  },
+});
+
 export const switchMyRoleInDemoOrg = mutation({
   args: {
     roleName: v.string(), // e.g. 'Admin' | 'Lecturer' | 'Manager'

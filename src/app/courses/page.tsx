@@ -144,11 +144,16 @@ export default function CoursesPage() {
             <CardTitle>Create Course</CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="space-y-3" onSubmit={handleCreateCourse}>
+            <form
+              className="space-y-3"
+              onSubmit={handleCreateCourse}
+              data-testid="create-course-form"
+            >
               <div className="space-y-2">
                 <Label htmlFor="code">Code</Label>
                 <Input
                   id="code"
+                  data-testid="course-code-input"
                   value={form.code}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, code: e.target.value }))
@@ -167,6 +172,7 @@ export default function CoursesPage() {
                 <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
+                  data-testid="course-name-input"
                   value={form.name}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, name: e.target.value }))
@@ -175,7 +181,7 @@ export default function CoursesPage() {
                 />
               </div>
               {/* Campuses chip multi-select */}
-              <div className="space-y-2">
+              <div className="space-y-2" data-testid="campuses-section">
                 <Label>Campuses (optional)</Label>
                 <div className="flex flex-wrap gap-2">
                   {(form.campuses || "")
@@ -203,6 +209,7 @@ export default function CoursesPage() {
                 </div>
                 <div className="flex gap-2">
                   <select
+                    data-testid="campus-selector"
                     className="h-9 rounded-md border px-2 bg-background"
                     value=""
                     onChange={(e) => {
@@ -262,13 +269,18 @@ export default function CoursesPage() {
           <CardContent>
             <div className="space-y-2">
               {Array.isArray(courses) && courses.length ? (
-                <ul className="divide-y">
+                <ul className="divide-y" data-testid="courses-list">
                   {courses.map((c: any) => (
-                    <li key={c._id} className="py-3">
+                    <li
+                      key={c._id}
+                      className="py-3"
+                      data-testid={`course-item-${c.code}`}
+                    >
                       <div className="flex items-center justify-between">
                         <Link
                           href={`/courses/${c._id}`}
                           className="hover:underline flex-1"
+                          data-testid={`course-link-${c.code}`}
                         >
                           <span className="font-medium">{c.code}</span> —{" "}
                           {c.name}
@@ -289,6 +301,7 @@ export default function CoursesPage() {
                             }
                           >
                             <Button
+                              data-testid={`edit-course-${c.code}`}
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditCourse(c)}
@@ -312,6 +325,7 @@ export default function CoursesPage() {
                             }
                           >
                             <Button
+                              data-testid={`delete-course-${c.code}`}
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteCourse(c)}

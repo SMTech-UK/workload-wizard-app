@@ -113,6 +113,7 @@ export default function CourseDetailPage() {
               <Label htmlFor="yearNumber">Add Year</Label>
               <Input
                 id="yearNumber"
+                data-testid="year-number-input"
                 type="number"
                 min={1}
                 max={10}
@@ -167,9 +168,16 @@ export default function CourseDetailPage() {
           </div>
           <div>
             {Array.isArray(years) && years.length ? (
-              <ul className="flex gap-2 flex-wrap">
+              <ul
+                className="flex gap-2 flex-wrap"
+                data-testid="course-years-list"
+              >
                 {years.map((y: any) => (
-                  <li key={y._id} className="basis-full">
+                  <li
+                    key={y._id}
+                    className="basis-full"
+                    data-testid={`course-year-${y.yearNumber}`}
+                  >
                     <div className="mb-2 inline-flex items-center px-3 py-1 rounded-full bg-muted text-sm">
                       Y{y.yearNumber}
                     </div>
@@ -216,7 +224,7 @@ function CourseYearModules({ yearId }: { yearId: string }) {
   }, [attached, allModules]);
 
   return (
-    <div className="border rounded-md p-3">
+    <div className="border rounded-md p-3" data-testid="module-attachment-form">
       <div className="flex items-end gap-2">
         <div className="w-64">
           <Label>Attach Module</Label>
@@ -245,6 +253,7 @@ function CourseYearModules({ yearId }: { yearId: string }) {
           <Label className="block">Core?</Label>
           <button
             type="button"
+            data-testid="core-toggle-btn"
             className={`px-3 py-2 border rounded-md text-sm ${isCore ? "bg-primary text-primary-foreground" : "bg-muted"}`}
             onClick={() => setIsCore((v) => !v)}
           >
@@ -290,9 +299,15 @@ function CourseYearModules({ yearId }: { yearId: string }) {
       </div>
       <div className="mt-3">
         {attached?.length ? (
-          <ul className="flex gap-2 flex-wrap">
+          <ul
+            className="flex gap-2 flex-wrap"
+            data-testid="attached-modules-list"
+          >
             {attached.map((a: any) => (
-              <li key={a.link._id}>
+              <li
+                key={a.link._id}
+                data-testid={`attached-module-${a.module?.code}`}
+              >
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm">
                   <span>
                     {a.module?.code} {a.link.isCore ? "(Core)" : "(Optional)"}
@@ -451,7 +466,10 @@ function ModuleIterationAndGroupsAndAllocations({
     return <span className="text-muted-foreground">Select AY</span>;
 
   return (
-    <div className="inline-flex items-center gap-2">
+    <div
+      className="inline-flex items-center gap-2"
+      data-testid="module-iteration-section"
+    >
       {hasIteration ? (
         <>
           <span className="text-emerald-700">
@@ -496,7 +514,10 @@ function ModuleIterationAndGroupsAndAllocations({
             {isCreatingGroup ? "Creating..." : "+ Add Group"}
           </button>
           {Array.isArray(groups) && groups.length > 0 ? (
-            <span className="text-xs text-muted-foreground">
+            <span
+              className="text-xs text-muted-foreground"
+              data-testid="groups-count"
+            >
               {groups.length} group(s)
             </span>
           ) : null}
@@ -510,7 +531,7 @@ function ModuleIterationAndGroupsAndAllocations({
                   Assign lecturer
                 </button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent data-testid="assign-lecturer-dialog">
                 <DialogHeader>
                   <DialogTitle>Assign Lecturer</DialogTitle>
                 </DialogHeader>
@@ -548,14 +569,14 @@ function ModuleIterationAndGroupsAndAllocations({
                   </div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-4" data-testid="allocation-form">
                   <div>
                     <Label>Group</Label>
                     <Select
                       value={selectedGroupId}
                       onValueChange={setSelectedGroupId}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger data-testid="group-select-trigger">
                         <SelectValue placeholder="Select group" />
                       </SelectTrigger>
                       <SelectContent>
@@ -573,7 +594,7 @@ function ModuleIterationAndGroupsAndAllocations({
                       value={selectedLecturerId}
                       onValueChange={setSelectedLecturerId}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger data-testid="lecturer-select-trigger">
                         <SelectValue placeholder="Select lecturer" />
                       </SelectTrigger>
                       <SelectContent>
@@ -588,6 +609,7 @@ function ModuleIterationAndGroupsAndAllocations({
                   <div>
                     <Label>Hours override (optional)</Label>
                     <Input
+                      data-testid="hours-override-input"
                       type="number"
                       inputMode="decimal"
                       value={hoursOverride}
@@ -705,6 +727,7 @@ function ModuleIterationAndGroupsAndAllocations({
                 </div>
                 <DialogFooter>
                   <Button
+                    data-testid="assign-lecturer-submit-btn"
                     disabled={
                       !selectedGroupId ||
                       !selectedLecturerId ||
@@ -761,7 +784,7 @@ function ModuleIterationAndGroupsAndAllocations({
                     ) : listAllocations.length === 0 ? (
                       <div className="text-sm text-muted-foreground">None</div>
                     ) : (
-                      <Table>
+                      <Table data-testid="allocations-table">
                         <TableHeader>
                           <TableRow>
                             <TableHead>Lecturer</TableHead>
@@ -776,12 +799,15 @@ function ModuleIterationAndGroupsAndAllocations({
                           {listAllocations.map(({ allocation, lecturer }) => {
                             const hours =
                               typeof allocation.hoursOverride === "number"
-                                ? `${allocation.hoursOverride} (override)`
+                                ? `${allocation.hoursOverride} (override)"`
                                 : typeof allocation.hoursComputed === "number"
                                   ? String(allocation.hoursComputed)
                                   : "-";
                             return (
-                              <TableRow key={String(allocation._id)}>
+                              <TableRow
+                                key={String(allocation._id)}
+                                data-testid={`allocation-row-${allocation._id}`}
+                              >
                                 <TableCell className="py-2">
                                   <div className="leading-tight">
                                     <div className="font-medium text-sm">
@@ -803,6 +829,7 @@ function ModuleIterationAndGroupsAndAllocations({
                                 </TableCell>
                                 <TableCell className="py-2 text-right space-x-3">
                                   <button
+                                    data-testid={`change-type-btn-${allocation._id}`}
                                     className="text-xs underline"
                                     onClick={async () => {
                                       const input = prompt(
@@ -843,6 +870,7 @@ function ModuleIterationAndGroupsAndAllocations({
                                     Type
                                   </button>
                                   <button
+                                    data-testid={`edit-hours-btn-${allocation._id}`}
                                     className="text-xs underline"
                                     onClick={async () => {
                                       const input = prompt(
@@ -907,6 +935,7 @@ function ModuleIterationAndGroupsAndAllocations({
                                     Edit
                                   </button>
                                   <button
+                                    data-testid={`remove-allocation-btn-${allocation._id}`}
                                     className="text-xs text-destructive underline"
                                     onClick={async () => {
                                       if (
@@ -951,6 +980,7 @@ function ModuleIterationAndGroupsAndAllocations({
         </>
       ) : (
         <Button
+          data-testid="create-iteration-btn"
           size="sm"
           variant="secondary"
           disabled={isCreating}

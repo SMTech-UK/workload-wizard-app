@@ -49,6 +49,7 @@ export default function DevToolsPage() {
             Reset demo
           </Button>
           <Button
+            data-testid="seed-demo-btn"
             disabled={!!busy}
             onClick={() => run("Seed demo", () => seed({}))}
           >

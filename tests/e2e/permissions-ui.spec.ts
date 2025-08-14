@@ -1,4 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
+
+const ADMIN_ASSURED = process.env.E2E_ASSUME_ADMIN === "true";
+test.skip(
+  !ADMIN_ASSURED,
+  "Skipping permission UI tests without admin assurance (set E2E_ASSUME_ADMIN=true)",
+);
 
 test.describe("UI permission states", () => {
   test("courses create button disabled-with-tooltip for lecturer", async ({

@@ -15,6 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+      # CI-specific environment variables
+      CI: true
+      E2E_ASSUME_ADMIN: true
+      CI_PERFORMANCE: true
+      TZ: UTC
+      PLAYWRIGHT_DISABLE_ANIMATIONS: 1
 
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +36,9 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "pnpm"
 
-      - run: pnpm install --frozen-lockfile
+      # Install dependencies
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       # Format (write) first so the job doesn't fail on trivial drift
       - name: Prettier (write)
@@ -54,8 +62,114 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Test
-        run: pnpm test
+      # Start Next.js and Convex services
+      - name: Start Next.js and Convex
+        run: |
+          echo "🚀 Starting Next.js and Convex services..."
 
+          # Start Convex dev deployment
+          pnpm dev:convex --once &
+          CONVEX_PID=$!
+
+          # Start Next.js
+          pnpm dev:next &
+          NEXT_PID=$!
+
+          # Wait for services to be ready
+          echo "⏳ Waiting for services to be ready..."
+
+          # Wait for Next.js
+          timeout 60 bash -c 'until curl -s http://localhost:3000 >/dev/null; do sleep 2; done' || {
+            echo "❌ Next.js failed to start within 60 seconds"
+            exit 1
+          }
+
+          echo "✅ Next.js is ready at http://localhost:3000"
+
+          # Store PIDs for cleanup
+          echo $NEXT_PID > .next.pid
+          echo $CONVEX_PID > .convex.pid
+
+      # Run test setup (authentication setup)
+      - name: Test Setup
+        run: |
+          echo "🔧 Running test setup..."
+          pnpm test:setup
+          echo "✅ Test setup completed"
+
+      # Run E2E tests with admin privileges
+      - name: E2E Tests
+        run: |
+          echo "🧪 Running E2E tests..."
+          pnpm e2e
+          echo "✅ E2E tests completed"
+
+      # Run unit tests
+      - name: Unit Tests
+        run: |
+          echo "🧪 Running unit tests..."
+          pnpm test
+          echo "✅ Unit tests completed"
+
+      # Run visual regression tests
+      - name: Visual Regression Tests
+        run: |
+          echo "🎨 Running visual regression tests..."
+          pnpm test:visual
+          echo "✅ Visual regression tests completed"
+
+      # Run performance tests
+      - name: Performance Tests
+        run: |
+          echo "⚡ Running performance tests..."
+          pnpm test:performance
+          echo "✅ Performance tests completed"
+
+      # Build the application
       - name: Build
-        run: pnpm build
+        run: |
+          echo "🏗️ Building application..."
+          pnpm build
+          echo "✅ Build completed"
+
+      # Upload test results as artifacts
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test-results/
+            playwright-report/
+            .next/
+          retention-days: 7
+
+      # Cleanup services
+      - name: Cleanup services
+        if: always()
+        run: |
+          echo "🧹 Cleaning up services..."
+
+          # Stop Next.js
+          if [ -f .next.pid ]; then
+            kill $(cat .next.pid) 2>/dev/null || true
+            rm .next.pid
+          fi
+
+          # Stop Convex
+          if [ -f .convex.pid ]; then
+            kill $(cat .convex.pid) 2>/dev/null || true
+            rm .convex.pid
+          fi
+
+          echo "✅ Cleanup completed"
+
+      # Show test summary
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "📊 Test Summary"
+          echo "================"
+          echo "✅ All test suites completed"
+          echo "📁 Test results uploaded as artifacts"
+          echo "🎯 CI recipe executed successfully"

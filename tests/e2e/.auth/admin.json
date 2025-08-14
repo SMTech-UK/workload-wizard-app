@@ -2,17 +2,17 @@
   "cookies": [
     {
       "name": "__cf_bm",
-      "value": "5woqT_huX3Qze5lXP04c9jBWUjcI.bC7RlyNgXTgRf8-1754990012-1.0.1.1-D2rAhZB4nfWcwVOqZ1gsIXJQxaYZaUB.fKhHi7nw4BRCwKwHr4Heje_McUdoK2mWSiB.TO5AJs.0Q8qQ5eLrrwTI0x9n8fSSx_Nzqm8w3NE",
+      "value": "tgWcQZENIdCdUoGRnQMgJDLzyFj4dp_mRrAhODpCNmo-1755193510-1.0.1.1-83VcthyGwk_icuye7z.UBI73yAeyd9XN3I1lvv9uozemPDgCB3nWlk3ITObRe7mTCMZz84_mf6giNHop71lZRJoN6MtFcq0PIWa6SCL.ZfA",
       "domain": ".trusting-eel-17.clerk.accounts.dev",
       "path": "/",
-      "expires": 1754991812.629259,
+      "expires": 1755195310.66427,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "_cfuvid",
-      "value": "Z.roIpZnb9kg1dcLLNsP.ZwePaowFjKE42ee7dHejKY-1754990012636-0.0.1.1-604800000",
+      "value": "ePUYDo3fIthhYy9aYtRdP.Eitea8UQwYCGL9eN2vk0U-1755193510696-0.0.1.1-604800000",
       "domain": ".trusting-eel-17.clerk.accounts.dev",
       "path": "/",
       "expires": -1,
@@ -22,63 +22,83 @@
     },
     {
       "name": "__clerk_db_jwt",
-      "value": "dvb_31BGNbuobW0o9bpSQ6oZcfe3Dab",
+      "value": "dvb_31HuqZhmQvQHmKkK2GJBRFqZcL9",
       "domain": "localhost",
       "path": "/",
-      "expires": 1786526016,
+      "expires": 1786729513,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "__clerk_db_jwt_ng4P0HRF",
-      "value": "dvb_31BGNbuobW0o9bpSQ6oZcfe3Dab",
+      "value": "dvb_31HuqZhmQvQHmKkK2GJBRFqZcL9",
       "domain": "localhost",
       "path": "/",
-      "expires": 1786526016,
+      "expires": 1786729513,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "__session",
-      "value": "eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18zMHNTc0hrUElCWkNldUVTOUh5OHk3Sm81cngiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJleHAiOjE3NTQ5OTAwNzYsImZ2YSI6WzAsLTFdLCJpYXQiOjE3NTQ5OTAwMTYsImlzcyI6Imh0dHBzOi8vdHJ1c3RpbmctZWVsLTE3LmNsZXJrLmFjY291bnRzLmRldiIsIm5iZiI6MTc1NDk5MDAwNiwic2lkIjoic2Vzc18zMUJHTnkyaUFBanBSZXRnVnU5eUx3UndOd0wiLCJzdWIiOiJ1c2VyXzMwc1RMa2hPcFptemZqTDVXOXM2YzJBYkx6QyIsInYiOjJ9.W0k5zGftXXTKDffd8mcJSOy2cNBAAGEJ5EIpltmhKROq2S88rE1pRFShn1zKNy7BRXSRrcTyahB3p9ngzm0PWqHfIklyU93BRakUkYDDeI26LR0Xnnw6IeJ0XRyPotjXWma1PmjjirwDTCEJW6KXN7x4sBXAHuA4mmHc0HoeYhsRsVLUSUKOdgeOmOFXBAE4xncvJc8Bu9ElFn1iP_7I5dAAKulWK_R6pB0z5tzYmw1wHT7jzkvg0H87DQxjjw0WiL6gBFG-jw4xf5KauqqXudpA5OeX-k0Dzg2VZ8J_nt0ydsWZU8Z-3pmyHmsJWPJIr3Qzq9jnC5TreOxGqcyNhg",
+      "value": "eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18zMHNTc0hrUElCWkNldUVTOUh5OHk3Sm81cngiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJleHAiOjE3NTUxOTM1NzIsImZ2YSI6WzAsLTFdLCJpYXQiOjE3NTUxOTM1MTIsImlzcyI6Imh0dHBzOi8vdHJ1c3RpbmctZWVsLTE3LmNsZXJrLmFjY291bnRzLmRldiIsIm5iZiI6MTc1NTE5MzUwMiwic2lkIjoic2Vzc18zMUh1cXM5ZDVDMHV5ZmdLM2FFb3NsU0dwcDEiLCJzdWIiOiJ1c2VyXzMwc1RMa2hPcFptemZqTDVXOXM2YzJBYkx6QyIsInYiOjJ9.SOqELZulcsNXaa0DBXoo-E9et7VxZ6SwZr6m4GJVmn-EjAIVJnVw9bqOAB-YnkRTXzdpb-KS_j1yQy99OQUSy1TuhmDsYMhLp0x3WT9VHCnWKMjYWdrij1waKjmdnyv53u-Hv6Bziwh5pe6cAyqAuVlM09PeakERzRI1kO-dI5Sr2nKiyzpNZpEUhxYtXGN_Rb9OMY4HJqny6habWS7sfbdeS1eRbI_RjVGLdJz3HkpyLKnuyebochnwBiGA9IxnPE2HLXM_7HEmqOtJXbPRHFapn182WeMb9o8SMjgTVcFeOu8ba1ASkKsr7hL0Ht_A_r75H1JvWXYP093l3ZaSnA",
       "domain": "localhost",
       "path": "/",
-      "expires": 1786526016,
+      "expires": 1786729512,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "__session_ng4P0HRF",
-      "value": "eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18zMHNTc0hrUElCWkNldUVTOUh5OHk3Sm81cngiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJleHAiOjE3NTQ5OTAwNzYsImZ2YSI6WzAsLTFdLCJpYXQiOjE3NTQ5OTAwMTYsImlzcyI6Imh0dHBzOi8vdHJ1c3RpbmctZWVsLTE3LmNsZXJrLmFjY291bnRzLmRldiIsIm5iZiI6MTc1NDk5MDAwNiwic2lkIjoic2Vzc18zMUJHTnkyaUFBanBSZXRnVnU5eUx3UndOd0wiLCJzdWIiOiJ1c2VyXzMwc1RMa2hPcFptemZqTDVXOXM2YzJBYkx6QyIsInYiOjJ9.W0k5zGftXXTKDffd8mcJSOy2cNBAAGEJ5EIpltmhKROq2S88rE1pRFShn1zKNy7BRXSRrcTyahB3p9ngzm0PWqHfIklyU93BRakUkYDDeI26LR0Xnnw6IeJ0XRyPotjXWma1PmjjirwDTCEJW6KXN7x4sBXAHuA4mmHc0HoeYhsRsVLUSUKOdgeOmOFXBAE4xncvJc8Bu9ElFn1iP_7I5dAAKulWK_R6pB0z5tzYmw1wHT7jzkvg0H87DQxjjw0WiL6gBFG-jw4xf5KauqqXudpA5OeX-k0Dzg2VZ8J_nt0ydsWZU8Z-3pmyHmsJWPJIr3Qzq9jnC5TreOxGqcyNhg",
+      "value": "eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18zMHNTc0hrUElCWkNldUVTOUh5OHk3Sm81cngiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJleHAiOjE3NTUxOTM1NzIsImZ2YSI6WzAsLTFdLCJpYXQiOjE3NTUxOTM1MTIsImlzcyI6Imh0dHBzOi8vdHJ1c3RpbmctZWVsLTE3LmNsZXJrLmFjY291bnRzLmRldiIsIm5iZiI6MTc1NTE5MzUwMiwic2lkIjoic2Vzc18zMUh1cXM5ZDVDMHV5ZmdLM2FFb3NsU0dwcDEiLCJzdWIiOiJ1c2VyXzMwc1RMa2hPcFptemZqTDVXOXM2YzJBYkx6QyIsInYiOjJ9.SOqELZulcsNXaa0DBXoo-E9et7VxZ6SwZr6m4GJVmn-EjAIVJnVw9bqOAB-YnkRTXzdpb-KS_j1yQy99OQUSy1TuhmDsYMhLp0x3WT9VHCnWKMjYWdrij1waKjmdnyv53u-Hv6Bziwh5pe6cAyqAuVlM09PeakERzRI1kO-dI5Sr2nKiyzpNZpEUhxYtXGN_Rb9OMY4HJqny6habWS7sfbdeS1eRbI_RjVGLdJz3HkpyLKnuyebochnwBiGA9IxnPE2HLXM_7HEmqOtJXbPRHFapn182WeMb9o8SMjgTVcFeOu8ba1ASkKsr7hL0Ht_A_r75H1JvWXYP093l3ZaSnA",
       "domain": "localhost",
       "path": "/",
-      "expires": 1786526016,
+      "expires": 1786729512,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "__client_uat_ng4P0HRF",
-      "value": "1754990015",
+      "value": "1755193512",
       "domain": "localhost",
       "path": "/",
-      "expires": 1786526016,
+      "expires": 1786729512,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Strict"
     },
     {
       "name": "__client_uat",
-      "value": "1754990015",
+      "value": "1755193512",
       "domain": "localhost",
       "path": "/",
-      "expires": 1786526016,
+      "expires": 1786729512,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Strict"
+    },
+    {
+      "name": "__cf_bm",
+      "value": "ePgJhiublkm._CTghgLspikiYhGBbF3.ZEJKNvlDI58-1755193513-1.0.1.1-m_T.DP6SJn1kn6s0_e8n.Xz5Es3jASidayMltBWzRCJI0IF_D5N7FJo0nD8p6TpfV4BKhoCHbLFVgCyuSvEdUfc0c5LuC1mkQzTXmHX7lFM",
+      "domain": ".img.clerk.com",
+      "path": "/",
+      "expires": 1755195313.388183,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "sidebar_state",
+      "value": "true",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1755798313.522681,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
     }
   ],
   "origins": [
@@ -87,7 +107,15 @@
       "localStorage": [
         {
           "name": "__clerk_environment",
-          "value": "{\"value\":{\"object\":\"environment\",\"auth_config\":{\"claimed_at\":null,\"id\":\"\",\"object\":\"auth_config\",\"reverification\":true,\"single_session_mode\":true},\"display_config\":{\"object\":\"display_config\",\"after_create_organization_url\":\"http://localhost:3000\",\"after_join_waitlist_url\":\"http://localhost:3000\",\"after_leave_organization_url\":\"http://localhost:3000\",\"after_sign_in_url\":\"http://localhost:3000\",\"after_sign_out_all_url\":\"https://trusting-eel-17.accounts.dev/sign-in\",\"after_sign_out_one_url\":\"https://trusting-eel-17.accounts.dev/sign-in/choose\",\"after_sign_up_url\":\"http://localhost:3000\",\"after_switch_session_url\":\"http://localhost:3000\",\"application_name\":\"WorkloadWizard\",\"branded\":true,\"captcha_heartbeat\":false,\"captcha_oauth_bypass\":[],\"captcha_provider\":\"turnstile\",\"captcha_public_key_invisible\":\"0x4AAAAAAAFV93qQdS0ycilX\",\"captcha_public_key\":\"0x4AAAAAAAWXJGBD7bONzLBd\",\"captcha_widget_type\":\"smart\",\"clerk_js_version\":\"5\",\"create_organization_url\":\"https://trusting-eel-17.accounts.dev/create-organization\",\"favicon_image_url\":\"https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvdXBsb2FkZWQvaW1nXzMwdVRwZHVVUG9aQ3NXRUFIbnF3U28xNjlVcSJ9\",\"home_url\":\"http://localhost:3000\",\"id\":\"display_config_30sSsHpSKX00uvMM9K3mHFippg2\",\"instance_environment_type\":\"development\",\"logo_image_url\":\"https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvdXBsb2FkZWQvaW1nXzMwdVRvNXQ2cmRYc0t3UUl6cnhmTmNSVkJhbiJ9\",\"organization_profile_url\":\"https://trusting-eel-17.accounts.dev/organization\",\"preferred_sign_in_strategy\":\"password\",\"privacy_policy_url\":\"\",\"show_devmode_warning\":true,\"sign_in_url\":\"https://trusting-eel-17.accounts.dev/sign-in\",\"sign_up_url\":\"https://trusting-eel-17.accounts.dev/sign-up\",\"support_email\":\"support@workload-wiz.xyz\",\"terms_url\":\"\",\"theme\":{\"buttons\":{\"font_color\":\"#ffffff\",\"font_family\":\"\\\"Source Sans Pro\\\", sans-serif\",\"font_weight\":\"600\"},\"general\":{\"color\":\"#6c47ff\",\"padding\":\"1em\",\"box_shadow\":\"0 2px 8px rgba(0, 0, 0, 0.2)\",\"font_color\":\"#151515\",\"font_family\":\"\\\"Source Sans Pro\\\", sans-serif\",\"border_radius\":\"0.5em\",\"background_color\":\"#ffffff\",\"label_font_weight\":\"600\"},\"accounts\":{\"background_color\":\"#ffffff\"}},\"user_profile_url\":\"https://trusting-eel-17.accounts.dev/user\",\"waitlist_url\":\"https://trusting-eel-17.accounts.dev/waitlist\"},\"id\":\"\",\"maintenance_mode\":false,\"organization_settings\":{\"actions\":{\"admin_delete\":true},\"domains\":{\"enabled\":false,\"enrollment_modes\":[],\"default_role\":\"\"},\"enabled\":false,\"max_allowed_memberships\":5},\"user_settings\":{\"actions\":{\"delete_self\":true,\"create_organization\":true,\"create_organizations_limit\":null},\"attributes\":{\"email_address\":{\"enabled\":true,\"required\":true,\"used_for_first_factor\":true,\"first_factors\":[\"email_code\"],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[\"email_code\"],\"verify_at_sign_up\":true,\"name\":\"email_address\"},\"phone_number\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"phone_number\"},\"username\":{\"enabled\":true,\"required\":true,\"used_for_first_factor\":true,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"username\"},\"web3_wallet\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"web3_wallet\"},\"first_name\":{\"enabled\":true,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"first_name\"},\"last_name\":{\"enabled\":true,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"last_name\"},\"password\":{\"enabled\":true,\"required\":true,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"password\"},\"authenticator_app\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"authenticator_app\"},\"ticket\":{\"enabled\":true,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"ticket\"},\"backup_code\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"backup_code\"},\"passkey\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"passkey\"}},\"passkey_settings\":{\"allow_autofill\":true,\"show_sign_in_button\":true},\"password_settings\":{\"disable_hibp\":false,\"min_length\":8,\"max_length\":72,\"require_special_char\":false,\"require_numbers\":false,\"require_uppercase\":false,\"require_lowercase\":false,\"show_zxcvbn\":false,\"min_zxcvbn_strength\":2,\"enforce_hibp_on_sign_in\":true,\"allowed_special_characters\":\"!\\\"#$%&'()*+,-./:;<=>?@[]^_`{|}~\"},\"saml\":{\"enabled\":false},\"sign_in\":{\"second_factor\":{\"required\":false}},\"sign_up\":{\"captcha_enabled\":true,\"captcha_widget_type\":\"smart\",\"custom_action_required\":false,\"progressive\":true,\"mode\":\"public\",\"legal_consent_enabled\":false},\"social\":{}},\"commerce_settings\":{\"billing\":{\"stripe_publishable_key\":\"\",\"enabled\":false,\"has_paid_user_plans\":false,\"has_paid_org_plans\":false,\"organization\":{\"enabled\":false,\"has_paid_plans\":false},\"user\":{\"enabled\":false,\"has_paid_plans\":false}}},\"api_keys_settings\":{\"enabled\":false}},\"exp\":1755076415039}"
+          "value": "{\"value\":{\"object\":\"environment\",\"auth_config\":{\"claimed_at\":null,\"id\":\"\",\"object\":\"auth_config\",\"reverification\":true,\"single_session_mode\":true},\"display_config\":{\"object\":\"display_config\",\"after_create_organization_url\":\"http://localhost:3000\",\"after_join_waitlist_url\":\"http://localhost:3000\",\"after_leave_organization_url\":\"http://localhost:3000\",\"after_sign_in_url\":\"http://localhost:3000\",\"after_sign_out_all_url\":\"https://trusting-eel-17.accounts.dev/sign-in\",\"after_sign_out_one_url\":\"https://trusting-eel-17.accounts.dev/sign-in/choose\",\"after_sign_up_url\":\"http://localhost:3000\",\"after_switch_session_url\":\"http://localhost:3000\",\"application_name\":\"WorkloadWizard\",\"branded\":true,\"captcha_heartbeat\":false,\"captcha_oauth_bypass\":[],\"captcha_provider\":\"turnstile\",\"captcha_public_key_invisible\":\"0x4AAAAAAAFV93qQdS0ycilX\",\"captcha_public_key\":\"0x4AAAAAAAWXJGBD7bONzLBd\",\"captcha_widget_type\":\"smart\",\"clerk_js_version\":\"5\",\"create_organization_url\":\"https://trusting-eel-17.accounts.dev/create-organization\",\"favicon_image_url\":\"https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvdXBsb2FkZWQvaW1nXzMwdVRwZHVVUG9aQ3NXRUFIbnF3U28xNjlVcSJ9\",\"home_url\":\"http://localhost:3000\",\"id\":\"display_config_30sSsHpSKX00uvMM9K3mHFippg2\",\"instance_environment_type\":\"development\",\"logo_image_url\":\"https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvdXBsb2FkZWQvaW1nXzMwdVRvNXQ2cmRYc0t3UUl6cnhmTmNSVkJhbiJ9\",\"organization_profile_url\":\"https://trusting-eel-17.accounts.dev/organization\",\"preferred_sign_in_strategy\":\"password\",\"privacy_policy_url\":\"\",\"show_devmode_warning\":true,\"sign_in_url\":\"https://trusting-eel-17.accounts.dev/sign-in\",\"sign_up_url\":\"https://trusting-eel-17.accounts.dev/sign-up\",\"support_email\":\"support@workload-wiz.xyz\",\"terms_url\":\"\",\"theme\":{\"buttons\":{\"font_color\":\"#ffffff\",\"font_family\":\"\\\"Source Sans Pro\\\", sans-serif\",\"font_weight\":\"600\"},\"general\":{\"color\":\"#6c47ff\",\"padding\":\"1em\",\"box_shadow\":\"0 2px 8px rgba(0, 0, 0, 0.2)\",\"font_color\":\"#151515\",\"font_family\":\"\\\"Source Sans Pro\\\", sans-serif\",\"border_radius\":\"0.5em\",\"background_color\":\"#ffffff\",\"label_font_weight\":\"600\"},\"accounts\":{\"background_color\":\"#ffffff\"}},\"user_profile_url\":\"https://trusting-eel-17.accounts.dev/user\",\"waitlist_url\":\"https://trusting-eel-17.accounts.dev/waitlist\"},\"id\":\"\",\"maintenance_mode\":false,\"organization_settings\":{\"actions\":{\"admin_delete\":true},\"domains\":{\"enabled\":false,\"enrollment_modes\":[],\"default_role\":\"\"},\"enabled\":false,\"max_allowed_memberships\":5},\"user_settings\":{\"actions\":{\"delete_self\":true,\"create_organization\":true,\"create_organizations_limit\":null},\"attributes\":{\"email_address\":{\"enabled\":true,\"required\":true,\"used_for_first_factor\":true,\"first_factors\":[\"email_code\"],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[\"email_code\"],\"verify_at_sign_up\":true,\"name\":\"email_address\"},\"phone_number\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"phone_number\"},\"username\":{\"enabled\":true,\"required\":true,\"used_for_first_factor\":true,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"username\"},\"web3_wallet\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"web3_wallet\"},\"first_name\":{\"enabled\":true,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"first_name\"},\"last_name\":{\"enabled\":true,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"last_name\"},\"password\":{\"enabled\":true,\"required\":true,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"password\"},\"authenticator_app\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"authenticator_app\"},\"ticket\":{\"enabled\":true,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"ticket\"},\"backup_code\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"backup_code\"},\"passkey\":{\"enabled\":false,\"required\":false,\"used_for_first_factor\":false,\"first_factors\":[],\"used_for_second_factor\":false,\"second_factors\":[],\"verifications\":[],\"verify_at_sign_up\":false,\"name\":\"passkey\"}},\"passkey_settings\":{\"allow_autofill\":true,\"show_sign_in_button\":true},\"password_settings\":{\"disable_hibp\":false,\"min_length\":8,\"max_length\":72,\"require_special_char\":false,\"require_numbers\":false,\"require_uppercase\":false,\"require_lowercase\":false,\"show_zxcvbn\":false,\"min_zxcvbn_strength\":2,\"enforce_hibp_on_sign_in\":true,\"allowed_special_characters\":\"!\\\"#$%&'()*+,-./:;<=>?@[]^_`{|}~\"},\"saml\":{\"enabled\":false},\"sign_in\":{\"second_factor\":{\"required\":false}},\"sign_up\":{\"captcha_enabled\":true,\"captcha_widget_type\":\"smart\",\"custom_action_required\":false,\"progressive\":true,\"mode\":\"public\",\"legal_consent_enabled\":false},\"social\":{}},\"commerce_settings\":{\"billing\":{\"stripe_publishable_key\":\"\",\"enabled\":false,\"has_paid_user_plans\":false,\"has_paid_org_plans\":false,\"organization\":{\"enabled\":false,\"has_paid_plans\":false},\"user\":{\"enabled\":false,\"has_paid_plans\":false}}},\"api_keys_settings\":{\"enabled\":false}},\"exp\":1755279911286}"
+        },
+        {
+          "name": "sidebar-ui-state",
+          "value": "expanded"
+        },
+        {
+          "name": "sidebar-nav-state",
+          "value": "[\"Dashboard\"]"
         }
       ]
     }

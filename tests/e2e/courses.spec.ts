@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test("courses create and list", async ({ page }) => {
   const code = `E2E-C${Date.now()}`;

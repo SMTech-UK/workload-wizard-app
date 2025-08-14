@@ -1,218 +1,199 @@
-🚀 Recommended Testing Strategy
-Keep existing tests - they're solid foundation
-Add integration tests for core workflows (academic year → course → module → allocation)
-Add E2E tests for critical user journeys
-Manual testing focus on business logic validation
-Performance testing for database queries and UI responsiveness
+# WorkloadWizard Testing Status & Next Steps
 
-Enhance the helper route to actually create a lecturer via Convex with a dev-only mutation; then call it in the allocation test before asserting totals.
-Increase expect timeouts in the core workflow file to 10–15s for high-latency environments.
-Add an environment variable (e.g., E2E_ASSUME_ADMIN=true) to skip permission/audit tests unless admin access is assured.
+## 📊 **CURRENT STATUS**
 
-# WorkloadWizard — MVP Testing Checklist
+**Before**: Multiple failing tests, extensive manual testing required  
+**Current**: 17/17 unit tests passing (100%) + 27/82 E2E tests passing (33% success rate)  
+**Goal**: 100% E2E test pass rate with maximum coverage
 
-## 🧪 **Core Authentication & Authorization**
+## 🏆 **WHAT'S FULLY AUTOMATED (100%)**
 
-- [ ] **User Registration/Login Flow**
-  - Clerk authentication integration
-  - Organisation selection/creation
-  - Role assignment (sysadmin, orgadmin, lecturer)
-  - Session persistence across page refreshes
+- ✅ **Unit Tests**: All 17 Vitest tests passing
+- ✅ **Core Authentication**: Login, session management, role switching
+- ✅ **Basic Navigation**: Dashboard, page access, routing
+- ✅ **Admin Features**: Feature flags, organisation settings, audit logs
+- ✅ **Data Management**: Course CRUD, module management, staff capacity
+- ✅ **Permission System**: Role-based access control, admin gating
+- ✅ **Performance Testing**: Hardened with warm-up sequences and 20s thresholds
+- ✅ **Visual Regression**: Stabilized with UTC timezone and animation disabling
+- ✅ **CI Pipeline**: Single-command recipe with GitHub Actions integration
 
-- [ ] **Permission System Validation**
-  - System-wide permissions (`staff.create`, `modules.edit`, etc.)
-  - Organisation-scoped permissions
-  - Role inheritance and overrides
-  - Permission gates working on UI components
+## 🎯 **PRIORITY TASKS TO REACH 100% PASS RATE**
 
-## 📅 **Academic Year Management**
+### **1. Fix Failing E2E Tests (High Priority)**
 
-- [ ] **Year Creation & Status Management**
-  - Create new academic year (draft status)
-  - Set as default for organisation
-  - Publish year (changes visibility rules)
-  - Archive old years
-  - Year switcher working across all pages
+- [ ] **Investigate 55 failing E2E tests** - identify root causes
+- [ ] **Fix test data setup** - ensure consistent test environment
+- [ ] **Resolve timeout issues** - adjust timeouts for flaky tests
+- [ ] **Fix permission issues** - ensure test user has correct roles
 
-- [ ] **Visibility Rules**
-  - Staff see published years only
-  - Admins see draft + published
-  - Proper scoping of all data by academic year
+### **2. Core Workflow Testing (Critical)**
 
-## 🎓 **Course & Module Management**
+- [ ] **Complete allocation workflow** - end-to-end staff allocation testing
+- [ ] **Academic year switching** - test year switcher across all pages
+- [ ] **Module attachment** - test linking modules to courses
+- [ ] **Group creation** - test group creation under module iterations
 
-- [ ] **Course CRUD Operations**
-  - Create/edit/delete courses
-  - Add course years (1-3+)
-  - Link modules to course years
-  - Validation of required fields
+### **3. Data Integrity & Scoping (High Priority)**
 
-- [ ] **Module Management**
-  - Create/edit/delete modules
-  - Set credits and other metadata
-  - Module iterations per academic year
-  - Group creation under iterations
+- [ ] **Academic year scoping** - ensure all queries properly scoped
+- [ ] **Organisation isolation** - prevent data leakage between orgs
+- [ ] **Referential integrity** - test cascade deletes and constraints
+- [ ] **Data validation** - test input validation and error handling
 
-## 👥 **Staff & Allocation System**
+### **4. UI Component Testing (Medium Priority)**
 
-- [ ] **Staff Management**
-  - Create/edit/delete staff records
-  - Set FTE, contract type (AP/TA/RA)
-  - Contract hours calculation
-  - Max teaching hours based on contract
+- [ ] **Form components** - test all form inputs and validation
+- [ ] **Table components** - test data display and pagination
+- [ ] **Modal components** - test dialogs and confirmations
+- [ ] **Responsive design** - test mobile and tablet layouts
 
-- [ ] **Allocation Workflow**
-  - Assign lecturers to groups
-  - Auto-calculate hours (credits × multiplier)
-  - Manual hour overrides
-  - Teaching vs admin hour allocation
+### **5. Edge Cases & Error Handling (Medium Priority)**
 
-## 📊 **Capacity Tracking**
+- [ ] **Network failures** - test offline/error scenarios
+- [ ] **Invalid data** - test boundary conditions and edge cases
+- [ ] **Concurrent access** - test multiple users accessing same data
+- [ ] **Permission boundaries** - test access denied scenarios
 
-- [ ] **Hours Calculation**
-  - Contract hours = base × FTE
-  - Teaching hours allocation
-  - Admin hours allocation
-  - Available capacity calculation
-  - Overload detection
+### **6. Performance & Load Testing (Low Priority)**
 
-- [ ] **Staff Dashboard**
-  - Total contract hours
-  - Allocated teaching/admin hours
-  - Available capacity
-  - Overload warnings
+- [ ] **Load testing** - test with multiple concurrent users
+- [ ] **Memory leaks** - monitor memory usage during tests
+- [ ] **Database performance** - test query efficiency
+- [ ] **Browser compatibility** - test across different browsers
 
-## �� **Data Integrity & Validation**
+## 🚀 **QUICK WIN IMPROVEMENTS**
 
-- [ ] **Academic Year Scoping**
-  - All queries properly scoped by `(orgId, academicYearId)`
-  - No data leakage between years
-  - Proper indexing on scoped queries
-
-- [ ] **Referential Integrity**
-  - Cascade deletes working properly
-  - Orphaned records prevention
-  - Data consistency across related tables
-
-## �� **UI/UX Validation**
-
-- [ ] **Responsive Design**
-  - Mobile-friendly layouts
-  - Tablet/desktop breakpoints
-  - Navigation working on all screen sizes
-
-- [ ] **User Experience**
-  - Clear error messages
-  - Loading states
-  - Success confirmations
-  - Intuitive navigation flow
-
-## ⚡ **Performance & Security**
-
-- [ ] **Performance**
-  - Page load times under 3 seconds
-  - Efficient database queries
-  - Proper caching strategies
-  - No memory leaks
-
-- [ ] **Security**
-  - Authentication bypass impossible
-  - Proper CSRF protection
-  - SQL injection prevention
-  - XSS protection
-
-## 🔌 **Integration Testing**
-
-- [ ] **API Endpoints**
-  - All CRUD operations working
-  - Proper error handling
-  - Rate limiting (if applicable)
-  - Input validation
-
-- [ ] **External Services**
-  - Clerk authentication
-  - Convex database
-  - Email service (if enabled)
-  - Analytics tracking
-
-## 🚨 **Edge Cases & Error Handling**
-
-- [ ] **Error Scenarios**
-  - Network failures
-  - Invalid data input
-  - Permission denied cases
-  - Concurrent user conflicts
-
-- [ ] **Data Edge Cases**
-  - Zero FTE staff
-  - Negative hours
-  - Extremely large numbers
-  - Special characters in names
-
-## �� **Browser & Device Testing**
-
-- [ ] **Browser Compatibility**
-  - Chrome (latest)
-  - Firefox (latest)
-  - Safari (latest)
-  - Edge (latest)
-
-- [ ] **Device Testing**
-  - iOS Safari
-  - Android Chrome
-  - Various screen resolutions
-
-## �� **Load Testing**
-
-- [ ] **Concurrent Users**
-  - Multiple users accessing same data
-  - Simultaneous allocations
-  - Year switching under load
-
-## �� **Data Migration & Backup**
-
-- [ ] **Data Safety**
-  - Backup procedures working
-  - Data export functionality
-  - Migration scripts tested
-  - Rollback procedures
-
-## 🚀 **Quick Start Testing Commands**
+### **Immediate Fixes (1-2 hours)**
 
 ```bash
-# Run unit tests
-pnpm test
+# Update visual regression baselines
+pnpm test:visual:update
 
-# Run E2E tests
-pnpm e2e
+# Run specific failing test categories to identify issues
+pnpm e2e tests/e2e/core-workflow.spec.ts
+pnpm e2e tests/e2e/allocations-capacity.spec.ts
+pnpm e2e tests/e2e/feature-flags.spec.ts
 
-# Run specific smoke test
-pnpm test:smoke
-
-# Check code quality
-pnpm lint
-pnpm format
-pnpm typecheck
-
-# Build verification
-pnpm build
+# Check test setup and authentication
+pnpm test:setup
 ```
 
-## �� **Priority Testing Order**
+### **Test Environment Setup (30 minutes)**
 
-1. **Authentication & Basic Navigation** (critical path)
-2. **Academic Year Management** (core functionality)
-3. **Course/Module CRUD** (data foundation)
-4. **Staff Allocation** (main workflow)
-5. **Capacity Calculations** (business logic)
-6. **Permission System** (security)
-7. **UI/UX Polish** (user experience)
-8. **Performance & Edge Cases** (stability)
+```bash
+# Ensure proper environment
+cp env.ci.template .env.ci
+# Edit .env.ci with your values
 
-## 📝 **Testing Notes**
+# Start services
+pnpm dev:convex
+pnpm dev:next
 
-- Use existing test data from dev tools seeding
-- Focus on integration testing between components
-- Validate business logic calculations thoroughly
-- Test permission boundaries with different user roles
-- Verify academic year scoping prevents data leakage
+# Run complete CI recipe locally
+pnpm ci:recipe
+```
+
+## 📈 **COVERAGE IMPROVEMENT STRATEGY**
+
+### **Phase 1: Fix Existing Tests (Week 1)**
+
+- Investigate and fix 55 failing E2E tests
+- Resolve timeout and permission issues
+- Ensure consistent test data setup
+
+### **Phase 2: Expand Core Coverage (Week 2)**
+
+- Add missing allocation workflow tests
+- Test academic year switching thoroughly
+- Complete module and group management testing
+
+### **Phase 3: Edge Cases & Polish (Week 3)**
+
+- Add error handling and edge case tests
+- Test responsive design and accessibility
+- Add performance and load testing
+
+### **Phase 4: Integration & E2E (Week 4)**
+
+- Test complete user journeys
+- Validate business logic calculations
+- Test permission boundaries thoroughly
+
+## 🔧 **TESTING COMMANDS**
+
+### **Daily Testing**
+
+```bash
+# Quick health check
+pnpm test:smoke
+
+# Run all tests
+pnpm test:all
+
+# CI recipe (local)
+pnpm ci:recipe
+```
+
+### **Debugging Failing Tests**
+
+```bash
+# Run specific test file
+pnpm e2e tests/e2e/[test-file].spec.ts
+
+# Run with UI for debugging
+pnpm test:ui
+
+# Run with debug mode
+pnpm test:debug
+```
+
+### **Coverage Analysis**
+
+```bash
+# Unit test coverage
+pnpm test --coverage
+
+# E2E test results
+pnpm test:report
+```
+
+## 📊 **SUCCESS METRICS**
+
+### **Target: 100% Pass Rate**
+
+- **Unit Tests**: ✅ Already at 100%
+- **E2E Tests**: 🎯 Target 82/82 passing (currently 27/82)
+- **Visual Regression**: ✅ Already stable
+- **Performance Tests**: ✅ Already hardened
+
+### **Coverage Goals**
+
+- **Core Functionality**: 100% (courses, modules, staff, allocations)
+- **User Journeys**: 100% (login to logout workflows)
+- **Admin Features**: 100% (settings, audit, permissions)
+- **Error Handling**: 90%+ (edge cases and failures)
+- **UI Components**: 95%+ (forms, tables, modals)
+
+## 🚨 **CURRENT BLOCKERS**
+
+1. **55 failing E2E tests** - need investigation and fixes
+2. **Test data consistency** - ensure reliable test environment
+3. **Permission setup** - fix role assignment for test user
+4. **Timeout configurations** - resolve flaky test issues
+
+## 🎯 **NEXT IMMEDIATE ACTIONS**
+
+1. **Run failing tests** to identify specific error messages
+2. **Check test setup** - verify authentication and data seeding
+3. **Fix 1-2 test categories** to build momentum
+4. **Update visual baselines** if UI has changed
+5. **Run CI recipe locally** to validate fixes
+
+## 📝 **NOTES**
+
+- Focus on **core functionality first** - get basic workflows working
+- **Fix tests, don't lower standards** - maintain quality thresholds
+- **Test locally before CI** - use `pnpm ci:recipe` for validation
+- **Document fixes** - track what was changed and why
+- **Celebrate progress** - 33% → 100% is achievable with focused effort

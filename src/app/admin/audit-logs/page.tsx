@@ -1,42 +1,12 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { StandardizedSidebarLayout } from "@/components/layout/StandardizedSidebarLayout";
 import { AuditLogsViewer } from "@/components/domain/AuditLogsViewer";
 import { Button } from "@/components/ui/button";
 import { Download, Settings } from "lucide-react";
-import { hasAnyRole } from "@/lib/utils";
+import { AuditViewGate } from "@/components/common/PermissionGate";
 
 export default function AdminAuditLogsPage() {
-  const { user, isLoaded } = useUser();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isLoaded) {
-      console.log("Debug - User metadata:", {
-        roles: user?.publicMetadata?.roles,
-        role: user?.publicMetadata?.role,
-        fullMetadata: user?.publicMetadata,
-        hasAnyRole: hasAnyRole(user, ["sysadmin", "developer"]),
-      });
-
-      if (!hasAnyRole(user, ["sysadmin", "developer"])) {
-        console.log("Debug - Access denied, redirecting to unauthorised");
-        router.replace("/unauthorised");
-      } else {
-        console.log("Debug - Access granted");
-      }
-    }
-  }, [isLoaded, user, router]);
-
-  if (!isLoaded) return <p>Loading...</p>;
-
-  if (!hasAnyRole(user, ["sysadmin", "developer"])) {
-    return null; // Will redirect in useEffect
-  }
-
   const breadcrumbs = [
     { label: "Home", href: "/" },
     { label: "Admin", href: "/admin" },
@@ -61,13 +31,27 @@ export default function AdminAuditLogsPage() {
   );
 
   return (
-    <StandardizedSidebarLayout
-      breadcrumbs={breadcrumbs}
-      title="Audit Logs"
-      subtitle="Monitor system activity and user actions"
-      headerActions={headerActions}
+    <AuditViewGate
+      fallback={
+        <div className="p-6 text-sm text-muted-foreground">
+          You don&apos;t have permission to view audit logs.
+        </div>
+      }
+      redirectOnDeny={false}
     >
-      <AuditLogsViewer />
-    </StandardizedSidebarLayout>
+      <StandardizedSidebarLayout
+        breadcrumbs={breadcrumbs}
+        title="Audit Logs"
+        subtitle="Monitor system activity and user actions"
+        headerActions={headerActions}
+      >
+        <p className="text-sm text-muted-foreground">
+          View and search audit logs for all user actions and system events. Use
+          the filters above to narrow down results by date range, user, action
+          type, or search terms.
+        </p>
+        <AuditLogsViewer />
+      </StandardizedSidebarLayout>
+    </AuditViewGate>
   );
 }
