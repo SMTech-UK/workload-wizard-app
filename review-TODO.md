@@ -20,16 +20,6 @@
 
 ## 🎯 **PRIORITY TASKS TO REACH 100% PASS RATE**
 
-### **1. Fix Failing E2E Tests (High Priority)** ✅ **COMPLETED**
-
-- [x] **Investigate 55 failing E2E tests** - identify root causes
-- [x] **Fix middleware blocking admin API routes** - added admin routes to middleware allowlist
-- [x] **Increase test timeouts** - from 30s to 60s, global timeout from 5m to 10m
-- [x] **Fix fixture timeouts** - increased seedDemoData API call timeouts to 60s
-- [x] **Fix missing test IDs** - added proper waiting for course-years-list elements
-- [x] **Replace unreliable waits** - replaced networkidle with element-based waits
-- [x] **Update .gitignore** - added playwright-report/ and test-results/ to prevent commit issues
-
 ### **2. Core Workflow Testing (Critical)**
 
 - [ ] **Complete allocation workflow** - end-to-end staff allocation testing

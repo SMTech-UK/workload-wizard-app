@@ -16,7 +16,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useToast } from "@/hooks/use-toast";
 import { withToast, isZodError, formatZodError } from "@/lib/utils";
-import { track } from "@/lib/analytics";
+import { analytics } from "@/lib/analytics";
 
 interface OrganisationFormData {
   name: string;
@@ -109,7 +109,10 @@ export function OrganisationForm() {
         toast,
       );
       if (data) {
-        track("organisation.created", { code: data.code, name: data.name });
+        analytics.track("organisation.created", {
+          code: data.code,
+          name: data.name,
+        });
       }
       (event.target as HTMLFormElement).reset();
     } finally {

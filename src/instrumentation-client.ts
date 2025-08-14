@@ -1,35 +1,54 @@
 import * as Sentry from "@sentry/nextjs";
 
+// PostHog configuration with basic features
+if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  import("posthog-js").then((posthog) => {
+    posthog.default.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      api_host:
+        process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
+    });
+  });
+}
+
+// Sentry configuration with basic features
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || "",
 
-  // Adds request headers and IP for users, for more info visit:
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  // Performance monitoring
+  tracesSampleRate: 1.0,
 
+  // Environment
+  environment: process.env.NODE_ENV || "development",
+
+  // Release version
+  release: process.env.NEXT_PUBLIC_APP_VERSION || "v0.4.0",
+
+  // Integrations
   integrations: [
-    Sentry.browserTracingIntegration(),
-    // Replay may only be enabled for the client-side
-    Sentry.replayIntegration(),
+    // Session replay integration
+    Sentry.replayIntegration({
+      // Mask sensitive data
+      maskAllText: false,
+      maskAllInputs: false,
+      blockAllMedia: false,
+    }),
+
+    // Feedback integration
     Sentry.feedbackIntegration({
-      // Additional SDK configuration goes in here, for example:
+      // Custom categories
+      categories: [
+        { label: "Bug Report", value: "bug" },
+        { label: "Feature Request", value: "feature" },
+        { label: "General Feedback", value: "general" },
+      ],
+      // Screenshot configuration
+      enableScreenshot: true,
+      // Handle attachments properly
+      attachments: true,
       colorScheme: "system",
     }),
   ],
-
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
-
-  // Set tracesSampleRate to 1.0 to capture 100%
-  // of transactions for tracing.
-  // We recommend adjusting this value in production
-  // Learn more at
-  // https://docs.sentry.io/platforms/javascript/configuration/options/#traces-sample-rate
-  tracesSampleRate: 1.0,
-  // Capture Replay for 10% of all
-  // plus for 100% of sessions with an error
-  // Learn more at
-  // https://docs.sentry.io/platforms/javascript/session-replay/configuration/#general-integration-configuration
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
 });
+
+// Export router transition hook for Sentry navigation instrumentation
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

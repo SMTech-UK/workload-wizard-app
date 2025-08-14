@@ -1,0 +1,76 @@
+/* Visual Regression Test CSS - Disable all animations and transitions */
+
+/* Disable all CSS animations */
+*,
+*::before,
+*::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-play-state: paused !important;
+  animation-fill-mode: none !important;
+  animation-iteration-count: 1 !important;
+  animation-name: none !important;
+  animation-timing-function: linear !important;
+}
+
+/* Disable all CSS transitions */
+*,
+*::before,
+*::after {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  transition-property: none !important;
+  transition-timing-function: linear !important;
+}
+
+/* Disable CSS transforms that might cause visual differences */
+*,
+*::before,
+*::after {
+  transform: none !important;
+  transform-origin: initial !important;
+  transform-style: flat !important;
+  perspective: none !important;
+  perspective-origin: initial !important;
+  backface-visibility: visible !important;
+}
+
+/* Ensure consistent font rendering */
+* {
+  font-smooth: never !important;
+  -webkit-font-smoothing: none !important;
+  -moz-osx-font-smoothing: unset !important;
+  text-rendering: optimizeSpeed !important;
+}
+
+/* Disable hover effects */
+*:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Ensure consistent scrollbar appearance */
+::-webkit-scrollbar {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 8px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8 !important;
+}
+
+/* Disable any CSS custom properties that might cause variations */
+:root {
+  --animation-duration: 0s !important;
+  --transition-duration: 0s !important;
+}

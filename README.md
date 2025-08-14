@@ -1,75 +1,210 @@
 # Workload Wizard App
 
-A comprehensive academic workload management system built with Next.js, Convex, and Clerk authentication.
+A comprehensive workload management application for educational institutions, built with Next.js, Convex, and Clerk.
 
-## Quick Start
+## 🚀 **New Advanced Features**
+
+### **PostHog Analytics & Session Replays**
+
+- **Session Recordings** with privacy-focused settings
+- **Heatmaps** for user interaction analysis
+- **Advanced Analytics** with autocapture and performance tracking
+- **Feature Flags** and Early Access Features
+- **Enhanced User Identification** with comprehensive tracking
+
+### **Sentry Error Monitoring & Performance**
+
+- **Session Replay** with privacy controls
+- **User Feedback** collection with customizable forms
+- **Performance Monitoring** with custom metrics and traces
+- **Error Tracking** across client, server, and edge functions
+- **Custom Breadcrumbs** and context for debugging
+
+## 🛠️ **Tech Stack**
+
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Backend**: Convex (real-time database)
+- **Authentication**: Clerk
+- **Analytics**: PostHog (with session replays & heatmaps)
+- **Monitoring**: Sentry (with session replay & user feedback)
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Testing**: Playwright (E2E), Vitest (unit)
+
+## 📊 **Key Features**
+
+- **Academic Year Management** with scoped data access
+- **Course & Module Management** with iterative planning
+- **Staff Allocation** with capacity planning
+- **Permission System** with role-based access control
+- **Real-time Collaboration** with Convex
+- **Comprehensive Testing** with 100% E2E coverage target
+
+## 🚀 **Quick Start**
+
+### Prerequisites
+
+- Node.js 18+
+- pnpm
+- Convex account
+- Clerk account
+- PostHog account (optional)
+- Sentry account (optional)
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd workload-wizard-app
+
+# Install dependencies
 pnpm install
-cp .env.example .env.local # or create and fill from the Env section below
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your configuration
+
+# Start the development server
 pnpm dev
-# App: http://localhost:3000
+
+# In another terminal, start Convex
+pnpm convex dev
 ```
 
-### Required environment
+### Environment Variables
 
 ```bash
-# Convex
-NEXT_PUBLIC_CONVEX_URL=your_convex_url
+# Required for Convex
+NEXT_PUBLIC_CONVEX_URL=https://your_convex_url.convex.cloud
 
-# Clerk
+# Clerk (required for auth)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_key
 CLERK_SECRET_KEY=sk_test_your_key
 
-# PostHog (optional)
+# PostHog (optional; enables analytics, session replays & heatmaps)
 NEXT_PUBLIC_POSTHOG_KEY=phc_your_api_key_here
 NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 
-# Email (recommended)
-RESEND_API_KEY=your_resend_api_key
-FROM_EMAIL=system@workload-wiz.xyz
+# Sentry (optional; enables error monitoring & session replay)
+NEXT_PUBLIC_SENTRY_DSN=https://your_dsn@your_org.ingest.sentry.io/your_project
 
-# App URLs (for emails)
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=http://localhost:3000/sign-in
+# App version for tracking
+NEXT_PUBLIC_APP_VERSION=1.0.0
 ```
 
-## Role matrix (default)
+## 🧪 **Testing**
 
-Derived from `src/lib/permissions.ts`.
+### E2E Tests
 
-- systemadmin: all permissions
-- orgadmin: `users.view`, `users.create`, `users.edit`, `permissions.manage`, `flags.manage`
-- lecturer: `users.view`
+```bash
+# Run all E2E tests
+pnpm run e2e
 
-See `src/lib/permissions.ts` for the canonical `PERMISSIONS` and `DEFAULT_ROLES`.
+# Run smoke tests only
+pnpm run e2e:smoke
 
-## Canonical docs
-
-- Permissions: `./docs/PERMISSIONS.md`
-- Audit: `./docs/AUDIT.md`
-- Email: `./docs/EMAIL.md`
-- Feature Flags: `./docs/FEATURE_FLAGS.md`
-- PostHog: `./docs/POSTHOG.md`
-
-## Scripts
-
-```json
-{
-  "dev": "concurrently \"next dev --turbopack\" \"convex dev\" \"ngrok http 3000\"",
-  "typecheck": "tsc --noEmit",
-  "lint": "eslint .",
-  "format": "prettier --check .",
-  "test": "vitest run",
-  "test:watch": "vitest --watch",
-  "test:ui": "vitest --ui --open",
-  "build": "next build",
-  "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build"
-}
+# Run specific test suites
+pnpm run test:performance
+pnpm run test:visual-regression
 ```
 
-## Notes
+### Unit Tests
 
-- AuthZ helpers live in `src/lib/authz.ts` (`getOrganisationIdFromSession()` etc.)
-- Avoid reading `organisationId` from clients in server routes; derive from session
-- Analytics must go via the proxy wrapper `src/lib/analytics.ts`
+```bash
+# Run unit tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+```
+
+## 📚 **Documentation**
+
+- **PostHog Integration**: `./docs/POSTHOG.md` - Session replays, heatmaps, analytics
+- **Sentry Integration**: `./docs/SENTRY.md` - Error tracking, session replay, user feedback
+- **Permissions**: `./docs/PERMISSIONS.md` - Role-based access control
+- **Feature Flags**: `./docs/FEATURE_FLAGS.md` - Feature management system
+- **Testing**: `./docs/TESTING_PROCEDURES.md` - Testing guidelines and procedures
+
+## 🔧 **Development**
+
+### Code Quality
+
+```bash
+# Format code
+pnpm format
+
+# Lint code
+pnpm lint
+
+# Type check
+pnpm type-check
+```
+
+### Database
+
+```bash
+# View Convex dashboard
+pnpm convex dashboard
+
+# Deploy schema changes
+pnpm convex deploy
+```
+
+## 🌟 **Advanced Features**
+
+### **PostHog Analytics Dashboard**
+
+Visit `/dev/posthog-test` to test:
+
+- Session recordings with privacy controls
+- Heatmaps for user interaction analysis
+- Feature flags and early access features
+- Advanced analytics and user tracking
+
+### **Sentry Monitoring Dashboard**
+
+Visit `/sentry-example-page` to test:
+
+- Error reporting and monitoring
+- Performance tracking and metrics
+- Session replay with privacy settings
+- User feedback collection
+
+### **Feature Flag Management**
+
+Visit `/dev/feature-flags-test` to manage:
+
+- PostHog feature flags
+- Local feature flags
+- Early access features
+- Flag debugging and testing
+
+## 📈 **Performance & Monitoring**
+
+- **Real-time Analytics** with PostHog
+- **Error Monitoring** with Sentry
+- **Performance Tracking** with custom metrics
+- **Session Replay** for debugging user issues
+- **User Feedback** collection for continuous improvement
+
+## 🤝 **Contributing**
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+## 📄 **License**
+
+This project is licensed under the MIT License.
+
+## 🆘 **Support**
+
+For support and questions:
+
+- Check the documentation in the `docs/` folder
+- Review existing issues
+- Create a new issue with detailed information

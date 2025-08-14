@@ -40,7 +40,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { withToast, toastError } from "@/lib/utils";
-import { track } from "@/lib/analytics";
+import { analytics } from "@/lib/analytics";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GenericDeleteModal } from "@/components/domain/GenericDeleteModal";
 import { PermissionGate } from "@/components/common/PermissionGate";
@@ -733,7 +733,7 @@ export default function IterationDetailsPage() {
                             : {}),
                         } as any);
                         // metric
-                        track("allocation.assigned", {
+                        analytics.track("allocation.assigned", {
                           groupId: selectedGroupId,
                           lecturerId: selectedLecturerId,
                           academicYearId: String(currentYear._id),
@@ -833,7 +833,7 @@ export default function IterationDetailsPage() {
                                       allocationId: allocation._id,
                                       type: next,
                                     } as any);
-                                    track("allocation.updated", {
+                                    analytics.track("allocation.updated", {
                                       allocationId: String(allocation._id),
                                       field: "type",
                                       value: next,
@@ -866,7 +866,7 @@ export default function IterationDetailsPage() {
                                         allocationId: allocation._id,
                                         hoursOverride: null,
                                       } as any);
-                                      track("allocation.updated", {
+                                      analytics.track("allocation.updated", {
                                         allocationId: String(allocation._id),
                                         field: "hoursOverride",
                                         value: null,
@@ -891,7 +891,7 @@ export default function IterationDetailsPage() {
                                         allocationId: allocation._id,
                                         hoursOverride: value,
                                       } as any);
-                                      track("allocation.updated", {
+                                      analytics.track("allocation.updated", {
                                         allocationId: String(allocation._id),
                                         field: "hoursOverride",
                                         value,
@@ -920,7 +920,7 @@ export default function IterationDetailsPage() {
                                       await removeAllocation({
                                         allocationId: allocation._id,
                                       } as any);
-                                      track("allocation.deleted", {
+                                      analytics.track("allocation.deleted", {
                                         allocationId: String(allocation._id),
                                       });
                                       toast({
@@ -1018,7 +1018,7 @@ export default function IterationDetailsPage() {
                       });
                     }
                   }
-                  track("allocation.bulkHoursUpdated", {
+                  analytics.track("allocation.bulkHoursUpdated", {
                     groupCount: groupIds.length,
                     value: parsed,
                   });
@@ -1159,7 +1159,9 @@ export default function IterationDetailsPage() {
               },
               toast,
             );
-            track("allocation.bulkRemoved", { groupCount: groupIds.length });
+            analytics.track("allocation.bulkRemoved", {
+              groupCount: groupIds.length,
+            });
             setBulkSelected({});
             setBulkRemoveOpen(false);
           }}

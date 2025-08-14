@@ -27,7 +27,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { toastError } from "@/lib/utils";
-import { track } from "@/lib/analytics";
+import { analytics } from "@/lib/analytics";
 
 interface CreateUserFormProps {
   organisationId?: string; // Optional for sysadmin use
@@ -118,7 +118,7 @@ export function CreateUserForm({
 
     try {
       await createUser(data);
-      track("user.created", {
+      analytics.track("user.created", {
         organisationId: data.organisationId,
         roleCount: data.roles?.length,
       });

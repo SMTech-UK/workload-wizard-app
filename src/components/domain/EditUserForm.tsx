@@ -1,7 +1,7 @@
 "use client";
 
 import posthog from "posthog-js";
-import { track } from "@/lib/analytics";
+import { analytics } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import { toastError } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -237,7 +237,7 @@ export function EditUserForm({
         user_id: user.subject,
         is_sysadmin: isSysadmin,
       });
-      track("user.passwordResetInitiated", {
+      analytics.track("user.passwordResetInitiated", {
         userId: user.subject,
         isSysadmin,
       });
