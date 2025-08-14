@@ -48,6 +48,9 @@ const isAccountRoute = createRouteMatcher(["/account(.*)"]);
 const isApiRoute = createRouteMatcher([
   "/api/complete-onboarding",
   "/api/update-user-email",
+  "/api/admin/dev-tools(.*)", // Allow admin dev tools API routes
+  "/api/admin/flags(.*)", // Allow admin flags API routes
+  "/api/admin/reset-password", // Allow admin password reset
 ]);
 const isOnboardingRoute = createRouteMatcher([
   "/onboarding",

@@ -105,3 +105,11 @@ coverage/
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Playwright snapshots
+tests/e2e/**/*-snapshots/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
